@@ -4,7 +4,6 @@ Personal WSL environment backup and setup scripts.
 
 ## Structure
 
-```text
 wsl/
 ├── dotfiles/
 │   └── tmux.conf
@@ -13,98 +12,96 @@ wsl/
 ├── push.sh
 ├── pull.sh
 └── README.md
-```
+
+
+## First Installation
+
+On a fresh WSL installation:
+
+    sudo apt update
+    sudo apt install -y git
+    git clone https://github.com/c-lech/wsl.git ~/wsl
+    cd ~/wsl
+    ./install.sh
+
 
 ## Install
 
-Clone the repository:
+Run:
 
-```bash
-git clone https://github.com/c-lech/wsl.git ~/wsl
-```
+    cd ~/wsl
+    ./install.sh
 
-Run setup:
-
-```bash
-cd ~/wsl
-./install.sh
-```
 
 The install script:
+
 - installs required packages
 - configures dotfiles
 - creates required directories
+
 
 ## Dotfiles
 
 Configuration files are stored in:
 
-```text
-dotfiles/
-```
+    dotfiles/
 
 Example:
 
-```text
-dotfiles/tmux.conf
-```
+    dotfiles/tmux.conf
 
-Installation creates:
 
-```text
-~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
-```
+The installation creates:
 
-Changes made to files inside `dotfiles/` are available immediately through the symlink.
+    ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
+
+
+Changes made to files inside `dotfiles/` are immediately available through the symlink.
+
 
 ## Projects
 
-The `projects/` directory is used for common projects shared between WSL installations.
+The `projects/` directory is reserved for common projects shared between WSL installations.
+
 
 Example:
 
-```text
-projects/
-├── project1/
-├── project2/
-└── ...
-```
+    projects/
+    ├── project1/
+    ├── project2/
+    └── ...
 
-## Update repository
+
+## Update Repository
 
 After modifying files:
 
-```bash
-./push.sh "update message"
-```
+    ./push.sh "update message"
+
 
 Example:
 
-```bash
-./push.sh "update tmux configuration"
-```
+    ./push.sh "update tmux configuration"
+
 
 This performs:
 
-```bash
-git add .
-git commit -m "update message"
-git push
-```
+    git add .
+    git commit -m "update message"
+    git push
 
-## Update WSL installation
+
+## Update Local Copy
 
 On another WSL machine:
 
-```bash
-./pull.sh
-```
+    ./pull.sh
 
-This downloads the latest changes:
 
-```bash
-git pull
-```
+This performs:
+
+    git pull
+
 
 ## Requirements
 
