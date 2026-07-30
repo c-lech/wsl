@@ -21,7 +21,7 @@ for pkg in "${packages[@]}"; do
   if ! dpkg -s "$pkg" >/dev/null 2>&1; then
     echo "  -> Installing $pkg"
     sudo apt install -y "$pkg"
-    source ~/.bashrc
+    #source ~/.bashrc
   else
     echo "  -> $pkg already installed"
   fi
@@ -34,7 +34,8 @@ ln -sfn "$BASE/dotfiles/bashrc" ~/.bashrc
 
 # opencode
 
-if [ -x "$HOME/.opencode/bin/opencode" ] || command -v opencode >/dev/null 2>&1; then
+#if [ -x "$HOME/.opencode/bin/opencode" ] || command -v opencode >/dev/null 2>&1; then
+if [ -x "$HOME/.opencode/bin/opencode" ]; then
   echo "  -> opencode already installed"
 else
   echo "  -> Installing opencode"
@@ -46,5 +47,6 @@ echo "[+] Creating projects directory"
 mkdir -p "$BASE/projects"
 
 source ~/.bashrc
+hash -r
 
 echo "[+] Done"
