@@ -26,6 +26,8 @@ for pkg in "${packages[@]}"; do
   fi
 done
 
+# opencode
+curl -fsSL https://opencode.ai/install | bash
 
 echo "[+] Installing dotfiles"
 
