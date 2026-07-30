@@ -21,6 +21,7 @@ for pkg in "${packages[@]}"; do
   if ! dpkg -s "$pkg" >/dev/null 2>&1; then
     echo "  -> Installing $pkg"
     sudo apt install -y "$pkg"
+    source ~/.bashrc
   else
     echo "  -> $pkg already installed"
   fi
