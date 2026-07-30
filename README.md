@@ -2,6 +2,13 @@
 
 Personal WSL environment backup and setup scripts.
 
+
+```powershell
+wsl --install -d Ubuntu-24.04
+wsl --list --verbose
+wsl --unregister Ubuntu-24.04
+```
+
 ## First Installation
 
 On a fresh WSL installation:
