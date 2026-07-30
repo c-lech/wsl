@@ -3,7 +3,7 @@
 Personal WSL environment backup and setup scripts.
 
 ## Structure
-
+```text
 wsl/
 ├── dotfiles/
 │   └── tmux.conf
@@ -12,7 +12,6 @@ wsl/
 ├── push.sh
 ├── pull.sh
 └── README.md
-
 
 ## First Installation
 
