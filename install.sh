@@ -16,18 +16,25 @@ packages=(
   ansible
   sshpass
   figlet
+  cmatrix
 )
 
 sudo apt update
 
 for pkg in "${packages[@]}"; do
   if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+    echo "  -> Installing $pkg"
     sudo apt install -y "$pkg"
+  else
+    echo "  -> $pkg already installed"
   fi
 done
 
 # opencode
+echo "  -> Installing opencode"
 curl -fsSL https://opencode.ai/install | bash
+source ~/.bashrc
+
 
 echo "[+] Installing dotfiles"
 
