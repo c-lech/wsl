@@ -4,6 +4,10 @@ set -e
 
 BASE=~/wsl
 
+echo "[+] Update package list"
+
+sudo apt update
+
 echo "[+] Installing packages"
 
 packages=(
