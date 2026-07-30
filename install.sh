@@ -31,9 +31,14 @@ for pkg in "${packages[@]}"; do
 done
 
 # opencode
-echo "  -> Installing opencode"
-curl -fsSL https://opencode.ai/install | bash
-source ~/.bashrc
+
+if command -v opencode >/dev/null 2>&1; then
+  echo "  -> opencode already installed"
+else
+  echo "  -> Installing opencode"
+  curl -fsSL https://opencode.ai/install | bash
+  source ~/.bashrc
+fi
 
 
 echo "[+] Installing dotfiles"
