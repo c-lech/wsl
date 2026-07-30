@@ -14,6 +14,8 @@ packages=(
   jq
   tree
   ansible
+  sshpass
+  figlet
 )
 
 sudo apt update
