@@ -44,4 +44,6 @@ echo "[+] Creating projects directory"
 
 mkdir -p "$BASE/projects"
 
+source ~/.bashrc
+
 echo "[+] Done"
