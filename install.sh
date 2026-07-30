@@ -21,7 +21,6 @@ for pkg in "${packages[@]}"; do
   if ! dpkg -s "$pkg" >/dev/null 2>&1; then
     echo "  -> Installing $pkg"
     sudo apt install -y "$pkg"
-    #source ~/.bashrc
   else
     echo "  -> $pkg already installed"
   fi
@@ -31,7 +30,6 @@ echo "[+] Installing dotfiles"
 
 ln -sfn "$BASE/dotfiles/tmux.conf" ~/.tmux.conf
 ln -sfn "$BASE/dotfiles/bashrc" ~/.bashrc
-source ~/.bashrc
 
 # opencode
 
@@ -47,7 +45,6 @@ echo "[+] Creating projects directory"
 
 mkdir -p "$BASE/projects"
 
-source ~/.bashrc
-#hash -r
+#source ~/.bashrc
 
 echo "[+] Done"
