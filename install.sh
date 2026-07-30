@@ -32,14 +32,13 @@ done
 
 # opencode
 
-if command -v opencode >/dev/null 2>&1; then
+if [ -x "$HOME/.opencode/bin/opencode" ] || command -v opencode >/dev/null 2>&1; then
   echo "  -> opencode already installed"
 else
   echo "  -> Installing opencode"
   curl -fsSL https://opencode.ai/install | bash
   source ~/.bashrc
 fi
-
 
 echo "[+] Installing dotfiles"
 
