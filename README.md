@@ -2,6 +2,15 @@
 
 Personal WSL environment backup and setup scripts.
 
+## First Installation
+
+On a fresh WSL:
+
+```bash
+git clone https://github.com/c-lech/wsl.git ~/wsl
+cd ~/wsl
+./install.sh
+
 ## Structure
 ```text
 wsl/
