@@ -26,6 +26,11 @@ for pkg in "${packages[@]}"; do
   fi
 done
 
+echo "[+] Installing dotfiles"
+
+ln -sfn "$BASE/dotfiles/tmux.conf" ~/.tmux.conf
+ln -sfn "$BASE/dotfiles/bashrc" ~/.bashrc
+
 # opencode
 
 if [ -x "$HOME/.opencode/bin/opencode" ] || command -v opencode >/dev/null 2>&1; then
@@ -35,17 +40,8 @@ else
   curl -fsSL https://opencode.ai/install | bash
 fi
 
-echo "[+] Installing dotfiles"
-
-ln -sfn "$BASE/dotfiles/tmux.conf" ~/.tmux.conf
-ln -sfn "$BASE/dotfiles/bashrc" ~/.bashrc
-
-
 echo "[+] Creating projects directory"
 
 mkdir -p "$BASE/projects"
-
-
-source ~/.bashrc
 
 echo "[+] Done"
