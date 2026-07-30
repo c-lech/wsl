@@ -4,10 +4,6 @@ set -e
 
 BASE=~/wsl
 
-echo "[+] Update package list"
-
-sudo apt update
-
 echo "[+] Installing packages"
 
 packages=(
@@ -37,17 +33,19 @@ if [ -x "$HOME/.opencode/bin/opencode" ] || command -v opencode >/dev/null 2>&1;
 else
   echo "  -> Installing opencode"
   curl -fsSL https://opencode.ai/install | bash
-  source ~/.bashrc
 fi
 
 echo "[+] Installing dotfiles"
 
 ln -sfn "$BASE/dotfiles/tmux.conf" ~/.tmux.conf
+ln -sfn "$BASE/dotfiles/bashrc" ~/.bashrc
 
 
 echo "[+] Creating projects directory"
 
 mkdir -p "$BASE/projects"
 
+
+source ~/.bashrc
 
 echo "[+] Done"
