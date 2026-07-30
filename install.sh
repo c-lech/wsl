@@ -31,6 +31,7 @@ echo "[+] Installing dotfiles"
 
 ln -sfn "$BASE/dotfiles/tmux.conf" ~/.tmux.conf
 ln -sfn "$BASE/dotfiles/bashrc" ~/.bashrc
+source ~/.bashrc
 
 # opencode
 
@@ -47,6 +48,6 @@ echo "[+] Creating projects directory"
 mkdir -p "$BASE/projects"
 
 source ~/.bashrc
-hash -r
+#hash -r
 
 echo "[+] Done"
