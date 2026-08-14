@@ -59,6 +59,9 @@ install_opencode() {
     curl -fsSL https://opencode.ai/install | bash
     step "Done"
   fi
+
+  step "Linking opencode to /usr/local/bin"
+  sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
 }
 
 install_vagrant() {
