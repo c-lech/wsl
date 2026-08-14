@@ -162,6 +162,28 @@ configure_git() {
   fi
 }
 
+fix_drvfs_automount() {
+  item "drvfs automount"
+
+  local uid gid
+  uid="$(id -u)"
+  gid="$(id -g)"
+
+  if ! grep -Fq '[user]' /etc/wsl.conf 2>/dev/null; then
+    step "Adding [user] default=$USER to /etc/wsl.conf"
+    printf '\n[user]\ndefault=%s\n' "$USER" | sudo tee -a /etc/wsl.conf >/dev/null
+  fi
+
+  if ! grep -Fq '[automount]' /etc/wsl.conf 2>/dev/null; then
+    step "Adding [automount] options uid=$uid,gid=$gid to /etc/wsl.conf"
+    printf '\n[automount]\noptions = "uid=%s,gid=%s"\n' "$uid" "$gid" | sudo tee -a /etc/wsl.conf >/dev/null
+  fi
+
+  step "Remounting /mnt/c as uid=$uid,gid=$gid (no restart needed)"
+  sudo mount -t drvfs 'C:\' /mnt/c -o remount,uid="$uid",gid="$gid"
+  step "Done"
+}
+
 main() {
   install_packages
   install_opencode
@@ -170,9 +192,21 @@ main() {
   install_dotfiles
   configure_git
   mount_data_dir
+  fix_drvfs_automount
 
   item "Setup complete"
   step "All steps done"
+  hr
+  echo
+  echo "  Environment variables were added to ~/.bashrc"
+  echo "  (VAGRANT_WSL_ENABLE_WINDOWS_ACCESS, VirtualBox PATH)"
+  echo
+  echo "  They apply automatically to new shells (next login/terminal)."
+  echo "  For THIS shell only, run:"
+  echo
+  echo "      source ~/.bashrc"
+  echo
+  hr
 }
 
 main "$@"
