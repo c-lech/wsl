@@ -2,7 +2,6 @@
 
 Personal WSL environment backup and setup scripts.
 
-
 ```powershell
 wsl --install -d Ubuntu-24.04
 wsl --list --verbose
@@ -24,21 +23,25 @@ cd ~/wsl
 ```text
 wsl/
 ├── dotfiles/
+│   ├── bashrc
 │   └── tmux.conf
-├── projects/
+├── createenv.sh
 ├── install.sh
-├── push.sh
 ├── pull.sh
+├── push.sh
 └── README.md
 ```
 
 ## Install
 
-The `install.sh` script:
+`install.sh` (idempotent, each step reports installed/skipped):
 
-- installs required packages
-- configures dotfiles
-- creates required directories
+- installs required packages (`jq`, `tree`, `ansible`, `sshpass`, `figlet`, `cmatrix`)
+- installs `opencode`
+- installs `vagrant` (HashiCorp repo) + `virtualbox_WSL2` plugin
+- creates the projects directory
+- symlinks dotfiles
+- mounts Windows `C:\data` at `/data` (persistent via `/etc/fstab`, drvfs `metadata`)
 
 Run:
 
@@ -47,75 +50,49 @@ cd ~/wsl
 ./install.sh
 ```
 
+## Data Mount
+
+Windows `C:\data` is mounted at `/data` (drvfs) and survives restarts via
+`/etc/fstab`:
+
+```text
+C:\data /data drvfs defaults,metadata 0 0
+```
+
+Project work lives under `/data` so it's accessible from both Windows and WSL.
+
 ## Dotfiles
 
-Configuration files are stored in:
-
-```text
-dotfiles/
-```
-
-Example:
-
-```text
-dotfiles/tmux.conf
-```
-
-The installation creates:
+`dotfiles/` contains `tmux.conf` and `bashrc`. Installation symlinks them:
 
 ```text
 ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
+~/.bashrc    -> ~/wsl/dotfiles/bashrc
 ```
 
-Changes made to files inside `dotfiles/` are immediately available through the symlink.
+Edits inside `dotfiles/` apply immediately through the symlink.
 
-## Projects
+## Vagrant / Development VMs
 
-The `projects/` directory is reserved for common projects shared between WSL installations.
+`createenv.sh` recreates the development VMs (destroy + up):
 
-Example:
-
-```text
-projects/
-├── project1/
-├── project2/
-└── ...
+```bash
+./createenv.sh
 ```
+
+Environments are defined in the script (`VAGRANT_DIR` + env names) under the
+Windows-side vagrant folder.
 
 ## Update Repository
-
-After modifying files:
 
 ```bash
 ./push.sh "update message"
 ```
 
-Example:
-
-```bash
-./push.sh "update tmux configuration"
-```
-
-This performs:
-
-```bash
-git add .
-git commit -m "update message"
-git push
-```
-
 ## Update Local Copy
-
-On another WSL machine:
 
 ```bash
 ./pull.sh
-```
-
-This performs:
-
-```bash
-git pull
 ```
 
 ## Requirements
