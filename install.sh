@@ -179,8 +179,7 @@ fix_drvfs_automount() {
     printf '\n[automount]\noptions = "uid=%s,gid=%s"\n' "$uid" "$gid" | sudo tee -a /etc/wsl.conf >/dev/null
   fi
 
-  step "Remounting /mnt/c as uid=$uid,gid=$gid (no restart needed)"
-  sudo mount -t drvfs 'C:\' /mnt/c -o remount,uid="$uid",gid="$gid"
+  step "Will apply on next restart (WSL startup reads /etc/wsl.conf)"
   step "Done"
 }
 
