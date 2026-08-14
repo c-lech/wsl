@@ -198,13 +198,12 @@ main() {
   step "All steps done"
   hr
   echo
-  echo "  Environment variables were added to ~/.bashrc"
-  echo "  (VAGRANT_WSL_ENABLE_WINDOWS_ACCESS, VirtualBox PATH)"
+  echo "  IMPORTANT: Restart this WSL distro to apply changes."
   echo
-  echo "  They apply automatically to new shells (next login/terminal)."
-  echo "  For THIS shell only, run:"
+  echo "      sudo reboot"
   echo
-  echo "      source ~/.bashrc"
+  echo "  Applies /mnt/c ownership (uid=1000) and the new"
+  echo "  environment variables. Nothing else needed after."
   echo
   hr
 }
