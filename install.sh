@@ -77,13 +77,13 @@ install_ollama() {
     step "Done"
   fi
 
-  if ollama list 2>/dev/null | grep -q 'qwen3:8b'; then
-    step "Model qwen3:8b already pulled, skipping"
-  else
-    step "Pulling qwen3:8b"
-    ollama pull qwen3:8b
-    step "Done"
-  fi
+  # if ollama list 2>/dev/null | grep -q 'qwen3:8b'; then
+  #   step "Model qwen3:8b already pulled, skipping"
+  # else
+  #   step "Pulling qwen3:8b"
+  #   ollama pull qwen3:8b
+  #   step "Done"
+  # fi
 }
 
 install_vagrant() {
