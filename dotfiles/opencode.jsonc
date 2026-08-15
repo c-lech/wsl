@@ -13,6 +13,5 @@
         }
       }
     }
-  },
-  "model": "ollama/qwen3:8b-8k"
+  }
 }
