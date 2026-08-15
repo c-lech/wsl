@@ -10,14 +10,6 @@
       "models": {
         "qwen3:8b-8k": {
           "name": "Qwen3 8B"
-        },
-        "llama3.2:3b": {
-          "name": "Llama 3.2 3B",
-          "options": { "num_ctx": 16384 }
-        },
-        "mistral-nemo:12b": {
-          "name": "Mistral Nemo 12B",
-          "options": { "num_ctx": 16384 }
         }
       }
     }
