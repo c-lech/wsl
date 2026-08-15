@@ -165,27 +165,6 @@ configure_git() {
   fi
 }
 
-fix_drvfs_automount() {
-  item "drvfs automount"
-
-  local uid gid
-  uid="$(id -u)"
-  gid="$(id -g)"
-
-  if ! grep -Fq '[user]' /etc/wsl.conf 2>/dev/null; then
-    step "Adding [user] default=$USER to /etc/wsl.conf"
-    printf '\n[user]\ndefault=%s\n' "$USER" | sudo tee -a /etc/wsl.conf >/dev/null
-  fi
-
-  if ! grep -Fq '[automount]' /etc/wsl.conf 2>/dev/null; then
-    step "Adding [automount] options uid=$uid,gid=$gid to /etc/wsl.conf"
-    printf '\n[automount]\noptions = "uid=%s,gid=%s"\n' "$uid" "$gid" | sudo tee -a /etc/wsl.conf >/dev/null
-  fi
-
-  step "Will apply on next restart (WSL startup reads /etc/wsl.conf)"
-  step "Done"
-}
-
 main() {
   install_packages
   install_opencode
@@ -194,18 +173,12 @@ main() {
   install_dotfiles
   configure_git
   mount_data_dir
-  fix_drvfs_automount
 
   item "Setup complete"
   step "All steps done"
   hr
   echo
-  echo "  IMPORTANT: Restart this WSL distro to apply changes."
-  echo
-  echo "      sudo reboot"
-  echo
-  echo "  Applies /mnt/c ownership (uid=1000) and the new"
-  echo "  environment variables. Nothing else needed after."
+  echo "  Open a new terminal to pick up aliases/PATH from ~/.bashrc."
   echo
   hr
 }
