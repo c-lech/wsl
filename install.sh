@@ -82,6 +82,8 @@ install_ollama() {
   # else
   #   step "Pulling qwen3:8b"
   #   ollama pull qwen3:8b
+#   printf 'FROM qwen3:8b\nPARAMETER num_ctx 8192\n' > /tmp/Modelfile-qwen3-8k
+#   ollama create qwen3:8b-8k -f /tmp/Modelfile-qwen3-8k
   #   step "Done"
   # fi
 }
