@@ -36,7 +36,7 @@ install_packages() {
   step "Updating package lists (apt update)"
   sudo apt update
 
-  local packages=(jq tree figlet cmatrix \
+  local packages=(jq tree figlet cmatrix mc \
     mtr nmap netcat-openbsd traceroute dnsutils whois telnet socat iftop net-tools \
     htop btop glances ncdu nvtop iotop sysstat lm-sensors smartmontools snmp \
     ansible sshpass rsync fzf)
