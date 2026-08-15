@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-BASE="$HOME/wsl"
+BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 section() {
   echo
@@ -166,7 +166,7 @@ mount_data_dir() {
   sudo mkdir -p /data
 
   step "Mounting C:\data -> /data"
-  sudo mount -t drvfs 'C:\data' /data
+  sudo mount -t drvfs -o defaults,metadata 'C:\data' /data
   step "Done"
 
   if ! grep -Fq 'C:\data' /etc/fstab 2>/dev/null; then
