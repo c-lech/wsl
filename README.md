@@ -24,7 +24,8 @@ cd ~/wsl
 wsl/
 ├── dotfiles/
 │   ├── bashrc
-│   └── tmux.conf
+│   ├── tmux.conf
+│   └── opencode.jsonc
 ├── createenv.sh
 ├── install.sh
 ├── pull.sh
@@ -36,11 +37,12 @@ wsl/
 
 `install.sh` (idempotent, each step reports installed/skipped):
 
-- installs required packages (`jq`, `tree`, `ansible`, `sshpass`, `figlet`, `cmatrix`)
+- installs required packages (`jq`, `zstd`, `tree`, `ansible`, `sshpass`, `figlet`, `cmatrix`)
 - installs `opencode`
+- installs `ollama` (server + pulls `qwen3:8b`)
 - installs `vagrant` (HashiCorp repo) + `virtualbox_WSL2` plugin
 - creates the projects directory
-- symlinks dotfiles
+- symlinks dotfiles (incl. opencode config)
 - mounts Windows `C:\data` at `/data` (persistent via `/etc/fstab`, drvfs `metadata`)
 
 Run:
@@ -63,11 +65,13 @@ Project work lives under `/data` so it's accessible from both Windows and WSL.
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf` and `bashrc`. Installation symlinks them:
+`dotfiles/` contains `tmux.conf`, `bashrc`, and `opencode.jsonc`. Installation
+symlinks them:
 
 ```text
 ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
 ~/.bashrc    -> ~/wsl/dotfiles/bashrc
+~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
 ```
 
 Edits inside `dotfiles/` apply immediately through the symlink.

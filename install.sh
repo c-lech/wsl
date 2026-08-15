@@ -36,7 +36,7 @@ install_packages() {
   step "Updating package lists (apt update)"
   sudo apt update
 
-  local packages=(jq tree figlet cmatrix mc \
+  local packages=(jq zstd tree figlet cmatrix mc \
     mtr nmap netcat-openbsd traceroute dnsutils whois telnet socat iftop net-tools \
     htop btop glances ncdu nvtop iotop sysstat lm-sensors smartmontools snmp \
     ansible sshpass rsync fzf)
@@ -65,6 +65,25 @@ install_opencode() {
 
   step "Linking opencode to /usr/local/bin"
   sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
+}
+
+install_ollama() {
+  item "ollama"
+  if command -v ollama >/dev/null 2>&1; then
+    step "Already installed ($(ollama --version 2>/dev/null || echo 'unknown version')), skipping"
+  else
+    step "Installing ollama"
+    curl -fsSL https://ollama.com/install.sh | sh
+    step "Done"
+  fi
+
+  if ollama list 2>/dev/null | grep -q 'qwen3:8b'; then
+    step "Model qwen3:8b already pulled, skipping"
+  else
+    step "Pulling qwen3:8b"
+    ollama pull qwen3:8b
+    step "Done"
+  fi
 }
 
 install_vagrant() {
@@ -125,6 +144,9 @@ install_dotfiles() {
   ln -sfn "$BASE/dotfiles/tmux.conf" "$HOME/.tmux.conf"
   step "Linking ~/.bashrc -> $BASE/dotfiles/bashrc"
   ln -sfn "$BASE/dotfiles/bashrc" "$HOME/.bashrc"
+  step "Linking ~/.config/opencode/opencode.jsonc -> $BASE/dotfiles/opencode.jsonc"
+  mkdir -p "$HOME/.config/opencode"
+  ln -sfn "$BASE/dotfiles/opencode.jsonc" "$HOME/.config/opencode/opencode.jsonc"
   step "Done"
 }
 
@@ -168,6 +190,7 @@ configure_git() {
 main() {
   install_packages
   install_opencode
+  install_ollama
   install_vagrant
   create_projects_dir
   install_dotfiles
