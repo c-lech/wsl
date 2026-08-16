@@ -210,26 +210,21 @@ install_wslconfig() {
 
 mount_data_dir() {
   item "mount data"
-  if mountpoint -q /data; then
+
+  if mountpoint -q "$HOME/projects"; then
     step "Already mounted, skipping"
-    return
+  else
+    step "Creating mount point $HOME/projects"
+    mkdir -p "$HOME/projects"
+
+    step "Mounting C:\data\projects -> $HOME/projects"
+    sudo mount -t drvfs -o defaults,metadata,uid=1000,gid=1000 'C:\data\projects' "$HOME/projects"
+    step "Done"
   fi
 
-  if [ -L /data ]; then
-    step "Removing existing /data symlink"
-    sudo rm -f /data
-  fi
-
-  step "Creating mount point /data"
-  sudo mkdir -p /data
-
-  step "Mounting C:\data -> /data"
-  sudo mount -t drvfs -o defaults,metadata 'C:\data' /data
-  step "Done"
-
-  if ! grep -Fq 'C:\data' /etc/fstab 2>/dev/null; then
-    step "Adding /data to /etc/fstab (persistent)"
-    echo 'C:\data /data drvfs defaults,metadata 0 0' | sudo tee -a /etc/fstab
+  if ! grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
+    step "Adding $HOME/projects to /etc/fstab (persistent)"
+    echo "C:\\data\\projects $HOME/projects drvfs defaults,metadata,uid=1000,gid=1000 0 0" | sudo tee -a /etc/fstab
   fi
 }
 
