@@ -26,7 +26,8 @@ wsl/
 │   ├── .wslconfig
 │   ├── bashrc
 │   ├── tmux.conf
-│   └── opencode.jsonc
+│   ├── opencode.jsonc
+│   └── tmuxai.yaml
 ├── createenv.sh
 ├── install.sh
 ├── pull.sh
@@ -40,10 +41,11 @@ wsl/
 
 - installs required packages (`jq`, `zstd`, `tree`, `ansible`, `sshpass`, `figlet`, `cmatrix`)
 - installs `opencode`
+- installs `tmuxai`
 - installs `ollama` (server + pulls `qwen3:8b`)
 - installs `vagrant` (HashiCorp repo) + `virtualbox_WSL2` plugin
 - creates the projects directory
-- symlinks dotfiles (incl. opencode config)
+- symlinks dotfiles (incl. opencode and tmuxai config)
 - copies `dotfiles/.wslconfig` to the Windows user profile
 - mounts Windows `C:\data` at `/data` (persistent via `/etc/fstab`, drvfs `metadata`)
 
@@ -67,7 +69,7 @@ Project work lives under `/data` so it's accessible from both Windows and WSL.
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `opencode.jsonc`, and `.wslconfig`.
+`dotfiles/` contains `tmux.conf`, `bashrc`, `opencode.jsonc`, `tmuxai.yaml`, and `.wslconfig`.
 Installation symlinks the Linux dotfiles and copies `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
@@ -75,6 +77,7 @@ user profile (`C:\Users\<user>\.wslconfig`):
 ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
 ~/.bashrc    -> ~/wsl/dotfiles/bashrc
 ~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
+~/.config/tmuxai/config.yaml      -> ~/wsl/dotfiles/tmuxai.yaml
 C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/.wslconfig  (copied, not symlinked)
 ```
 

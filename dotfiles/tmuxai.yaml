@@ -1,0 +1,22 @@
+debug: false
+yolo: false
+max_context_size: 100000
+status_line: ""
+max_capture_lines: 200
+wait_interval: 5
+
+tmux:
+  exec_split_args: ["-d", "-h"]
+
+default_model: "qwen"
+
+models:
+  qwen:
+    provider: "openrouter"
+    model: "qwen3:8b-8k"
+    base_url: "http://localhost:11434/v1"
+    api_key: "ollama"
+
+exec_confirm: true
+send_keys_confirm: true
+paste_multiline_confirm: true

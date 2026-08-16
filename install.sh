@@ -67,6 +67,17 @@ install_opencode() {
   sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
 }
 
+install_tmuxai() {
+  item "tmuxai"
+  if command -v tmuxai >/dev/null 2>&1; then
+    step "Already installed ($(tmuxai --version 2>/dev/null || echo 'unknown version')), skipping"
+  else
+    step "Installing tmuxai"
+    curl -fsSL https://get.tmuxai.dev | bash
+    step "Done"
+  fi
+}
+
 install_ollama() {
   item "ollama"
   if command -v ollama >/dev/null 2>&1; then
@@ -151,6 +162,9 @@ install_dotfiles() {
   step "Linking ~/.config/opencode/opencode.jsonc -> $BASE/dotfiles/opencode.jsonc"
   mkdir -p "$HOME/.config/opencode"
   ln -sfn "$BASE/dotfiles/opencode.jsonc" "$HOME/.config/opencode/opencode.jsonc"
+  step "Linking ~/.config/tmuxai/config.yaml -> $BASE/dotfiles/tmuxai.yaml"
+  mkdir -p "$HOME/.config/tmuxai"
+  ln -sfn "$BASE/dotfiles/tmuxai.yaml" "$HOME/.config/tmuxai/config.yaml"
   install_wslconfig
   step "Done"
 }
@@ -234,6 +248,7 @@ main() {
 
   install_packages
   install_opencode
+  install_tmuxai
   install_ollama
   install_vagrant
   create_projects_dir
