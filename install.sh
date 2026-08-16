@@ -142,6 +142,19 @@ install_vagrant() {
   fi
 }
 
+install_tmux_plugins() {
+  item "tmux plugins"
+  if [ -d "$HOME/.tmux/plugins/tpm" ]; then
+    step "TPM already installed, skipping"
+  else
+    step "Cloning tpm"
+    git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+    step "Installing plugins"
+    "$HOME/.tmux/plugins/tpm/bin/install_plugins"
+    step "Done"
+  fi
+}
+
 install_dotfiles() {
   item "Installing dotfiles"
   step "Linking ~/.tmux.conf -> $BASE/dotfiles/tmux.conf"
@@ -236,6 +249,7 @@ main() {
   RESTART_NEEDED=0
 
   install_packages
+  install_tmux_plugins
   install_opencode
   install_tmuxai
   install_ollama
