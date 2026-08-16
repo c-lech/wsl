@@ -115,6 +115,7 @@ install_vagrant() {
     step "Installing vagrant"
     sudo apt install -y vagrant
     step "Done"
+    RESTART_NEEDED=1
   fi
 
   item "virtualbox_WSL2 plugin"
@@ -124,6 +125,7 @@ install_vagrant() {
     step "Installing"
     vagrant plugin install virtualbox_WSL2
     step "Done"
+    RESTART_NEEDED=1
   else
     step "Skipped (vagrant not found in PATH)"
   fi
@@ -149,7 +151,45 @@ install_dotfiles() {
   step "Linking ~/.config/opencode/opencode.jsonc -> $BASE/dotfiles/opencode.jsonc"
   mkdir -p "$HOME/.config/opencode"
   ln -sfn "$BASE/dotfiles/opencode.jsonc" "$HOME/.config/opencode/opencode.jsonc"
+  install_wslconfig
   step "Done"
+}
+
+install_wslconfig() {
+  step "Configuring Windows .wslconfig"
+  if ! command -v cmd.exe >/dev/null 2>&1 || ! command -v wslpath >/dev/null 2>&1; then
+    step "Not running on WSL (cmd.exe/wslpath not found), skipping"
+    return
+  fi
+
+  local win_home win_config
+  win_home="$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')"
+  if [ -z "$win_home" ]; then
+    step "Could not detect Windows profile, skipping"
+    return
+  fi
+
+  win_config="$(wslpath -u "$win_home")/.wslconfig"
+  if [ ! -d "$(dirname "$win_config")" ]; then
+    step "Windows profile not reachable ($win_config), skipping"
+    return
+  fi
+
+  if [ -f "$win_config" ]; then
+    if cmp -s "$BASE/dotfiles/.wslconfig" "$win_config"; then
+      step "Already in sync, skipping"
+    else
+      step "Backing up existing $win_config to $win_config.bak"
+      cp "$win_config" "$win_config.bak"
+      step "Updating $win_config"
+      cp "$BASE/dotfiles/.wslconfig" "$win_config"
+      RESTART_NEEDED=1
+    fi
+  else
+    step "Installing $win_config"
+    cp "$BASE/dotfiles/.wslconfig" "$win_config"
+    RESTART_NEEDED=1
+  fi
 }
 
 mount_data_dir() {
@@ -190,6 +230,8 @@ configure_git() {
 }
 
 main() {
+  RESTART_NEEDED=0
+
   install_packages
   install_opencode
   install_ollama
@@ -201,11 +243,13 @@ main() {
 
   item "Setup complete"
   step "All steps done"
-  hr
-  echo
-  echo "  Open a new terminal to pick up aliases/PATH from ~/.bashrc."
   echo
   hr
+  echo
+  if [ "$RESTART_NEEDED" = 1 ]; then
+    echo "  Run 'wsl --shutdown' in PowerShell and reopen to apply changes."
+  fi
+  echo
 }
 
 main "$@"

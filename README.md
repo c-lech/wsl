@@ -23,6 +23,7 @@ cd ~/wsl
 ```text
 wsl/
 ├── dotfiles/
+│   ├── .wslconfig
 │   ├── bashrc
 │   ├── tmux.conf
 │   └── opencode.jsonc
@@ -43,6 +44,7 @@ wsl/
 - installs `vagrant` (HashiCorp repo) + `virtualbox_WSL2` plugin
 - creates the projects directory
 - symlinks dotfiles (incl. opencode config)
+- copies `dotfiles/.wslconfig` to the Windows user profile
 - mounts Windows `C:\data` at `/data` (persistent via `/etc/fstab`, drvfs `metadata`)
 
 Run:
@@ -65,16 +67,20 @@ Project work lives under `/data` so it's accessible from both Windows and WSL.
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, and `opencode.jsonc`. Installation
-symlinks them:
+`dotfiles/` contains `tmux.conf`, `bashrc`, `opencode.jsonc`, and `.wslconfig`.
+Installation symlinks the Linux dotfiles and copies `.wslconfig` to the Windows
+user profile (`C:\Users\<user>\.wslconfig`):
 
 ```text
 ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
 ~/.bashrc    -> ~/wsl/dotfiles/bashrc
 ~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
+C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/.wslconfig  (copied, not symlinked)
 ```
 
-Edits inside `dotfiles/` apply immediately through the symlink.
+`.wslconfig` is copied rather than symlinked since it lives on the Windows side.
+An existing file that differs is backed up to `.wslconfig.bak` first. Changes
+take effect after `wsl --shutdown` in PowerShell, then reopening WSL.
 
 ## Vagrant / Development VMs
 
