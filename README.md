@@ -42,9 +42,8 @@ wsl/
 - installs required packages (`jq`, `zstd`, `tree`, `ansible`, `sshpass`, `figlet`, `cmatrix`)
 - installs `opencode`
 - installs `tmuxai`
-- installs `ollama` (server + pulls `qwen3:8b`)
+- installs `ollama` (server + pulls `qwen3:8b`, creates `qwen3:8b-16k`)
 - installs `vagrant` (HashiCorp repo) + `virtualbox_WSL2` plugin
-- creates the projects directory
 - symlinks dotfiles (incl. opencode and tmuxai config)
 - copies `dotfiles/.wslconfig` to the Windows user profile
 - mounts Windows `C:\data` at `/data` (persistent via `/etc/fstab`, drvfs `metadata`)

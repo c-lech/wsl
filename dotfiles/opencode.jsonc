@@ -8,7 +8,7 @@
         "baseURL": "http://localhost:11434/v1"
       },
       "models": {
-        "qwen3:8b-8k": {
+        "qwen3:8b-16k": {
           "name": "Qwen3 8B"
         }
       }

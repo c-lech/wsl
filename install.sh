@@ -93,8 +93,8 @@ install_ollama() {
   else
     step "Pulling qwen3:8b"
     ollama pull qwen3:8b
-    printf 'FROM qwen3:8b\nPARAMETER num_ctx 8192\n' > /tmp/Modelfile-qwen3-8k
-    ollama create qwen3:8b-8k -f /tmp/Modelfile-qwen3-8k
+    printf 'FROM qwen3:8b\nPARAMETER num_ctx 16384\n' > /tmp/Modelfile-qwen3-16k
+    ollama create qwen3:8b-16k -f /tmp/Modelfile-qwen3-16k
     step "Done"
   fi
 }
@@ -139,17 +139,6 @@ install_vagrant() {
     RESTART_NEEDED=1
   else
     step "Skipped (vagrant not found in PATH)"
-  fi
-}
-
-create_projects_dir() {
-  item "projects directory"
-  if [ -d "$BASE/projects" ]; then
-    step "Already exists, skipping"
-  else
-    step "Creating $BASE/projects"
-    mkdir -p "$BASE/projects"
-    step "Done"
   fi
 }
 
@@ -251,7 +240,6 @@ main() {
   install_tmuxai
   install_ollama
   install_vagrant
-  create_projects_dir
   install_dotfiles
   configure_git
   mount_data_dir

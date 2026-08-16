@@ -13,7 +13,7 @@ default_model: "qwen"
 models:
   qwen:
     provider: "openrouter"
-    model: "qwen3:8b-8k"
+    model: "qwen3:8b-16k"
     base_url: "http://localhost:11434/v1"
     api_key: "ollama"
 

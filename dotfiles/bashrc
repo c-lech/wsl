@@ -4,7 +4,7 @@
 
 export PATH=/home/benito/.opencode/bin:$PATH
 
-alias ps="powershell.exe"
+#alias ps="powershell.exe"
 alias bardis="ssh clech@172.27.76.122"
 alias zbxserver="ssh root@172.27.76.51"
 alias zbxproxy1="ssh root@172.27.76.53"
