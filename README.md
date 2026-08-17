@@ -23,7 +23,7 @@ cd ~/wsl
 ```text
 wsl/
 ├── dotfiles/
-│   ├── .wslconfig
+│   ├── wslconfig
 │   ├── bashrc
 │   ├── tmux.conf
 │   ├── opencode.jsonc
@@ -39,14 +39,14 @@ wsl/
 
 `install.sh` (idempotent, each step reports installed/skipped):
 
-- installs required packages (`jq`, `zstd`, `tree`, `ansible`, `sshpass`, `figlet`, `cmatrix`)
+- installs required packages (`jq`, `zstd`, `tree`, `figlet`, `cmatrix`, `mtr`, `nmap`, `netcat-openbsd`, `traceroute`, `dnsutils`, `whois`, `telnet`, `socat`, `iftop`, `net-tools`, `htop`, `btop`, `glances`, `ncdu`, `nvtop`, `iotop`, `sysstat`, `lm-sensors`, `smartmontools`, `snmp`, `ansible`, `sshpass`, `rsync`, `fzf`)
 - installs `opencode`
 - installs `tmuxai`
 - installs `ollama` (server + pulls `qwen3:8b`, creates `qwen3:8b-16k`)
 - installs `vagrant` (HashiCorp repo) + `virtualbox_WSL2` plugin
 - symlinks dotfiles (incl. opencode and tmuxai config)
-- copies `dotfiles/.wslconfig` to the Windows user profile
-- mounts Windows `C:\data` at `/data` (persistent via `/etc/fstab`, drvfs `metadata`)
+- copies `dotfiles/wslconfig` as `.wslconfig` to the Windows user profile
+- mounts Windows `C:\data\projects` at `$HOME/projects` (persistent via `/etc/fstab`, drvfs `metadata`)
 
 Run:
 
@@ -57,19 +57,19 @@ cd ~/wsl
 
 ## Data Mount
 
-Windows `C:\data` is mounted at `/data` (drvfs) and survives restarts via
-`/etc/fstab`:
+Windows `C:\data\projects` is mounted at `$HOME/projects` (drvfs) and survives
+restarts via `/etc/fstab`:
 
 ```text
-C:\data /data drvfs defaults,metadata 0 0
+C:\data\projects $HOME/projects drvfs defaults,metadata 0 0
 ```
 
-Project work lives under `/data` so it's accessible from both Windows and WSL.
+Project work lives under `$HOME/projects` so it's accessible from both Windows and WSL.
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `opencode.jsonc`, `tmuxai.yaml`, and `.wslconfig`.
-Installation symlinks the Linux dotfiles and copies `.wslconfig` to the Windows
+`dotfiles/` contains `tmux.conf`, `bashrc`, `opencode.jsonc`, `tmuxai.yaml`, and `wslconfig`.
+Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
 ```text
@@ -77,7 +77,7 @@ user profile (`C:\Users\<user>\.wslconfig`):
 ~/.bashrc    -> ~/wsl/dotfiles/bashrc
 ~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
 ~/.config/tmuxai/config.yaml      -> ~/wsl/dotfiles/tmuxai.yaml
-C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/.wslconfig  (copied, not symlinked)
+C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)
 ```
 
 `.wslconfig` is copied rather than symlinked since it lives on the Windows side.

@@ -207,18 +207,18 @@ install_wslconfig() {
   fi
 
   if [ -f "$win_config" ]; then
-    if cmp -s "$BASE/dotfiles/.wslconfig" "$win_config"; then
+    if cmp -s "$BASE/dotfiles/wslconfig" "$win_config"; then
       step "Already in sync, skipping"
     else
       step "Backing up existing $win_config to $win_config.bak"
       cp "$win_config" "$win_config.bak"
       step "Updating $win_config"
-      cp "$BASE/dotfiles/.wslconfig" "$win_config"
+      cp "$BASE/dotfiles/wslconfig" "$win_config"
       RESTART_NEEDED=1
     fi
   else
     step "Installing $win_config"
-    cp "$BASE/dotfiles/.wslconfig" "$win_config"
+    cp "$BASE/dotfiles/wslconfig" "$win_config"
     RESTART_NEEDED=1
   fi
 }
