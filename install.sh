@@ -265,12 +265,12 @@ main() {
   RESTART_NEEDED=0
 
   install_packages
-  install_tmux_plugins
   install_opencode
   install_tmuxai
   install_ollama
   install_vagrant
   install_dotfiles
+  install_tmux_plugins
   configure_git
   mount_data_dir
 
