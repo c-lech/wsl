@@ -59,7 +59,12 @@ install_opencode() {
     step "Already installed, skipping"
   else
     step "Installing opencode"
-    curl -fsSL https://opencode.ai/install | bash
+    if ! curl -fsSL https://opencode.ai/install | bash; then
+      step "Official installer unavailable, downloading from GitHub releases"
+      mkdir -p "$HOME/.opencode/bin"
+      curl -fL "https://github.com/anomalyco/opencode/releases/latest/download/opencode-linux-x64.tar.gz" \
+        | tar xz -C "$HOME/.opencode/bin"
+    fi
     step "Done"
   fi
 
@@ -73,7 +78,11 @@ install_tmuxai() {
     step "Already installed ($(tmuxai --version 2>/dev/null || echo 'unknown version')), skipping"
   else
     step "Installing tmuxai"
-    curl -fsSL https://get.tmuxai.dev | bash
+    if ! curl -fsSL https://get.tmuxai.dev | bash; then
+      step "Official installer unavailable, downloading from GitHub releases"
+      curl -fL "https://github.com/alvinunreal/tmuxai/releases/latest/download/tmuxai_Linux_amd64.tar.gz" \
+        | sudo tar xz -C /usr/local/bin --strip-components=0 tmuxai
+    fi
     step "Done"
   fi
 }
@@ -84,7 +93,13 @@ install_ollama() {
     step "Already installed ($(ollama --version 2>/dev/null || echo 'unknown version')), skipping"
   else
     step "Installing ollama"
-    curl -fsSL https://ollama.com/install.sh | sh
+    if ! curl -fsSL https://ollama.com/install.sh | sh; then
+      step "Official installer unavailable, downloading from GitHub releases"
+      curl -fL "https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64" \
+        -o /tmp/ollama
+      sudo install -o root -g root -m 755 /tmp/ollama /usr/local/bin/ollama
+      rm -f /tmp/ollama
+    fi
     step "Done"
   fi
 
@@ -217,14 +232,20 @@ mount_data_dir() {
     step "Creating mount point $HOME/projects"
     mkdir -p "$HOME/projects"
 
-    step "Mounting C:\data\projects -> $HOME/projects"
-    sudo mount -t drvfs -o defaults,metadata,uid=1000,gid=1000 'C:\data\projects' "$HOME/projects"
+    local uid gid
+    uid="$(id -u)"
+    gid="$(id -g)"
+    step "Mounting C:\\data\\projects -> $HOME/projects (uid=$uid, gid=$gid)"
+    sudo mount -t drvfs -o "defaults,metadata,uid=$uid,gid=$gid" 'C:\data\projects' "$HOME/projects"
     step "Done"
   fi
 
   if ! grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
+    local uid gid
+    uid="$(id -u)"
+    gid="$(id -g)"
     step "Adding $HOME/projects to /etc/fstab (persistent)"
-    echo "C:\\data\\projects $HOME/projects drvfs defaults,metadata,uid=1000,gid=1000 0 0" | sudo tee -a /etc/fstab
+    echo "C:\\data\\projects $HOME/projects drvfs defaults,metadata,uid=$uid,gid=$gid 0 0" | sudo tee -a /etc/fstab
   fi
 }
 
