@@ -249,6 +249,28 @@ mount_data_dir() {
   fi
 }
 
+install_ssh() {
+  item "SSH keys"
+  local src="$HOME/projects/infra/wsl_ssh_key"
+  if [ ! -f "$src/id_ed25519" ]; then
+    step "Source key not found at $src/id_ed25519, skipping"
+    return
+  fi
+  step "Creating ~/.ssh"
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+  step "Copying id_ed25519"
+  cp "$src/id_ed25519" "$HOME/.ssh/"
+  chmod 600 "$HOME/.ssh/id_ed25519"
+  step "Copying id_ed25519.pub"
+  cp "$src/id_ed25519.pub" "$HOME/.ssh/"
+  chmod 644 "$HOME/.ssh/id_ed25519.pub"
+  step "Copying known_hosts"
+  cp "$src/known_hosts" "$HOME/.ssh/"
+  chmod 644 "$HOME/.ssh/known_hosts"
+  step "Done"
+}
+
 configure_git() {
   item "git identity"
   if [ -n "$(git config --global user.name)" ] && [ -n "$(git config --global user.email)" ]; then
@@ -273,6 +295,7 @@ main() {
   install_tmux_plugins
   configure_git
   mount_data_dir
+  install_ssh
 
   item "Setup complete"
   step "All steps done"
