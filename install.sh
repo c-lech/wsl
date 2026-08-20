@@ -265,9 +265,8 @@ install_ssh() {
   step "Copying id_ed25519.pub"
   cp "$src/id_ed25519.pub" "$HOME/.ssh/"
   chmod 644 "$HOME/.ssh/id_ed25519.pub"
-  step "Copying known_hosts"
-  cp "$src/known_hosts" "$HOME/.ssh/"
-  chmod 644 "$HOME/.ssh/known_hosts"
+  step "Linking known_hosts"
+  ln -sfn "$src/known_hosts" "$HOME/.ssh/known_hosts"
   step "Done"
 }
 
