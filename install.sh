@@ -266,7 +266,11 @@ install_ssh() {
   cp "$src/id_ed25519.pub" "$HOME/.ssh/"
   chmod 644 "$HOME/.ssh/id_ed25519.pub"
   step "Linking known_hosts"
-  ln -sfn "$src/known_hosts" "$HOME/.ssh/known_hosts"
+  rm -f "$HOME/.ssh/known_hosts"
+  for i in 1 2 3; do
+    ln -sfn "$src/known_hosts" "$HOME/.ssh/known_hosts" && break
+    sleep 1
+  done
   step "Done"
 }
 
