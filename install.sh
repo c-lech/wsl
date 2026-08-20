@@ -237,6 +237,7 @@ mount_data_dir() {
     gid="$(id -g)"
     step "Mounting C:\\data\\projects -> $HOME/projects (uid=$uid, gid=$gid)"
     sudo mount -t drvfs -o "defaults,metadata,uid=$uid,gid=$gid" 'C:\data\projects' "$HOME/projects"
+    sleep 2
     step "Done"
   fi
 
