@@ -83,7 +83,7 @@ C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)
 ```
 
 `.wslconfig` is copied rather than symlinked since it lives on the Windows side.
-An existing file that differs is backed up to `.wslconfig.bak` first. Changes
+An existing file that differs is overwritten. Changes
 take effect after `wsl --shutdown` in PowerShell, then reopening WSL.
 
 ## Vagrant / Development VMs
