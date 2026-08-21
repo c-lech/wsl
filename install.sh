@@ -271,6 +271,20 @@ install_ssh() {
   step "Done"
 }
 
+configure_timezone() {
+  item "timezone"
+  local tz="America/Argentina/Buenos_Aires"
+  if [ "$(timedatectl show -p Timezone --value 2>/dev/null)" = "$tz" ]; then
+    step "Already set to $tz, skipping"
+  else
+    step "Setting timezone to $tz"
+    sudo timedatectl set-timezone "$tz" \
+      || { step "timedatectl failed, linking /etc/localtime directly"
+           sudo ln -sf "/usr/share/zoneinfo/$tz" /etc/localtime; }
+    step "Done (now: $(date))"
+  fi
+}
+
 configure_git() {
   item "git identity"
   if [ -n "$(git config --global user.name)" ] && [ -n "$(git config --global user.email)" ]; then
@@ -286,6 +300,7 @@ configure_git() {
 main() {
   RESTART_NEEDED=0
 
+  configure_timezone
   install_packages
   install_opencode
   install_tmuxai
