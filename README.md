@@ -25,6 +25,7 @@ wsl/
 ├── dotfiles/
 │   ├── wslconfig
 │   ├── bashrc
+│   ├── bash_aliases
 │   ├── tmux.conf
 │   ├── opencode.jsonc
 │   └── tmuxai.yaml
@@ -68,13 +69,14 @@ Project work lives under `$HOME/projects` so it's accessible from both Windows a
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `opencode.jsonc`, `tmuxai.yaml`, and `wslconfig`.
+`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `opencode.jsonc`, `tmuxai.yaml`, and `wslconfig`.
 Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
 ```text
 ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
 ~/.bashrc    -> ~/wsl/dotfiles/bashrc
+~/.bash_aliases -> ~/wsl/dotfiles/bash_aliases
 ~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
 ~/.config/tmuxai/config.yaml      -> ~/wsl/dotfiles/tmuxai.yaml
 C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)

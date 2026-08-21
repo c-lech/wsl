@@ -176,6 +176,8 @@ install_dotfiles() {
   ln -sfn "$BASE/dotfiles/tmux.conf" "$HOME/.tmux.conf"
   step "Linking ~/.bashrc -> $BASE/dotfiles/bashrc"
   ln -sfn "$BASE/dotfiles/bashrc" "$HOME/.bashrc"
+  step "Linking ~/.bash_aliases -> $BASE/dotfiles/bash_aliases"
+  ln -sfn "$BASE/dotfiles/bash_aliases" "$HOME/.bash_aliases"
   step "Linking ~/.config/opencode/opencode.jsonc -> $BASE/dotfiles/opencode.jsonc"
   mkdir -p "$HOME/.config/opencode"
   ln -sfn "$BASE/dotfiles/opencode.jsonc" "$HOME/.config/opencode/opencode.jsonc"
