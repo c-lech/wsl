@@ -286,9 +286,9 @@ configure_git() {
 main() {
   RESTART_NEEDED=0
 
-  #install_packages
-  #install_opencode
-  #install_tmuxai
+  install_packages
+  install_opencode
+  install_tmuxai
   #install_ollama
   install_vagrant
   install_dotfiles
