@@ -266,8 +266,6 @@ install_ssh() {
   step "Copying id_ed25519.pub"
   cp "$src/id_ed25519.pub" "$HOME/.ssh/"
   chmod 644 "$HOME/.ssh/id_ed25519.pub"
-  step "Creating known_hosts symlink"
-  ln -sf /mnt/c/data/projects/infra/wsl_ssh_key/known_hosts "$HOME/.ssh/known_hosts"
   step "Done"
 }
 
