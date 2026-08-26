@@ -41,6 +41,7 @@ wsl/
 `install.sh` (idempotent, each step reports installed/skipped):
 
 - installs required packages (`jq`, `zstd`, `tree`, `figlet`, `cmatrix`, `mtr`, `nmap`, `netcat-openbsd`, `traceroute`, `dnsutils`, `whois`, `telnet`, `socat`, `iftop`, `net-tools`, `htop`, `btop`, `glances`, `ncdu`, `nvtop`, `iotop`, `sysstat`, `lm-sensors`, `smartmontools`, `snmp`, `ansible`, `sshpass`, `rsync`, `fzf`)
+- installs `fastfetch` (from PPA)
 - installs `opencode`
 - installs `tmuxai`
 - installs `ollama` (server + pulls `qwen3:8b`, creates `qwen3:8b-16k`)
@@ -69,7 +70,7 @@ Project work lives under `$HOME/projects` so it's accessible from both Windows a
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `opencode.jsonc`, `tmuxai.yaml`, and `wslconfig`.
+`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `opencode.jsonc`, `tmuxai.yaml`, `config.jsonc`, `logo.png`, and `wslconfig`.
 Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
@@ -79,6 +80,8 @@ user profile (`C:\Users\<user>\.wslconfig`):
 ~/.bash_aliases -> ~/wsl/dotfiles/bash_aliases
 ~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
 ~/.config/tmuxai/config.yaml      -> ~/wsl/dotfiles/tmuxai.yaml
+~/.config/fastfetch/config.jsonc  -> ~/wsl/dotfiles/config.jsonc
+~/.config/fastfetch/logo.png      -> ~/wsl/dotfiles/logo.png
 C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)
 ```
 
