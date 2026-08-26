@@ -23,7 +23,7 @@ install_packages() {
   local packages=(jq zstd tree figlet cmatrix mc \
     mtr nmap netcat-openbsd traceroute dnsutils whois telnet socat iftop net-tools \
     htop btop glances ncdu nvtop iotop sysstat lm-sensors smartmontools snmp \
-    ansible sshpass rsync fzf wl-clipboard)
+    ansible sshpass rsync fzf wl-clipboard chafa)
 
   for pkg in "${packages[@]}"; do
     if dpkg -s "$pkg" >/dev/null 2>&1; then
@@ -155,6 +155,9 @@ install_dotfiles() {
   ln -sfn "$BASE/dotfiles/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
   step "dotfiles -> ~/.config/fastfetch/logo.png"
   ln -sfn "$BASE/dotfiles/logo.png" "$HOME/.config/fastfetch/logo.png"
+  step "dotfiles -> ~/.config/fastfetch/logo.txt (rendering)"
+  chafa --size 60x30 --symbols block+border+space-wide-inverted \
+    "$HOME/.config/fastfetch/logo.png" > "$HOME/.config/fastfetch/logo.txt"
   install_wslconfig
 }
 
