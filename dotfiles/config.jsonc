@@ -114,14 +114,11 @@
       }
     },
     {
-      "type": "separator",
-      "string": "-",
-      "outputColor": "",
-      "times": 0
-    },
-    {
       "type": "os",
       "keyIcon": ""
+    },
+    {
+      "type": "wsl"
     },
     {
       "type": "host",
@@ -132,20 +129,22 @@
       "keyIcon": ""
     },
     {
+      "type": "shell",
+      "keyIcon": ""
+    },
+    {
+      "type": "terminal",
+      "keyIcon": ""
+    },
+    {
       "type": "uptime",
       "keyIcon": ""
     },
     {
-      "type": "packages",
-      "keyIcon": "󰏖",
-      "disabled": [
-        "winget"
-      ],
-      "combined": false
-    },
-    {
-      "type": "shell",
-      "keyIcon": ""
+      "type": "separator",
+      "string": "----",
+      "outputColor": "",
+      "times": 0
     },
     {
       "type": "display",
@@ -168,28 +167,10 @@
       "keyIcon": "󰓸"
     },
     {
-      "type": "theme",
-      "keyIcon": "󰉼"
-    },
-    {
-      "type": "icons",
-      "keyIcon": ""
-    },
-    {
-      "type": "font",
-      "keyIcon": ""
-    },
-    {
-      "type": "cursor",
-      "keyIcon": "󰆿"
-    },
-    {
-      "type": "terminal",
-      "keyIcon": ""
-    },
-    {
-      "type": "terminalfont",
-      "keyIcon": ""
+      "type": "separator",
+      "string": "----",
+      "outputColor": "",
+      "times": 0
     },
     {
       "type": "cpu",
@@ -199,12 +180,8 @@
       "tempSensor": ""
     },
     {
-      "type": "gpu",
-      "keyIcon": "󰾲",
-      "driverSpecific": false,
-      "detectionMethod": "pci",
-      "temp": false,
-      "hideType": "none",
+      "type": "memory",
+      "keyIcon": "",
       "percent": {
         "green": 50,
         "yellow": 80,
@@ -212,8 +189,12 @@
       }
     },
     {
-      "type": "memory",
-      "keyIcon": "",
+      "type": "gpu",
+      "keyIcon": "󰾲",
+      "driverSpecific": false,
+      "detectionMethod": "pci",
+      "temp": false,
+      "hideType": "none",
       "percent": {
         "green": 50,
         "yellow": 80,
@@ -262,26 +243,6 @@
     {
       "type": "poweradapter",
       "keyIcon": "󰚥"
-    },
-    {
-      "type": "localip",
-      "keyIcon": "󰩟",
-      "showIpv4": true,
-      "showIpv6": false,
-      "showMac": false,
-      "showLoop": false,
-      "showPrefixLen": true,
-      "showMtu": false,
-      "showSpeed": false,
-      "showFlags": false,
-      "compact": false,
-      "defaultRouteOnly": true,
-      "showAllIps": false,
-      "namePrefix": ""
-    },
-    {
-      "type": "locale",
-      "keyIcon": ""
     },
     "break",
     {
