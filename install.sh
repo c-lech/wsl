@@ -263,7 +263,7 @@ main() {
   install_fastfetch
   install_opencode
   install_tmuxai
-  #install_ollama
+  install_ollama
   install_vagrant
   install_dotfiles
   install_tmux_plugins
