@@ -23,7 +23,8 @@ install_packages() {
   local packages=(jq zstd tree figlet cmatrix mc \
     mtr nmap netcat-openbsd traceroute dnsutils whois telnet socat iftop net-tools \
     htop btop glances ncdu nvtop iotop sysstat lm-sensors smartmontools snmp \
-    ansible sshpass rsync fzf wl-clipboard chafa)
+    ansible sshpass rsync fzf wl-clipboard chafa \
+    alsa-utils libasound2-plugins pulseaudio-utils ffmpeg yt-dlp)
 
   for pkg in "${packages[@]}"; do
     if dpkg -s "$pkg" >/dev/null 2>&1; then
@@ -127,6 +128,15 @@ install_vagrant() {
   fi
 }
 
+install_cliamp() {
+  if command -v cliamp >/dev/null 2>&1; then
+    step "cliamp (already installed)"
+  else
+    step "cliamp -> installing"
+    curl -fsSL https://raw.githubusercontent.com/bjarneo/cliamp/HEAD/install.sh | sh
+  fi
+}
+
 install_tmux_plugins() {
   if [ -d "$HOME/.tmux/plugins/tpm" ]; then
     step "tmux plugins (already installed)"
@@ -144,6 +154,8 @@ install_dotfiles() {
   ln -sfn "$BASE/dotfiles/bashrc" "$HOME/.bashrc"
   step "dotfiles -> ~/.bash_aliases"
   ln -sfn "$BASE/dotfiles/bash_aliases" "$HOME/.bash_aliases"
+  step "dotfiles -> ~/.asoundrc"
+  ln -sfn "$BASE/dotfiles/asoundrc" "$HOME/.asoundrc"
   step "dotfiles -> ~/.config/opencode/opencode.jsonc"
   mkdir -p "$HOME/.config/opencode"
   ln -sfn "$BASE/dotfiles/opencode.jsonc" "$HOME/.config/opencode/opencode.jsonc"
@@ -265,6 +277,7 @@ main() {
   install_tmuxai
   install_ollama
   install_vagrant
+  install_cliamp
   install_dotfiles
   install_tmux_plugins
   configure_git
