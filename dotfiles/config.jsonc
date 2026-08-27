@@ -5,7 +5,7 @@
     "source": "~/.config/fastfetch/logo.txt",
     "padding": {
       "top": 0,
-      "left": 0,
+      "left": 8,
       "bottom": 0,
       "right": 4
     },
@@ -62,7 +62,7 @@
     },
     "bar": {
       "char": {
-        "elapsed": "■",
+        "elapsed": "\u25a0",
         "total": "-"
       },
       "border": {
@@ -104,9 +104,7 @@
   "modules": [
     {
       "type": "title",
-      "key": " ",
-      "keyIcon": "",
-      "fqdn": false,
+      "format": "   {user-name-colored}{at-symbol-colored}{host-name-colored}",
       "color": {
         "user": "",
         "at": "",
@@ -115,92 +113,52 @@
     },
     {
       "type": "os",
-      "keyIcon": ""
-    },
-    {
-      "type": "wsl"
-    },
-    {
-      "type": "host",
-      "keyIcon": "󰌢"
+      "keyIcon": "\uf17c"
     },
     {
       "type": "kernel",
-      "keyIcon": ""
+      "keyIcon": "\uf013"
     },
     {
       "type": "shell",
-      "keyIcon": ""
-    },
-    {
-      "type": "terminal",
-      "keyIcon": ""
+      "keyIcon": "\uf489"
     },
     {
       "type": "uptime",
-      "keyIcon": ""
+      "keyIcon": "\ue641"
+    },
+    "break",
+    {
+      "type": "host",
+      "keyIcon": "\udb80\udf22"
     },
     {
-      "type": "separator",
-      "string": "----",
-      "outputColor": "",
-      "times": 0
-    },
-    {
-      "type": "display",
-      "keyIcon": "󰍹",
-      "compactType": "none",
-      "preciseRefreshRate": false,
-      "order": null
-    },
-    {
-      "type": "de",
-      "keyIcon": ""
+      "type": "terminal",
+      "keyIcon": "\ue795"
     },
     {
       "type": "wm",
-      "keyIcon": "",
+      "keyIcon": "\uf488",
       "detectPlugin": true
     },
-    {
-      "type": "wmtheme",
-      "keyIcon": "󰓸"
-    },
-    {
-      "type": "separator",
-      "string": "----",
-      "outputColor": "",
-      "times": 0
-    },
+    "break",
     {
       "type": "cpu",
-      "keyIcon": "",
+      "keyIcon": "\uf4bc",
       "temp": false,
       "showPeCoreCount": true,
       "tempSensor": ""
     },
     {
       "type": "memory",
-      "keyIcon": "",
+      "keyIcon": "\uefc5",
       "percent": {
         "green": 50,
         "yellow": 80,
         "type": 0
       }
     },
-    {
-      "type": "gpu",
-      "keyIcon": "󰾲",
-      "driverSpecific": false,
-      "detectionMethod": "pci",
-      "temp": false,
-      "hideType": "none",
-      "percent": {
-        "green": 50,
-        "yellow": 80,
-        "type": 0
-      }
-    },
+    "break",
     {
       "type": "swap",
       "percent": {
@@ -208,12 +166,12 @@
         "yellow": 80,
         "type": 0
       },
-      "keyIcon": "󰓡",
+      "keyIcon": "\udb81\udce1",
       "separate": false
     },
     {
       "type": "disk",
-      "keyIcon": "",
+      "keyIcon": "\uf0a0",
       "showRegular": true,
       "showExternal": true,
       "showHidden": false,
@@ -230,9 +188,10 @@
         "type": 0
       }
     },
+    "break",
     {
       "type": "battery",
-      "keyIcon": "",
+      "keyIcon": "\uf242",
       "temp": false,
       "percent": {
         "green": 50,
@@ -240,15 +199,39 @@
         "type": 0
       }
     },
+    "break",
     {
-      "type": "poweradapter",
-      "keyIcon": "󰚥"
+      "type": "display",
+      "keyIcon": "\udb80\udf79",
+      "compactType": "none",
+      "preciseRefreshRate": false,
+      "order": null
+    },
+    {
+      "type": "gpu",
+      "keyIcon": "\udb83\udfb2",
+      "driverSpecific": false,
+      "detectionMethod": "pci",
+      "temp": false,
+      "hideType": "none",
+      "percent": {
+        "green": 50,
+        "yellow": 80,
+        "type": 0
+      }
+    },
+    "break",
+    {
+      "type": "localip"
+    },
+    {
+      "type": "publicip"
     },
     "break",
     {
       "type": "colors",
       "key": " ",
-      "keyIcon": "",
+      "keyIcon": "\uefcc",
       "symbol": "block",
       "paddingLeft": 0,
       "block": {
