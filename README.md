@@ -38,7 +38,12 @@ wsl/
 
 ## Install
 
-`install.sh` (idempotent, each step reports installed/skipped):
+`install.sh` is idempotent: it runs silently and never reinstalls what's already present
+(`[skip]`); `[ok]` means something actually changed, `[FAIL]` an error. At the end it prints a
+per-component status report with sub-results (ollama models, vagrant plugin) included. It
+keeps running past individual failures, and verbose command output (apt, curl installers,
+etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fails. Use
+`./install.sh -v` to watch each step live. It exits 0 when nothing failed. It:
 
 - installs required packages (`jq`, `zstd`, `tree`, `figlet`, `cmatrix`, `mtr`, `nmap`, `netcat-openbsd`, `traceroute`, `dnsutils`, `whois`, `telnet`, `socat`, `iftop`, `net-tools`, `htop`, `btop`, `glances`, `ncdu`, `nvtop`, `iotop`, `sysstat`, `lm-sensors`, `smartmontools`, `snmp`, `ansible`, `sshpass`, `rsync`, `fzf`)
 - installs `fastfetch` (from PPA)
