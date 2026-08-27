@@ -56,9 +56,9 @@ apt_update() {
 install_packages() {
   step "checking packages"
   local packages=(jq zstd tree figlet cmatrix mc \
-    mtr nmap netcat-openbsd traceroute dnsutils whois telnet socat iftop net-tools \
+    mtr nmap traceroute dnsutils whois telnet socat iftop net-tools \
     htop btop glances ncdu nvtop iotop sysstat lm-sensors smartmontools snmp \
-    ansible sshpass rsync fzf wl-clipboard chafa \
+    ansible sshpass fzf wl-clipboard chafa \
     alsa-utils libasound2-plugins pulseaudio-utils ffmpeg yt-dlp)
 
   local pkg to_install=()
@@ -635,8 +635,8 @@ main() {
   RESTART_NEEDED=0
   mkdir -p "$LOG_DIR"
 
-  run_step "system:timezone" configure_timezone
   run_step "apt:packages" install_packages
+  run_step "system:timezone" configure_timezone
   run_step "tools:fastfetch" install_fastfetch
   run_step "tools:opencode" install_opencode
   run_step "tools:tmuxai" install_tmuxai
