@@ -661,9 +661,9 @@ main() {
   run_step "tools:fastfetch" install_fastfetch
   run_step "tools:opencode" install_opencode
   run_step "tools:tmuxai" install_tmuxai
-  run_step "tools:ollama" install_ollama
+  #run_step "tools:ollama" install_ollama
   run_step "tools:vagrant" install_vagrant
-  run_step "tools:cliamp" install_cliamp
+  #run_step "tools:cliamp" install_cliamp
   run_step "system:dotfiles" install_dotfiles
   run_step "system:wslconfig" install_wslconfig
   run_step "tools:tmux-plugins" install_tmux_plugins
