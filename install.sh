@@ -578,34 +578,41 @@ report() {
   local g k
   local n_ok=0 n_skip=0 n_fail=0
 
+  local W=0
   for g in "${groups[@]}"; do
-    local names=() lvls=() cls=() lbls=()
-    local w0=0 w1=0
+    for k in "${ORDER[@]}"; do
+      [[ "$k" == "$g:"* ]] || continue
+      local rest="${k#"$g:"}"
+      local pre
+      if [[ "$rest" == *":"* ]]; then
+        pre="    ${rest#*:}"
+      else
+        pre="  $rest"
+      fi
+      if [ "${#pre}" -gt "$W" ]; then
+        W="${#pre}"
+      fi
+    done
+  done
+
+  for g in "${groups[@]}"; do
+    local names=() cls=() lbls=()
     local empty=1
 
     for k in "${ORDER[@]}"; do
       [[ "$k" == "$g:"* ]] || continue
       empty=0
       local rest="${k#"$g:"}"
-      local indent name level
+      local indent name
       if [[ "$rest" == *":"* ]]; then
-        level=1
         indent="    "
         name="${rest#*:}"
       else
-        level=0
         indent="  "
         name="$rest"
       fi
       local pre="${indent}${name}"
-      if [ "$level" = 0 ] && [ "${#pre}" -gt "$w0" ]; then
-        w0="${#pre}"
-      fi
-      if [ "$level" = 1 ] && [ "${#pre}" -gt "$w1" ]; then
-        w1="${#pre}"
-      fi
       names+=("$pre")
-      lvls+=("$level")
       cls+=("${STATUS[$k]}")
       lbls+=("${NOTE[$k]}")
     done
@@ -616,8 +623,7 @@ report() {
     local i
     for i in "${!names[@]}"; do
       printf "%s" "${names[$i]}"
-      local w
-      [ "${lvls[$i]}" = 0 ] && w="$w0" || w="$w1"
+      local w="$W"
       local pad=$(( w - ${#names[$i]} ))
       local j
       for (( j=0; j<pad; j++ )); do
