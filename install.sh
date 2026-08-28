@@ -58,7 +58,7 @@ install_packages() {
   local packages=(jq zstd tree figlet cmatrix mc \
     mtr nmap traceroute dnsutils whois telnet socat iftop net-tools \
     htop btop glances ncdu nvtop iotop sysstat lm-sensors smartmontools snmp \
-    ansible sshpass fzf wl-clipboard chafa \
+    ansible sshpass fzf wl-clipboard chafa yq \
     alsa-utils libasound2-plugins pulseaudio-utils ffmpeg yt-dlp)
 
   local pkg to_install=()
