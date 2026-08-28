@@ -511,6 +511,22 @@ install_ssh() {
   record "system:ssh" ok "keys copied"
 }
 
+install_git_credentials() {
+  local src="$HOME/projects/infra/git_credentials/git-credentials"
+  if [ ! -f "$src" ]; then
+    record "system:git-credentials" skip "no source credentials"
+    return 0
+  fi
+  if [ -f "$HOME/.git-credentials" ] && cmp -s "$src" "$HOME/.git-credentials"; then
+    record "system:git-credentials" skip "already in place"
+    return 0
+  fi
+  step "git-credentials -> copying"
+  cp "$src" "$HOME/.git-credentials"
+  chmod 600 "$HOME/.git-credentials"
+  record "system:git-credentials" ok "credentials copied"
+}
+
 configure_timezone() {
   local tz="America/Argentina/Buenos_Aires"
   if [ "$(timedatectl show -p Timezone --value 2>/dev/null)" = "$tz" ]; then
@@ -534,6 +550,11 @@ configure_git() {
     git config --global user.name "c-lech"
     git config --global user.email "126396070+c-lech@users.noreply.github.com"
     record "system:git" ok "configured"
+  fi
+  if [ "$(git config --global credential.helper)" != "store" ]; then
+    step "git -> enabling credential.helper store"
+    git config --global credential.helper store
+    record "system:git" ok "credential helper set"
   fi
 }
 
@@ -649,6 +670,7 @@ main() {
   run_step "system:git" configure_git
   run_step "system:mount" mount_data_dir
   run_step "system:ssh" install_ssh
+  run_step "system:git-credentials" install_git_credentials
 
   report
 }

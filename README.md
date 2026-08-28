@@ -54,6 +54,7 @@ etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fai
 - symlinks dotfiles (incl. opencode and tmuxai config)
 - copies `dotfiles/wslconfig` as `.wslconfig` to the Windows user profile
 - mounts Windows `C:\data\projects` at `$HOME/projects` (persistent via `/etc/fstab`, drvfs `metadata`)
+- lets Git authenticate silently: copies `infra/git_credentials/git-credentials` to `~/.git-credentials` (chmod 600) and enables `credential.helper store`
 
 Run:
 
