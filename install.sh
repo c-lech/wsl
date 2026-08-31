@@ -146,7 +146,7 @@ install_opencode() {
     log_tail opencode.log
     step "opencode -> install script failed, trying tarball"
     mkdir -p "$HOME/.opencode/bin"
-    if ! curl -fL "https://github.com/anomalyco/opencode/releases/latest/download/opencode-linux-x64.tar.gz" \
+    if ! curl -fsL "https://github.com/anomalyco/opencode/releases/latest/download/opencode-linux-x64.tar.gz" \
         | tar xz -C "$HOME/.opencode/bin" >> "$log" 2>&1; then
       log_tail opencode.log
       record "tools:opencode" fail "failed"
@@ -167,7 +167,7 @@ install_tmuxai() {
   if ! curl -fsSL https://get.tmuxai.dev | bash >> "$log" 2>&1; then
     log_tail tmuxai.log
     step "tmuxai -> install script failed, trying tarball"
-    if ! curl -fL "https://github.com/alvinunreal/tmuxai/releases/latest/download/tmuxai_Linux_amd64.tar.gz" \
+    if ! curl -fsL "https://github.com/alvinunreal/tmuxai/releases/latest/download/tmuxai_Linux_amd64.tar.gz" \
         | sudo tar xz -C /usr/local/bin --strip-components=0 tmuxai >> "$log" 2>&1; then
       log_tail tmuxai.log
       record "tools:tmuxai" fail "failed"
@@ -191,7 +191,7 @@ install_ollama() {
     if ! curl -fsSL https://ollama.com/install.sh | sh >> "$log" 2>&1; then
       log_tail ollama.log
       step "ollama -> install script failed, trying binary"
-      if ! curl -fL "https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64" \
+      if ! curl -fsL "https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64" \
             -o /tmp/ollama >> "$log" 2>&1 \
           || ! sudo install -o root -g root -m 755 /tmp/ollama /usr/local/bin/ollama >> "$log" 2>&1; then
         rm -f /tmp/ollama
@@ -309,7 +309,7 @@ install_node() {
     record "tools:nvm" skip "already installed"
   else
     step "node -> installing nvm"
-    if ! curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh \
+    if ! curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh \
         | bash >> "$log" 2>&1; then
       log_tail node.log
       record "tools:nvm" fail "failed"
@@ -709,6 +709,8 @@ main() {
 
   RESTART_NEEDED=0
   mkdir -p "$LOG_DIR"
+
+  sudo -v
 
   run_step "apt:packages" install_packages
   run_step "system:timezone" configure_timezone
