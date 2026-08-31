@@ -301,6 +301,54 @@ install_cliamp() {
   record "tools:cliamp" ok "installed"
 }
 
+install_node() {
+  local log="$LOG_DIR/node.log"
+
+  # nvm
+  if [ -s "$HOME/.nvm/nvm.sh" ]; then
+    record "tools:nvm" skip "already installed"
+  else
+    step "node -> installing nvm"
+    if ! curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh \
+        | bash >> "$log" 2>&1; then
+      log_tail node.log
+      record "tools:nvm" fail "failed"
+      return 1
+    fi
+    record "tools:nvm" ok "installed"
+  fi
+
+  # Load nvm for this run (nvm is a shell function, not on PATH).
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+  # node LTS
+  if command -v node >/dev/null 2>&1; then
+    record "tools:node" skip "already installed ($(node --version))"
+  else
+    step "node -> installing LTS"
+    if ! nvm install --lts >> "$log" 2>&1; then
+      log_tail node.log
+      record "tools:node" fail "failed"
+      return 1
+    fi
+    record "tools:node" ok "installed ($(node --version))"
+  fi
+
+  # cfonts (global)
+  if npm ls -g cfonts >/dev/null 2>&1; then
+    record "tools:cfonts" skip "already installed"
+  else
+    step "node -> installing cfonts"
+    if ! npm i -g cfonts >> "$log" 2>&1; then
+      log_tail node.log
+      record "tools:cfonts" fail "failed"
+      return 1
+    fi
+    record "tools:cfonts" ok "installed"
+  fi
+}
+
 install_tmux_plugins() {
   local plugins_dir="$HOME/.tmux/plugins"
   local log="$LOG_DIR/tmux-plugins.log"
@@ -670,6 +718,7 @@ main() {
   #run_step "tools:ollama" install_ollama
   run_step "tools:vagrant" install_vagrant
   run_step "tools:cliamp" install_cliamp
+  run_step "tools:node" install_node
   run_step "system:dotfiles" install_dotfiles
   run_step "system:wslconfig" install_wslconfig
   run_step "tools:tmux-plugins" install_tmux_plugins

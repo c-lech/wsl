@@ -119,7 +119,17 @@ if ! shopt -oq posix; then
 fi
 
 
+# --- Vagrant / VirtualBox setup (custom) ---
+# Enables Windows access for Vagrant and adds the VirtualBox binaries to PATH.
 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS="1"
 export PATH="$PATH:/mnt/c/Program Files/Oracle/VirtualBox"
 
+# --- Node.js via nvm (custom, managed by install.sh) ---
+# Loads nvm so `node`, `npm`, `npx` are available in every shell.
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"          # load nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # nvm bash_completion
+
+# --- Startup banner (custom) ---
+# "system" ASCII art, system info, and "monitored!" shown on each shell.
 clear; figlet "    system";echo ""; fastfetch; figlet -t -f slant "                monitored!"
