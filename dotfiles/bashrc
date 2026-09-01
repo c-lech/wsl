@@ -132,4 +132,4 @@ export NVM_DIR="$HOME/.nvm"
 
 # --- Startup banner (custom) ---
 # "system" ASCII art, system info, and "monitored!" shown on each shell.
-clear; figlet "    system";echo ""; fastfetch; figlet -t -f slant "                monitored!"
+cfonts " access restricted " -c red,yellowBright -f tiny; fastfetch; cfonts "              system monitored!" -f tiny -a left -c red
