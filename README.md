@@ -78,7 +78,7 @@ Project work lives under `$HOME/projects` so it's accessible from both Windows a
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `opencode.jsonc`, `tmuxai.yaml`, `config.jsonc`, `logo.png`, and `wslconfig`.
+`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `opencode.jsonc`, `tmuxai.yaml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
 Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
@@ -90,6 +90,7 @@ user profile (`C:\Users\<user>\.wslconfig`):
 ~/.config/tmuxai/config.yaml      -> ~/wsl/dotfiles/tmuxai.yaml
 ~/.config/fastfetch/config.jsonc  -> ~/wsl/dotfiles/config.jsonc
 ~/.config/fastfetch/logo.png      -> ~/wsl/dotfiles/logo.png
+~/.config/golazo/settings.yaml    -> ~/wsl/dotfiles/golazo-settings.yaml
 C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)
 ```
 

@@ -462,6 +462,7 @@ install_dotfiles() {
     ["$HOME/.config/tmuxai/config.yaml"]="$BASE/dotfiles/tmuxai.yaml"
     ["$HOME/.config/fastfetch/config.jsonc"]="$BASE/dotfiles/config.jsonc"
     ["$HOME/.config/fastfetch/logo.png"]="$BASE/dotfiles/logo.png"
+    ["$HOME/.config/golazo/settings.yaml"]="$BASE/dotfiles/golazo-settings.yaml"
   )
 
   local link up=1
@@ -500,6 +501,10 @@ install_dotfiles() {
   ln -sfn "$BASE/dotfiles/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
   ln -sfn "$BASE/dotfiles/logo.png" "$HOME/.config/fastfetch/logo.png"
 
+  step "dotfiles -> ~/.config/golazo/settings.yaml"
+  mkdir -p "$HOME/.config/golazo"
+  ln -sfn "$BASE/dotfiles/golazo-settings.yaml" "$HOME/.config/golazo/settings.yaml"
+
   step "dotfiles -> rendering fastfetch logo"
   if ! chafa --size 60x30 --symbols block+border+space-wide-inverted \
         "$HOME/.config/fastfetch/logo.png" > "$HOME/.config/fastfetch/logo.txt" 2> "$LOG_DIR/dotfiles.log"; then
@@ -508,7 +513,7 @@ install_dotfiles() {
     return 1
   fi
 
-  record "system:dotfiles" ok "8 symlinks + logo"
+  record "system:dotfiles" ok "9 symlinks + logo"
 }
 
 install_wslconfig() {
