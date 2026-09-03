@@ -59,7 +59,9 @@ install_packages() {
     mtr nmap traceroute dnsutils whois telnet socat iftop net-tools \
     htop btop glances ncdu nvtop iotop sysstat lm-sensors smartmontools snmp \
     ansible sshpass fzf wl-clipboard chafa yq \
-    alsa-utils libasound2-plugins pulseaudio-utils ffmpeg yt-dlp)
+    alsa-utils libasound2-plugins pulseaudio-utils ffmpeg yt-dlp \
+    libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype6-dev \
+    libexpat1-dev libxcb-composite0-dev libharfbuzz-dev libfontconfig1-dev g++)
 
   local pkg to_install=()
   for pkg in "${packages[@]}"; do
@@ -299,6 +301,59 @@ install_cliamp() {
     return 1
   fi
   record "tools:cliamp" ok "installed"
+}
+
+install_golazo() {
+  local log="$LOG_DIR/golazo.log"
+  if command -v golazo >/dev/null 2>&1; then
+    record "tools:golazo" skip "already present"
+    return 0
+  fi
+  step "golazo -> installing"
+  if ! curl -fsSL https://raw.githubusercontent.com/0xjuanma/golazo/main/scripts/install.sh | bash >> "$log" 2>&1; then
+    log_tail golazo.log
+    record "tools:golazo" fail "failed"
+    return 1
+  fi
+  record "tools:golazo" ok "installed"
+}
+
+install_rust() {
+  local log="$LOG_DIR/rust.log"
+  if command -v cargo >/dev/null 2>&1; then
+    record "tools:rust" skip "already present"
+  else
+    step "rust -> installing via rustup"
+    if ! curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable >> "$log" 2>&1; then
+      log_tail rust.log
+      record "tools:rust" fail "failed (rustup)"
+      return 1
+    fi
+    record "tools:rust" ok "installed"
+    step "rust -> reloading cargo env"
+  fi
+  [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+  command -v cargo >/dev/null 2>&1 || record "tools:rust" fail "cargo not on PATH after install"
+}
+
+install_silicon() {
+  local log="$LOG_DIR/silicon.log"
+  if command -v silicon >/dev/null 2>&1; then
+    record "tools:silicon" skip "already present"
+    return 0
+  fi
+  [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+  if ! command -v cargo >/dev/null 2>&1; then
+    record "tools:silicon" fail "cargo missing"
+    return 1
+  fi
+  step "silicon -> cargo install (this may take a while)"
+  if ! cargo install silicon >> "$log" 2>&1; then
+    log_tail silicon.log
+    record "tools:silicon" fail "failed"
+    return 1
+  fi
+  record "tools:silicon" ok "installed"
 }
 
 install_node() {
@@ -720,6 +775,9 @@ main() {
   #run_step "tools:ollama" install_ollama
   run_step "tools:vagrant" install_vagrant
   run_step "tools:cliamp" install_cliamp
+  run_step "tools:golazo" install_golazo
+  run_step "tools:rust" install_rust
+  run_step "tools:silicon" install_silicon
   run_step "tools:node" install_node
   run_step "system:dotfiles" install_dotfiles
   run_step "system:wslconfig" install_wslconfig

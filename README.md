@@ -51,6 +51,8 @@ etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fai
 - installs `tmuxai`
 - installs `ollama` (server + pulls `qwen3:8b`, creates `qwen3:8b-16k`)
 - installs `vagrant` (HashiCorp repo) + `virtualbox_WSL2` plugin
+- installs Rust (`cargo`, via rustup) and `silicon` (code screenshot tool, `cargo install`)
+- installs `golazo` (football TUI)
 - symlinks dotfiles (incl. opencode and tmuxai config)
 - copies `dotfiles/wslconfig` as `.wslconfig` to the Windows user profile
 - mounts Windows `C:\data\projects` at `$HOME/projects` (persistent via `/etc/fstab`, drvfs `metadata`)
