@@ -295,7 +295,7 @@ install_vagrant() {
   else
     step "vagrant plugin virtualbox_WSL2 -> installing"
     if vagrant plugin install virtualbox_WSL2 >> "$log" 2>&1; then
-      record "tools:vagrant:virtualbox_WSL2 plugin" ok "installed"
+      record "tools:vagrant:virtualbox_WSL2 plugin" ok "installed ($ver)"
       RESTART_NEEDED=1
     else
       log_tail vagrant.log
@@ -335,7 +335,7 @@ install_golazo() {
     record "tools:golazo" fail "failed"
     return 1
   fi
-  record "tools:golazo" ok "installed"
+  record "tools:golazo" ok "installed ($(golazo --version 2>/dev/null | grep -oP 'v[0-9.]+'))"
 }
 
 install_rust() {
@@ -351,7 +351,7 @@ install_rust() {
       record "tools:rust" fail "failed (rustup)"
       return 1
     fi
-    record "tools:rust" ok "installed"
+    record "tools:rust" ok "installed ($(cargo --version 2>/dev/null | awk '{print $2}'))"
     step "rust -> reloading cargo env"
   fi
   [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
@@ -377,7 +377,7 @@ install_silicon() {
     record "tools:silicon" fail "failed"
     return 1
   fi
-  record "tools:silicon" ok "installed"
+  record "tools:silicon" ok "installed ($(get_version silicon | awk '{print $2}'))"
 }
 
 install_node() {
@@ -396,7 +396,7 @@ install_node() {
       record "tools:nvm" fail "failed"
       return 1
     fi
-    record "tools:nvm" ok "installed"
+    record "tools:nvm" ok "installed ($(nvm --version))"
   fi
 
   # Load nvm for this run (nvm is a shell function, not on PATH).
@@ -428,7 +428,7 @@ install_node() {
       record "tools:cfonts" fail "failed"
       return 1
     fi
-    record "tools:cfonts" ok "installed"
+    record "tools:cfonts" ok "installed ($(npx cfonts --version 2>/dev/null | head -1))"
   fi
 }
 
@@ -445,7 +445,7 @@ install_tmux_plugins() {
     fi
     step "tmux plugins -> installing plugins"
     if "$plugins_dir/tpm/bin/install_plugins" >> "$log" 2>&1; then
-      record "tools:tmux-plugins" ok "installed"
+      record "tools:tmux-plugins" ok "installed ($(git -C "$plugins_dir/tpm" describe --tags --always 2>/dev/null))"
     else
       log_tail tmux-plugins.log
       record "tools:tmux-plugins" fail "failed"
@@ -543,7 +543,7 @@ install_dotfiles() {
     return 1
   fi
 
-  record "system:dotfiles" ok "9 symlinks + logo"
+  record "system:dotfiles" ok "configured"
 }
 
 install_wslconfig() {
@@ -571,13 +571,13 @@ install_wslconfig() {
     else
       step "wslconfig -> updating"
       cp "$BASE/dotfiles/wslconfig" "$win_config"
-      record "system:wslconfig" ok "updated"
+      record "system:wslconfig" ok "configured"
       RESTART_NEEDED=1
     fi
   else
     step "wslconfig -> installing"
     cp "$BASE/dotfiles/wslconfig" "$win_config"
-    record "system:wslconfig" ok "installed"
+    record "system:wslconfig" ok "configured"
     RESTART_NEEDED=1
   fi
 }
@@ -643,7 +643,7 @@ install_ssh() {
   chmod 600 "$HOME/.ssh/id_ed25519"
   cp "$src/id_ed25519.pub" "$HOME/.ssh/"
   chmod 644 "$HOME/.ssh/id_ed25519.pub"
-  record "system:ssh" ok "keys copied"
+  record "system:ssh" ok "configured"
 }
 
 install_git_credentials() {
@@ -659,7 +659,7 @@ install_git_credentials() {
   step "git-credentials -> copying"
   cp "$src" "$HOME/.git-credentials"
   chmod 600 "$HOME/.git-credentials"
-  record "system:git-credentials" ok "credentials copied"
+  record "system:git-credentials" ok "configured"
 }
 
 configure_timezone() {
@@ -673,7 +673,7 @@ configure_timezone() {
       record "system:timezone" fail "failed"
       return 1
     fi
-    record "system:timezone" ok "set to $tz"
+    record "system:timezone" ok "configured"
   fi
 }
 
