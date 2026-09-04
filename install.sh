@@ -39,6 +39,10 @@ record() {
   fi
 }
 
+get_version() {
+  "$@" --version 2>/dev/null | head -1
+}
+
 log_tail() {
   local f="$LOG_DIR/$1"
   echo "  ! last output of $f:"
@@ -60,7 +64,7 @@ install_packages() {
     htop btop glances ncdu nvtop iotop sysstat lm-sensors smartmontools snmp \
     ansible sshpass fzf wl-clipboard chafa yq \
     alsa-utils libasound2-plugins pulseaudio-utils ffmpeg yt-dlp \
-    libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype6-dev \
+    libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev \
     libexpat1-dev libxcb-composite0-dev libharfbuzz-dev libfontconfig1-dev g++)
 
   local pkg to_install=()
@@ -109,7 +113,9 @@ install_packages() {
 install_fastfetch() {
   local log="$LOG_DIR/fastfetch.log"
   if command -v fastfetch >/dev/null 2>&1; then
-    record "tools:fastfetch" skip "already present"
+    local ver
+    ver="$(get_version fastfetch | awk '{print $2}')"
+    record "tools:fastfetch" skip "already present ($ver)"
     return 0
   fi
   step "fastfetch -> adding PPA"
@@ -128,18 +134,20 @@ install_fastfetch() {
     record "tools:fastfetch" fail "failed"
     return 1
   fi
-  record "tools:fastfetch" ok "installed (PPA)"
+  record "tools:fastfetch" ok "installed (PPA, $(get_version fastfetch | awk '{print $2}'))"
 }
 
 install_opencode() {
   local log="$LOG_DIR/opencode.log"
   if [ -x "$HOME/.opencode/bin/opencode" ]; then
+    local ver
+    ver="$("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1)"
     if [ "$(readlink /usr/local/bin/opencode 2>/dev/null)" = "$HOME/.opencode/bin/opencode" ]; then
-      record "tools:opencode" skip "already present"
+      record "tools:opencode" skip "already present ($ver)"
     else
       echo "  -> opencode: relinking /usr/local/bin/opencode"
       sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
-      record "tools:opencode" ok "relinked"
+      record "tools:opencode" ok "relinked ($ver)"
     fi
     return 0
   fi
@@ -156,13 +164,15 @@ install_opencode() {
     fi
   fi
   sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
-  record "tools:opencode" ok "installed"
+  record "tools:opencode" ok "installed ($("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1))"
 }
 
 install_tmuxai() {
   local log="$LOG_DIR/tmuxai.log"
   if command -v tmuxai >/dev/null 2>&1; then
-    record "tools:tmuxai" skip "already present"
+    local ver
+    ver="$(get_version tmuxai | awk '{print $3}')"
+    record "tools:tmuxai" skip "already present ($ver)"
     return 0
   fi
   step "tmuxai -> installing"
@@ -176,7 +186,7 @@ install_tmuxai() {
       return 1
     fi
   fi
-  record "tools:tmuxai" ok "installed"
+  record "tools:tmuxai" ok "installed ($(get_version tmuxai | awk '{print $3}'))"
 }
 
 model_present() {
@@ -187,7 +197,9 @@ install_ollama() {
   local log="$LOG_DIR/ollama.log"
 
   if command -v ollama >/dev/null 2>&1; then
-    record "tools:ollama" skip "already present"
+    local ver
+    ver="$(get_version ollama | awk '{print $3}')"
+    record "tools:ollama" skip "already present ($ver)"
   else
     step "ollama -> installing"
     if ! curl -fsSL https://ollama.com/install.sh | sh >> "$log" 2>&1; then
@@ -203,7 +215,7 @@ install_ollama() {
       fi
       rm -f /tmp/ollama
     fi
-    record "tools:ollama" ok "installed"
+    record "tools:ollama" ok "installed ($(get_version ollama | awk '{print $3}'))"
   fi
 
   if model_present "qwen3:8b"; then
@@ -234,7 +246,9 @@ install_vagrant() {
   local log="$LOG_DIR/vagrant.log"
 
   if dpkg -s vagrant >/dev/null 2>&1; then
-    record "tools:vagrant" skip "already present"
+    local ver
+    ver="$(get_version vagrant | awk '{print $2}')"
+    record "tools:vagrant" skip "already present ($ver)"
   else
     local codename
     codename="$(lsb_release -cs 2>/dev/null || true)"
@@ -265,7 +279,7 @@ install_vagrant() {
       record "tools:vagrant" fail "failed"
       return 1
     fi
-    record "tools:vagrant" ok "installed"
+    record "tools:vagrant" ok "installed ($(get_version vagrant | awk '{print $2}'))"
     RESTART_NEEDED=1
   fi
 
@@ -275,7 +289,9 @@ install_vagrant() {
   fi
 
   if vagrant plugin list | grep -qi virtualbox_wsl2; then
-    record "tools:vagrant:virtualbox_WSL2 plugin" skip "already present"
+    local ver
+    ver="$(vagrant plugin list | grep -i virtualbox_wsl2 | grep -oP '\(\K[^,]+')"
+    record "tools:vagrant:virtualbox_WSL2 plugin" skip "already present ($ver)"
   else
     step "vagrant plugin virtualbox_WSL2 -> installing"
     if vagrant plugin install virtualbox_WSL2 >> "$log" 2>&1; then
@@ -291,7 +307,9 @@ install_vagrant() {
 install_cliamp() {
   local log="$LOG_DIR/cliamp.log"
   if command -v cliamp >/dev/null 2>&1; then
-    record "tools:cliamp" skip "already present"
+    local ver
+    ver="$(get_version cliamp | awk '{print $3}')"
+    record "tools:cliamp" skip "already present ($ver)"
     return 0
   fi
   step "cliamp -> installing"
@@ -300,13 +318,15 @@ install_cliamp() {
     record "tools:cliamp" fail "failed"
     return 1
   fi
-  record "tools:cliamp" ok "installed"
+  record "tools:cliamp" ok "installed ($(get_version cliamp | awk '{print $3}'))"
 }
 
 install_golazo() {
   local log="$LOG_DIR/golazo.log"
   if command -v golazo >/dev/null 2>&1; then
-    record "tools:golazo" skip "already present"
+    local ver
+    ver="$(golazo --version 2>/dev/null | grep -oP 'v[0-9.]+')"
+    record "tools:golazo" skip "already present ($ver)"
     return 0
   fi
   step "golazo -> installing"
@@ -321,7 +341,9 @@ install_golazo() {
 install_rust() {
   local log="$LOG_DIR/rust.log"
   if command -v cargo >/dev/null 2>&1; then
-    record "tools:rust" skip "already present"
+    local ver
+    ver="$(cargo --version 2>/dev/null | awk '{print $2}')"
+    record "tools:rust" skip "already present ($ver)"
   else
     step "rust -> installing via rustup"
     if ! curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable >> "$log" 2>&1; then
@@ -339,7 +361,9 @@ install_rust() {
 install_silicon() {
   local log="$LOG_DIR/silicon.log"
   if command -v silicon >/dev/null 2>&1; then
-    record "tools:silicon" skip "already present"
+    local ver
+    ver="$(get_version silicon | awk '{print $2}')"
+    record "tools:silicon" skip "already present ($ver)"
     return 0
   fi
   [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
@@ -361,7 +385,9 @@ install_node() {
 
   # nvm
   if [ -s "$HOME/.nvm/nvm.sh" ]; then
-    record "tools:nvm" skip "already installed"
+    export NVM_DIR="$HOME/.nvm"
+    . "$NVM_DIR/nvm.sh"
+    record "tools:nvm" skip "already present ($(nvm --version))"
   else
     step "node -> installing nvm"
     if ! curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh \
@@ -379,7 +405,7 @@ install_node() {
 
   # node LTS
   if command -v node >/dev/null 2>&1; then
-    record "tools:node" skip "already installed ($(node --version))"
+    record "tools:node" skip "already present ($(node --version))"
   else
     step "node -> installing LTS"
     if ! nvm install --lts >> "$log" 2>&1; then
@@ -392,7 +418,9 @@ install_node() {
 
   # cfonts (global)
   if npm ls -g cfonts >/dev/null 2>&1; then
-    record "tools:cfonts" skip "already installed"
+    local ver
+    ver="$(npx cfonts --version 2>/dev/null | head -1)"
+    record "tools:cfonts" skip "already present ($ver)"
   else
     step "node -> installing cfonts"
     if ! npm i -g cfonts >> "$log" 2>&1; then
@@ -448,7 +476,9 @@ install_tmux_plugins() {
       record "tools:tmux-plugins" fail "reinstall failed"
     fi
   else
-    record "tools:tmux-plugins" skip "already present"
+    local ver
+    ver="$(git -C "$plugins_dir/tpm" describe --tags --always 2>/dev/null)"
+    record "tools:tmux-plugins" skip "already present ($ver)"
   fi
 }
 
@@ -474,7 +504,7 @@ install_dotfiles() {
   done
 
   if [ "$up" = 1 ] && [ -f "$HOME/.config/fastfetch/logo.txt" ]; then
-    record "system:dotfiles" skip "already linked"
+    record "system:dotfiles" skip "already configured"
     return 0
   fi
 
@@ -537,7 +567,7 @@ install_wslconfig() {
 
   if [ -f "$win_config" ]; then
     if cmp -s "$BASE/dotfiles/wslconfig" "$win_config"; then
-      record "system:wslconfig" skip "already in sync"
+      record "system:wslconfig" skip "already configured"
     else
       step "wslconfig -> updating"
       cp "$BASE/dotfiles/wslconfig" "$win_config"
@@ -553,11 +583,14 @@ install_wslconfig() {
 }
 
 mount_data_dir() {
-  local note="" changed=0
+  if mountpoint -q "$HOME/projects" && grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
+    record "system:mount" skip "already configured"
+    return 0
+  fi
 
-  if mountpoint -q "$HOME/projects"; then
-    note="already mounted"
-  else
+  local changed=0
+
+  if ! mountpoint -q "$HOME/projects"; then
     step "mount data -> creating $HOME/projects"
     mkdir -p "$HOME/projects"
 
@@ -572,27 +605,21 @@ mount_data_dir() {
       return 1
     fi
     sleep 2
-    note="mounted"
     changed=1
   fi
 
-  if grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
-    note="$note, fstab already set"
-  else
+  if ! grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
     local uid gid
     uid="$(id -u)"
     gid="$(id -g)"
     step "mount data -> adding to /etc/fstab"
     echo "C:\\data\\projects $HOME/projects drvfs defaults,metadata,uid=$uid,gid=$gid 0 0" \
       | sudo tee -a /etc/fstab >> "$LOG_DIR/mount.log" 2>&1
-    note="$note, fstab added"
     changed=1
   fi
 
   if [ "$changed" = 1 ]; then
-    record "system:mount" ok "$note"
-  else
-    record "system:mount" skip "$note"
+    record "system:mount" ok "configured"
   fi
 }
 
@@ -606,7 +633,7 @@ install_ssh() {
       && [ -f "$HOME/.ssh/id_ed25519.pub" ] \
       && cmp -s "$src/id_ed25519" "$HOME/.ssh/id_ed25519" \
       && cmp -s "$src/id_ed25519.pub" "$HOME/.ssh/id_ed25519.pub"; then
-    record "system:ssh" skip "keys already in place"
+    record "system:ssh" skip "already configured"
     return 0
   fi
   step "ssh -> copying keys"
@@ -626,7 +653,7 @@ install_git_credentials() {
     return 0
   fi
   if [ -f "$HOME/.git-credentials" ] && cmp -s "$src" "$HOME/.git-credentials"; then
-    record "system:git-credentials" skip "already in place"
+    record "system:git-credentials" skip "already configured"
     return 0
   fi
   step "git-credentials -> copying"
@@ -638,7 +665,7 @@ install_git_credentials() {
 configure_timezone() {
   local tz="America/Argentina/Buenos_Aires"
   if [ "$(timedatectl show -p Timezone --value 2>/dev/null)" = "$tz" ]; then
-    record "system:timezone" skip "already set ($tz)"
+    record "system:timezone" skip "already configured"
   else
     step "timezone -> setting to $tz"
     if ! sudo timedatectl set-timezone "$tz" \
@@ -662,7 +689,7 @@ configure_git() {
   if [ "$(git config --global credential.helper)" != "store" ]; then
     step "git -> enabling credential.helper store"
     git config --global credential.helper store
-    record "system:git" ok "credential helper set"
+    record "system:git" ok "configured"
   fi
 }
 
