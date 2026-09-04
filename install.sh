@@ -307,7 +307,7 @@ install_vagrant() {
   else
     step "vagrant plugin virtualbox_WSL2 -> installing"
     if vagrant plugin install virtualbox_WSL2 >> "$log" 2>&1; then
-      record "tools:vagrant:virtualbox_WSL2 plugin" ok "installed ($ver)"
+      record "tools:vagrant:virtualbox_WSL2 plugin" ok "installed ($(vagrant plugin list | grep -i virtualbox_wsl2 | grep -oP '\(\K[^,]+'))"
       RESTART_NEEDED=1
     else
       log_tail vagrant.log
@@ -359,8 +359,8 @@ install_rust() {
       record "tools:rust" fail "failed (rustup)"
       return 1
     fi
+    [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
     record "tools:rust" ok "installed ($(cargo --version 2>/dev/null | awk '{print $2}'))"
-    step "rust -> reloading cargo env"
   fi
   [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
   command -v cargo >/dev/null 2>&1 || record "tools:rust" fail "cargo not on PATH after install"
@@ -402,6 +402,8 @@ install_node() {
       record "tools:nvm" fail "failed"
       return 1
     fi
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
     record "tools:nvm" ok "installed ($(nvm --version))"
   fi
 
@@ -817,10 +819,10 @@ main() {
   run_step "tools:rust" install_rust
   run_step "tools:silicon" install_silicon
   run_step "tools:node" install_node
-  run_step "tools:tmux-plugins" install_tmux_plugins
   run_step "system:set time zone" configure_timezone
   run_step "system:mount shared data" mount_data_dir
   run_step "system:link dot files" install_dotfiles
+  run_step "tools:tmux-plugins" install_tmux_plugins
   run_step "system:config git" configure_git
   run_step "system:copy ssh public key" install_ssh
   run_step "system:config wsl" install_wslconfig
