@@ -70,7 +70,11 @@ install_packages() {
   local pkg to_install=()
   for pkg in "${packages[@]}"; do
     if dpkg -s "$pkg" >/dev/null 2>&1; then
-      record "apt:$pkg" skip "already present"
+      if [ "$pkg" = "ansible" ]; then
+        record "apt:$pkg" skip "already present ($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))"
+      else
+        record "apt:$pkg" skip "already present"
+      fi
     else
       to_install+=("$pkg")
     fi
@@ -91,7 +95,11 @@ install_packages() {
   step "apt install ${#to_install[@]} packages (single run)"
   if sudo apt install -y "${to_install[@]}" >> "$LOG_DIR/apt-install.log" 2>&1; then
     for pkg in "${to_install[@]}"; do
-      record "apt:$pkg" ok "installed"
+      if [ "$pkg" = "ansible" ]; then
+        record "apt:$pkg" ok "installed ($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))"
+      else
+        record "apt:$pkg" ok "installed"
+      fi
     done
     return 0
   fi
@@ -100,9 +108,17 @@ install_packages() {
   log_tail apt-install.log
   for pkg in "${to_install[@]}"; do
     if dpkg -s "$pkg" >/dev/null 2>&1; then
-      record "apt:$pkg" ok "installed"
+      if [ "$pkg" = "ansible" ]; then
+        record "apt:$pkg" ok "installed ($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))"
+      else
+        record "apt:$pkg" ok "installed"
+      fi
     elif sudo apt install -y "$pkg" >> "$LOG_DIR/apt-$pkg.log" 2>&1; then
-      record "apt:$pkg" ok "installed"
+      if [ "$pkg" = "ansible" ]; then
+        record "apt:$pkg" ok "installed ($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))"
+      else
+        record "apt:$pkg" ok "installed"
+      fi
     else
       record "apt:$pkg" fail "failed"
       log_tail "apt-$pkg.log"
@@ -113,9 +129,7 @@ install_packages() {
 install_fastfetch() {
   local log="$LOG_DIR/fastfetch.log"
   if command -v fastfetch >/dev/null 2>&1; then
-    local ver
-    ver="$(get_version fastfetch | awk '{print $2}')"
-    record "tools:fastfetch" skip "already present ($ver)"
+    record "tools:fastfetch" skip "already present"
     return 0
   fi
   step "fastfetch -> adding PPA"
@@ -134,7 +148,7 @@ install_fastfetch() {
     record "tools:fastfetch" fail "failed"
     return 1
   fi
-  record "tools:fastfetch" ok "installed (PPA, $(get_version fastfetch | awk '{print $2}'))"
+  record "tools:fastfetch" ok "installed"
 }
 
 install_opencode() {
@@ -170,9 +184,7 @@ install_opencode() {
 install_tmuxai() {
   local log="$LOG_DIR/tmuxai.log"
   if command -v tmuxai >/dev/null 2>&1; then
-    local ver
-    ver="$(get_version tmuxai | awk '{print $3}')"
-    record "tools:tmuxai" skip "already present ($ver)"
+    record "tools:tmuxai" skip "already present"
     return 0
   fi
   step "tmuxai -> installing"
@@ -186,7 +198,7 @@ install_tmuxai() {
       return 1
     fi
   fi
-  record "tools:tmuxai" ok "installed ($(get_version tmuxai | awk '{print $3}'))"
+  record "tools:tmuxai" ok "installed"
 }
 
 model_present() {
@@ -307,9 +319,7 @@ install_vagrant() {
 install_cliamp() {
   local log="$LOG_DIR/cliamp.log"
   if command -v cliamp >/dev/null 2>&1; then
-    local ver
-    ver="$(get_version cliamp | awk '{print $3}')"
-    record "tools:cliamp" skip "already present ($ver)"
+    record "tools:cliamp" skip "already present"
     return 0
   fi
   step "cliamp -> installing"
@@ -318,15 +328,13 @@ install_cliamp() {
     record "tools:cliamp" fail "failed"
     return 1
   fi
-  record "tools:cliamp" ok "installed ($(get_version cliamp | awk '{print $3}'))"
+  record "tools:cliamp" ok "installed"
 }
 
 install_golazo() {
   local log="$LOG_DIR/golazo.log"
   if command -v golazo >/dev/null 2>&1; then
-    local ver
-    ver="$(golazo --version 2>/dev/null | grep -oP 'v[0-9.]+')"
-    record "tools:golazo" skip "already present ($ver)"
+    record "tools:golazo" skip "already present"
     return 0
   fi
   step "golazo -> installing"
@@ -335,7 +343,7 @@ install_golazo() {
     record "tools:golazo" fail "failed"
     return 1
   fi
-  record "tools:golazo" ok "installed ($(golazo --version 2>/dev/null | grep -oP 'v[0-9.]+'))"
+  record "tools:golazo" ok "installed"
 }
 
 install_rust() {
@@ -361,9 +369,7 @@ install_rust() {
 install_silicon() {
   local log="$LOG_DIR/silicon.log"
   if command -v silicon >/dev/null 2>&1; then
-    local ver
-    ver="$(get_version silicon | awk '{print $2}')"
-    record "tools:silicon" skip "already present ($ver)"
+    record "tools:silicon" skip "already present"
     return 0
   fi
   [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
@@ -377,7 +383,7 @@ install_silicon() {
     record "tools:silicon" fail "failed"
     return 1
   fi
-  record "tools:silicon" ok "installed ($(get_version silicon | awk '{print $2}'))"
+  record "tools:silicon" ok "installed"
 }
 
 install_node() {
@@ -418,9 +424,7 @@ install_node() {
 
   # cfonts (global)
   if npm ls -g cfonts >/dev/null 2>&1; then
-    local ver
-    ver="$(npx cfonts --version 2>/dev/null | head -1)"
-    record "tools:cfonts" skip "already present ($ver)"
+    record "tools:cfonts" skip "already present"
   else
     step "node -> installing cfonts"
     if ! npm i -g cfonts >> "$log" 2>&1; then
@@ -428,7 +432,7 @@ install_node() {
       record "tools:cfonts" fail "failed"
       return 1
     fi
-    record "tools:cfonts" ok "installed ($(npx cfonts --version 2>/dev/null | head -1))"
+    record "tools:cfonts" ok "installed"
   fi
 }
 
@@ -445,7 +449,7 @@ install_tmux_plugins() {
     fi
     step "tmux plugins -> installing plugins"
     if "$plugins_dir/tpm/bin/install_plugins" >> "$log" 2>&1; then
-      record "tools:tmux-plugins" ok "installed ($(git -C "$plugins_dir/tpm" describe --tags --always 2>/dev/null))"
+      record "tools:tmux-plugins" ok "installed"
     else
       log_tail tmux-plugins.log
       record "tools:tmux-plugins" fail "failed"
@@ -476,9 +480,7 @@ install_tmux_plugins() {
       record "tools:tmux-plugins" fail "reinstall failed"
     fi
   else
-    local ver
-    ver="$(git -C "$plugins_dir/tpm" describe --tags --always 2>/dev/null)"
-    record "tools:tmux-plugins" skip "already present ($ver)"
+    record "tools:tmux-plugins" skip "already present"
   fi
 }
 
@@ -504,7 +506,7 @@ install_dotfiles() {
   done
 
   if [ "$up" = 1 ] && [ -f "$HOME/.config/fastfetch/logo.txt" ]; then
-    record "system:dotfiles" skip "already configured"
+    record "system:link dot files" skip "already configured"
     return 0
   fi
 
@@ -539,52 +541,52 @@ install_dotfiles() {
   if ! chafa --size 60x30 --symbols block+border+space-wide-inverted \
         "$HOME/.config/fastfetch/logo.png" > "$HOME/.config/fastfetch/logo.txt" 2> "$LOG_DIR/dotfiles.log"; then
     log_tail dotfiles.log
-    record "system:dotfiles" fail "failed (logo render)"
+    record "system:link dot files" fail "failed (logo render)"
     return 1
   fi
 
-  record "system:dotfiles" ok "configured"
+  record "system:link dot files" ok "configured"
 }
 
 install_wslconfig() {
   if ! command -v cmd.exe >/dev/null 2>&1 || ! command -v wslpath >/dev/null 2>&1; then
-    record "system:wslconfig" skip "not on WSL"
+    record "system:config wsl" skip "not on WSL"
     return 0
   fi
 
   local win_home win_config
   win_home="$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')"
   if [ -z "$win_home" ]; then
-    record "system:wslconfig" skip "no Windows profile"
+    record "system:config wsl" skip "no Windows profile"
     return 0
   fi
 
   win_config="$(wslpath -u "$win_home")/.wslconfig"
   if [ ! -d "$(dirname "$win_config")" ]; then
-    record "system:wslconfig" skip "Windows profile unreachable"
+    record "system:config wsl" skip "Windows profile unreachable"
     return 0
   fi
 
   if [ -f "$win_config" ]; then
     if cmp -s "$BASE/dotfiles/wslconfig" "$win_config"; then
-      record "system:wslconfig" skip "already configured"
+      record "system:config wsl" skip "already configured"
     else
       step "wslconfig -> updating"
       cp "$BASE/dotfiles/wslconfig" "$win_config"
-      record "system:wslconfig" ok "configured"
+      record "system:config wsl" ok "configured"
       RESTART_NEEDED=1
     fi
   else
     step "wslconfig -> installing"
     cp "$BASE/dotfiles/wslconfig" "$win_config"
-    record "system:wslconfig" ok "configured"
+    record "system:config wsl" ok "configured"
     RESTART_NEEDED=1
   fi
 }
 
 mount_data_dir() {
   if mountpoint -q "$HOME/projects" && grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
-    record "system:mount" skip "already configured"
+    record "system:mount shared data" skip "already configured"
     return 0
   fi
 
@@ -601,7 +603,7 @@ mount_data_dir() {
     if ! sudo mount -t drvfs -o "defaults,metadata,uid=$uid,gid=$gid" \
           'C:\data\projects' "$HOME/projects" >> "$LOG_DIR/mount.log" 2>&1; then
       log_tail mount.log
-      record "system:mount" fail "mount failed"
+      record "system:mount shared data" fail "mount failed"
       return 1
     fi
     sleep 2
@@ -619,21 +621,21 @@ mount_data_dir() {
   fi
 
   if [ "$changed" = 1 ]; then
-    record "system:mount" ok "configured"
+    record "system:mount shared data" ok "configured"
   fi
 }
 
 install_ssh() {
   local src="$HOME/projects/infra/wsl_ssh_key"
   if [ ! -f "$src/id_ed25519" ]; then
-    record "system:ssh" skip "no source key"
+    record "system:copy ssh public key" skip "no source key"
     return 0
   fi
   if [ -f "$HOME/.ssh/id_ed25519" ] \
       && [ -f "$HOME/.ssh/id_ed25519.pub" ] \
       && cmp -s "$src/id_ed25519" "$HOME/.ssh/id_ed25519" \
       && cmp -s "$src/id_ed25519.pub" "$HOME/.ssh/id_ed25519.pub"; then
-    record "system:ssh" skip "already configured"
+    record "system:copy ssh public key" skip "already configured"
     return 0
   fi
   step "ssh -> copying keys"
@@ -643,53 +645,58 @@ install_ssh() {
   chmod 600 "$HOME/.ssh/id_ed25519"
   cp "$src/id_ed25519.pub" "$HOME/.ssh/"
   chmod 644 "$HOME/.ssh/id_ed25519.pub"
-  record "system:ssh" ok "configured"
-}
-
-install_git_credentials() {
-  local src="$HOME/projects/infra/git_credentials/git-credentials"
-  if [ ! -f "$src" ]; then
-    record "system:git-credentials" skip "no source credentials"
-    return 0
-  fi
-  if [ -f "$HOME/.git-credentials" ] && cmp -s "$src" "$HOME/.git-credentials"; then
-    record "system:git-credentials" skip "already configured"
-    return 0
-  fi
-  step "git-credentials -> copying"
-  cp "$src" "$HOME/.git-credentials"
-  chmod 600 "$HOME/.git-credentials"
-  record "system:git-credentials" ok "configured"
+  record "system:copy ssh public key" ok "configured"
 }
 
 configure_timezone() {
   local tz="America/Argentina/Buenos_Aires"
-  if [ "$(timedatectl show -p Timezone --value 2>/dev/null)" = "$tz" ]; then
-    record "system:timezone" skip "already configured"
+  local current
+  current="$(timedatectl show -p Timezone --value 2>/dev/null)"
+  if [ "$current" = "$tz" ]; then
+    record "system:set time zone" skip "already configured ($tz)"
   else
     step "timezone -> setting to $tz"
     if ! sudo timedatectl set-timezone "$tz" \
         && ! sudo ln -sf "/usr/share/zoneinfo/$tz" /etc/localtime; then
-      record "system:timezone" fail "failed"
+      record "system:set time zone" fail "failed"
       return 1
     fi
-    record "system:timezone" ok "configured"
+    record "system:set time zone" ok "configured ($tz)"
   fi
 }
 
 configure_git() {
+  local changed=0
+
   if [ -n "$(git config --global user.name)" ] && [ -n "$(git config --global user.email)" ]; then
-    record "system:git" skip "already configured"
+    step "git -> identity already set"
   else
     step "git -> setting identity"
     git config --global user.name "c-lech"
     git config --global user.email "126396070+c-lech@users.noreply.github.com"
-    record "system:git" ok "configured"
+    changed=1
   fi
+
   if [ "$(git config --global credential.helper)" != "store" ]; then
     step "git -> enabling credential.helper store"
     git config --global credential.helper store
-    record "system:git" ok "configured"
+    changed=1
+  fi
+
+  local src="$HOME/projects/infra/git_credentials/git-credentials"
+  if [ -f "$src" ]; then
+    if [ ! -f "$HOME/.git-credentials" ] || ! cmp -s "$src" "$HOME/.git-credentials"; then
+      step "git -> copying credentials"
+      cp "$src" "$HOME/.git-credentials"
+      chmod 600 "$HOME/.git-credentials"
+      changed=1
+    fi
+  fi
+
+  if [ "$changed" = 1 ]; then
+    record "system:config git" ok "configured"
+  else
+    record "system:config git" skip "already configured"
   fi
 }
 
@@ -800,7 +807,6 @@ main() {
   sudo -v
 
   run_step "apt:packages" install_packages
-  run_step "system:timezone" configure_timezone
   run_step "tools:fastfetch" install_fastfetch
   run_step "tools:opencode" install_opencode
   run_step "tools:tmuxai" install_tmuxai
@@ -811,13 +817,13 @@ main() {
   run_step "tools:rust" install_rust
   run_step "tools:silicon" install_silicon
   run_step "tools:node" install_node
-  run_step "system:dotfiles" install_dotfiles
-  run_step "system:wslconfig" install_wslconfig
   run_step "tools:tmux-plugins" install_tmux_plugins
-  run_step "system:git" configure_git
-  run_step "system:mount" mount_data_dir
-  run_step "system:ssh" install_ssh
-  run_step "system:git-credentials" install_git_credentials
+  run_step "system:set time zone" configure_timezone
+  run_step "system:mount shared data" mount_data_dir
+  run_step "system:link dot files" install_dotfiles
+  run_step "system:config git" configure_git
+  run_step "system:copy ssh public key" install_ssh
+  run_step "system:config wsl" install_wslconfig
 
   report
 }
