@@ -59,13 +59,35 @@ apt_update() {
 
 install_packages() {
   step "checking packages"
-  local packages=(jq zstd tree figlet cmatrix mc \
-    mtr nmap traceroute dnsutils whois telnet socat iftop net-tools \
-    htop btop glances ncdu nvtop iotop sysstat lm-sensors smartmontools snmp \
-    ansible sshpass fzf wl-clipboard chafa yq \
-    alsa-utils libasound2-plugins pulseaudio-utils ffmpeg yt-dlp \
-    libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev \
-    libexpat1-dev libxcb-composite0-dev libharfbuzz-dev libfontconfig1-dev g++)
+  local packages=(
+    # monitoring
+    btop htop glances
+    # disk tools
+    tree ncdu iotop sysstat
+    # parsing
+    jq yq
+    # networking
+    mtr nmap traceroute dnsutils whois telnet iftop net-tools snmp socat
+    # hardware
+    lm-sensors smartmontools nvtop
+    # remote
+    ansible sshpass
+    # others
+    fzf mc figlet cmatrix
+    # required by tmux (clipboard)
+    wl-clipboard
+    # required by fastfetch (logo render)
+    chafa
+    # audio
+    alsa-utils libasound2-plugins pulseaudio-utils ffmpeg
+    # required by yt-dlp
+    yt-dlp
+    # build deps
+    libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev
+    libexpat1-dev libxcb-composite0-dev libharfbuzz-dev libfontconfig1-dev g++
+    # ungrouped
+    zstd
+  )
 
   local pkg to_install=()
   for pkg in "${packages[@]}"; do
