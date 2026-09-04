@@ -81,11 +81,9 @@ install_packages() {
     # cargo
     pkg-config libfontconfig1-dev libfreetype-dev libxcb-composite0-dev libharfbuzz-dev libexpat1-dev
     # cliamp
-    libasound2-plugins pulseaudio-utils
-    #pulseaudio
-
-    #alsa-utils libasound2-plugins pulseaudio-utils ffmpeg
-    #yt-dlp
+    libasound2-plugins pulseaudio-utils ffmpeg
+    
+    #pulseaudio , yt-dlp alsa-utils
     #libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev
     #zstd
   )
