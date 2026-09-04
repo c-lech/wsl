@@ -83,7 +83,7 @@ install_packages() {
     # cliamp
     libasound2-plugins pulseaudio-utils ffmpeg
     
-    #pulseaudio , yt-dlp alsa-utils
+    #pulseaudio yt-dlp alsa-utils
     #libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev
     #zstd
   )
@@ -810,7 +810,7 @@ report() {
   echo ""
 
   if [ "$RESTART_NEEDED" = 1 ]; then
-    echo "  Run 'wsl --shutdown' in PowerShell and reopen to apply changes."
+    wsl.exe --shutdown
   fi
 
   [ "$n_fail" -eq 0 ]
