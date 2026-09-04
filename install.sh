@@ -78,15 +78,16 @@ install_packages() {
     wl-clipboard
     # required by fastfetch (logo render)
     chafa
-    # audio
-    alsa-utils libasound2-plugins pulseaudio-utils ffmpeg
-    # required by yt-dlp
-    yt-dlp
-    # build deps
-    libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev
-    libexpat1-dev libxcb-composite0-dev libharfbuzz-dev libfontconfig1-dev g++
-    # ungrouped
-    zstd
+    # cargo
+    pkg-config libfontconfig1-dev libfreetype-dev libxcb-composite0-dev libharfbuzz-dev libexpat1-dev
+    # cliamp
+    libasound2-plugins pulseaudio-utils
+    #pulseaudio
+
+    #alsa-utils libasound2-plugins pulseaudio-utils ffmpeg
+    #yt-dlp
+    #libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev
+    #zstd
   )
 
   local pkg to_install=()
