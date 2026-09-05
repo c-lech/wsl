@@ -598,36 +598,36 @@ install_dotfiles() {
 
 install_wslconfig() {
   if ! command -v cmd.exe >/dev/null 2>&1 || ! command -v wslpath >/dev/null 2>&1; then
-    record "system:config wsl" skip "not on WSL"
+    record "system:wsl config (on windows host)" skip "not on WSL"
     return 0
   fi
 
   local win_home win_config
   win_home="$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')"
   if [ -z "$win_home" ]; then
-    record "system:config wsl" skip "no Windows profile"
+    record "system:wsl config (on windows host)" skip "no Windows profile"
     return 0
   fi
 
   win_config="$(wslpath -u "$win_home")/.wslconfig"
   if [ ! -d "$(dirname "$win_config")" ]; then
-    record "system:config wsl" skip "Windows profile unreachable"
+    record "system:wsl config (on windows host)" skip "Windows profile unreachable"
     return 0
   fi
 
   if [ -f "$win_config" ]; then
     if cmp -s "$BASE/dotfiles/wslconfig" "$win_config"; then
-      record "system:config wsl" skip "already configured"
+      record "system:wsl config (on windows host)" skip "already configured"
     else
       step "wslconfig -> updating"
       cp "$BASE/dotfiles/wslconfig" "$win_config"
-      record "system:config wsl" ok "configured"
+      record "system:wsl config (on windows host)" ok "configured"
       RESTART_NEEDED=1
     fi
   else
     step "wslconfig -> installing"
     cp "$BASE/dotfiles/wslconfig" "$win_config"
-    record "system:config wsl" ok "configured"
+    record "system:wsl config (on windows host)" ok "configured"
     RESTART_NEEDED=1
   fi
 }
@@ -872,7 +872,7 @@ main() {
   run_step "tools:tmux-plugins" install_tmux_plugins
   run_step "system:config git" configure_git
   run_step "system:copy ssh public key" install_ssh
-  run_step "system:config wsl" install_wslconfig
+  run_step "system:wsl config (on windows host)" install_wslconfig
 
   report
 }
