@@ -518,6 +518,8 @@ install_dotfiles() {
     ["$HOME/.config/fastfetch/config.jsonc"]="$BASE/dotfiles/config.jsonc"
     ["$HOME/.config/fastfetch/logo.png"]="$BASE/dotfiles/logo.png"
     ["$HOME/.config/golazo/settings.yaml"]="$BASE/dotfiles/golazo-settings.yaml"
+    ["$HOME/.config/cliamp/config.toml"]="$BASE/dotfiles/cliamp.toml"
+    ["$HOME/.config/cliamp/radios.toml"]="$BASE/dotfiles/cliamp-radios.toml"
   )
 
   local link up=1
@@ -559,6 +561,13 @@ install_dotfiles() {
   step "dotfiles -> ~/.config/golazo/settings.yaml"
   mkdir -p "$HOME/.config/golazo"
   ln -sfn "$BASE/dotfiles/golazo-settings.yaml" "$HOME/.config/golazo/settings.yaml"
+
+  step "dotfiles -> ~/.config/cliamp/config.toml"
+  mkdir -p "$HOME/.config/cliamp"
+  ln -sfn "$BASE/dotfiles/cliamp.toml" "$HOME/.config/cliamp/config.toml"
+
+  step "dotfiles -> ~/.config/cliamp/radios.toml"
+  ln -sfn "$BASE/dotfiles/cliamp-radios.toml" "$HOME/.config/cliamp/radios.toml"
 
   step "dotfiles -> rendering fastfetch logo"
   if ! chafa --size 60x30 --symbols block+border+space-wide-inverted \

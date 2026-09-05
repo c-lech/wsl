@@ -28,7 +28,9 @@ wsl/
 │   ├── bash_aliases
 │   ├── tmux.conf
 │   ├── opencode.jsonc
-│   └── tmuxai.yaml
+│   ├── tmuxai.yaml
+│   ├── cliamp.toml
+│   └── cliamp-radios.toml
 ├── createenv.sh
 ├── install.sh
 ├── pull.sh
@@ -78,7 +80,7 @@ Project work lives under `$HOME/projects` so it's accessible from both Windows a
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `opencode.jsonc`, `tmuxai.yaml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
+`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
 Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
@@ -91,12 +93,18 @@ user profile (`C:\Users\<user>\.wslconfig`):
 ~/.config/fastfetch/config.jsonc  -> ~/wsl/dotfiles/config.jsonc
 ~/.config/fastfetch/logo.png      -> ~/wsl/dotfiles/logo.png
 ~/.config/golazo/settings.yaml    -> ~/wsl/dotfiles/golazo-settings.yaml
+~/.config/cliamp/config.toml      -> ~/wsl/dotfiles/cliamp.toml
+~/.config/cliamp/radios.toml      -> ~/wsl/dotfiles/cliamp-radios.toml
 C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)
 ```
 
 `.wslconfig` is copied rather than symlinked since it lives on the Windows side.
 An existing file that differs is overwritten. Changes
 take effect after `wsl --shutdown` in PowerShell, then reopening WSL.
+
+Note: on WSLg, audio travels through the RDP bridge — if cliamp audio stutters or
+"corks" after a while, update WSL itself (`wsl.exe --update`, then `wsl.exe
+--shutdown`) rather than touching cliamp's buffer settings.
 
 ## Vagrant / Development VMs
 
