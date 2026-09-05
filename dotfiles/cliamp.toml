@@ -3,4 +3,9 @@ resample_quality = 4
 bit_depth = 16
 sample_rate = 0
 
+visualizer = "ClassicLED"
 theme = ""
+
+padding_horizontal = 3
+padding_vertical = 1
+
