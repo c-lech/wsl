@@ -854,6 +854,7 @@ main() {
 
   sudo -v
 
+  run_step "system:mount shared data" mount_data_dir
   run_step "apt:packages" install_packages
   run_step "tools:fastfetch" install_fastfetch
   run_step "tools:opencode" install_opencode
@@ -867,7 +868,6 @@ main() {
   run_step "tools:silicon" install_silicon
   run_step "tools:node" install_node
   run_step "system:set time zone" configure_timezone
-  run_step "system:mount shared data" mount_data_dir
   run_step "system:link dot files" install_dotfiles
   run_step "tools:tmux-plugins" install_tmux_plugins
   run_step "system:config git" configure_git
