@@ -1,3 +1,7 @@
 [[station]]
+name = "100hitz - 90's Alternative [128k] · United States Of America"
+url = "http://pureplay.cdnstream1.com/6040_128.mp3?DIST=TuneIn&TGT=TuneIn&maxServers=2&gdpr=0&us_privacy=1YNY&partnertok=eyJhbGciOiJIUzI1NiIsImtpZCI6InR1bmVpb"
+
+[[station]]
 name = "Radio FM"
 url = "https://icecast.stv.livebox.sk/fm_128.mp3"
