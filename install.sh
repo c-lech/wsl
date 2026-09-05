@@ -82,6 +82,8 @@ install_packages() {
     pkg-config libfontconfig1-dev libfreetype-dev libxcb-composite0-dev libharfbuzz-dev libexpat1-dev
     # cliamp
     libasound2-plugins pulseaudio-utils ffmpeg
+    # python
+    pip pipx
     
     #pulseaudio yt-dlp alsa-utils
     #libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev
@@ -367,6 +369,21 @@ install_golazo() {
   record "tools:golazo" ok "installed"
 }
 
+install_tte() {
+  local log="$LOG_DIR/tte.log"
+  if command -v tte >/dev/null 2>&1; then
+    record "tools:tte" skip "already present"
+    return 0
+  fi
+  step "tte -> installing terminaltexteffects"
+  if ! pipx install terminaltexteffects >> "$log" 2>&1; then
+    log_tail tte.log
+    record "tools:tte" fail "failed"
+    return 1
+  fi
+  record "tools:tte" ok "installed"
+}
+
 install_rust() {
   local log="$LOG_DIR/rust.log"
   if command -v cargo >/dev/null 2>&1; then
@@ -577,6 +594,21 @@ install_dotfiles() {
   fi
 
   record "system:link dot files" ok "configured"
+}
+
+setup_pipx() {
+  local log="$LOG_DIR/pipx.log"
+  if grep -q '\.local/bin' "$HOME/.bashrc" 2>/dev/null; then
+    record "python:ensurepath" skip "already in bashrc"
+    return 0
+  fi
+  step "pipx -> ensurepath"
+  if ! pipx ensurepath >> "$log" 2>&1; then
+    log_tail pipx.log
+    record "python:ensurepath" fail "failed"
+    return 1
+  fi
+  record "python:ensurepath" ok "done"
 }
 
 install_wslconfig() {
@@ -845,12 +877,14 @@ main() {
   run_step "tools:vagrant" install_vagrant
   run_step "tools:cliamp" install_cliamp
   run_step "tools:golazo" install_golazo
+  run_step "tools:tte" install_tte
   run_step "tools:rust" install_rust
   run_step "tools:silicon" install_silicon
   run_step "tools:node" install_node
   run_step "system:set time zone" configure_timezone
   run_step "system:mount shared data" mount_data_dir
   run_step "system:link dot files" install_dotfiles
+  run_step "python:ensurepath" setup_pipx
   run_step "tools:tmux-plugins" install_tmux_plugins
   run_step "system:config git" configure_git
   run_step "system:copy ssh public key" install_ssh
