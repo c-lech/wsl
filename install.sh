@@ -518,7 +518,6 @@ install_dotfiles() {
     ["$HOME/.config/fastfetch/config.jsonc"]="$BASE/dotfiles/config.jsonc"
     ["$HOME/.config/fastfetch/logo.png"]="$BASE/dotfiles/logo.png"
     ["$HOME/.config/golazo/settings.yaml"]="$BASE/dotfiles/golazo-settings.yaml"
-    ["$HOME/.config/cliamp/config.toml"]="$BASE/dotfiles/cliamp.toml"
     ["$HOME/.config/cliamp/radios.toml"]="$BASE/dotfiles/cliamp-radios.toml"
   )
 
@@ -562,9 +561,9 @@ install_dotfiles() {
   mkdir -p "$HOME/.config/golazo"
   ln -sfn "$BASE/dotfiles/golazo-settings.yaml" "$HOME/.config/golazo/settings.yaml"
 
-  step "dotfiles -> ~/.config/cliamp/config.toml"
+  step "dotfiles -> ~/.config/cliamp/config.toml (copy)"
   mkdir -p "$HOME/.config/cliamp"
-  ln -sfn "$BASE/dotfiles/cliamp.toml" "$HOME/.config/cliamp/config.toml"
+  cp "$BASE/dotfiles/cliamp.toml" "$HOME/.config/cliamp/config.toml"
 
   step "dotfiles -> ~/.config/cliamp/radios.toml"
   ln -sfn "$BASE/dotfiles/cliamp-radios.toml" "$HOME/.config/cliamp/radios.toml"

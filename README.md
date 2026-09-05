@@ -57,6 +57,7 @@ etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fai
 - installs `golazo` (football TUI)
 - symlinks dotfiles (incl. opencode and tmuxai config)
 - copies `dotfiles/wslconfig` as `.wslconfig` to the Windows user profile
+- copies `dotfiles/cliamp.toml` to `~/.config/cliamp/config.toml` (symlinks `cliamp-radios.toml`)
 - mounts Windows `C:\data\projects` at `$HOME/projects` (persistent via `/etc/fstab`, drvfs `metadata`)
 - lets Git authenticate silently: copies `infra/git_credentials/git-credentials` to `~/.git-credentials` (chmod 600) and enables `credential.helper store`
 
@@ -93,10 +94,15 @@ user profile (`C:\Users\<user>\.wslconfig`):
 ~/.config/fastfetch/config.jsonc  -> ~/wsl/dotfiles/config.jsonc
 ~/.config/fastfetch/logo.png      -> ~/wsl/dotfiles/logo.png
 ~/.config/golazo/settings.yaml    -> ~/wsl/dotfiles/golazo-settings.yaml
-~/.config/cliamp/config.toml      -> ~/wsl/dotfiles/cliamp.toml
 ~/.config/cliamp/radios.toml      -> ~/wsl/dotfiles/cliamp-radios.toml
+~/.config/cliamp/config.toml      <- ~/wsl/dotfiles/cliamp.toml  (copied, not symlinked)
 C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)
 ```
+
+`cliamp/config.toml` is copied rather than symlinked since cliamp rewrites it on
+its own (atomic save replacing any symlink). The repo file is the seed for fresh
+installs; only your own setting changes need syncing back to the repo.
+`cliamp/radios.toml` stays symlinked — cliamp never writes it.
 
 `.wslconfig` is copied rather than symlinked since it lives on the Windows side.
 An existing file that differs is overwritten. Changes
