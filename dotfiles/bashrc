@@ -137,3 +137,6 @@ export NVM_DIR="$HOME/.nvm"
 # --- Startup banner (custom) ---
 # "system" ASCII art, system info, and "monitored!" shown on each shell.
 cfonts " access restricted " -c red,yellowBright -f tiny; fastfetch; cfonts "              system monitored!" -f tiny -a left -c red
+
+# pipx bins (managed)
+export PATH="$PATH:/home/benito/.local/bin"

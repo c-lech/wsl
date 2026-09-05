@@ -83,7 +83,7 @@ install_packages() {
     # cliamp
     libasound2-plugins pulseaudio-utils ffmpeg
     # python
-    pip pipx
+    python3-pip pipx
     
     #pulseaudio yt-dlp alsa-utils
     #libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev
@@ -596,21 +596,6 @@ install_dotfiles() {
   record "system:link dot files" ok "configured"
 }
 
-setup_pipx() {
-  local log="$LOG_DIR/pipx.log"
-  if grep -q '\.local/bin' "$HOME/.bashrc" 2>/dev/null; then
-    record "python:ensurepath" skip "already in bashrc"
-    return 0
-  fi
-  step "pipx -> ensurepath"
-  if ! pipx ensurepath >> "$log" 2>&1; then
-    log_tail pipx.log
-    record "python:ensurepath" fail "failed"
-    return 1
-  fi
-  record "python:ensurepath" ok "done"
-}
-
 install_wslconfig() {
   if ! command -v cmd.exe >/dev/null 2>&1 || ! command -v wslpath >/dev/null 2>&1; then
     record "system:config wsl" skip "not on WSL"
@@ -884,7 +869,6 @@ main() {
   run_step "system:set time zone" configure_timezone
   run_step "system:mount shared data" mount_data_dir
   run_step "system:link dot files" install_dotfiles
-  run_step "python:ensurepath" setup_pipx
   run_step "tools:tmux-plugins" install_tmux_plugins
   run_step "system:config git" configure_git
   run_step "system:copy ssh public key" install_ssh
