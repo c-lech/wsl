@@ -402,14 +402,6 @@ install_tdfiglet() {
     return 1
   fi
 
-  step "tdfiglet -> copying unused-fonts (all 1198)"
-  if ! sudo cp "$build_dir"/unused-fonts/*.tdf /usr/local/share/tdfiglet/fonts/ >> "$log" 2>&1; then
-    log_tail tdfiglet.log
-    record "tools:tdfiglet" fail "failed (unused-fonts copy)"
-    rm -rf "$build_dir"
-    return 1
-  fi
-
   record "tools:tdfiglet" ok "installed"
   rm -rf "$build_dir"
 }
