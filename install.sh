@@ -369,6 +369,51 @@ install_golazo() {
   record "tools:golazo" ok "installed"
 }
 
+install_tdfiglet() {
+  local log="$LOG_DIR/tdfiglet.log"
+  if command -v tdfiglet >/dev/null 2>&1; then
+    record "tools:tdfiglet" skip "already present"
+    return 0
+  fi
+
+  local build_dir="/tmp/tdfiglet"
+  rm -rf "$build_dir"
+  step "tdfiglet -> cloning repo"
+  if ! git clone https://github.com/tat3r/tdfiglet.git "$build_dir" >> "$log" 2>&1; then
+    log_tail tdfiglet.log
+    record "tools:tdfiglet" fail "failed (clone)"
+    rm -rf "$build_dir"
+    return 1
+  fi
+
+  step "tdfiglet -> building"
+  if ! make -C "$build_dir" >> "$log" 2>&1; then
+    log_tail tdfiglet.log
+    record "tools:tdfiglet" fail "failed (make)"
+    rm -rf "$build_dir"
+    return 1
+  fi
+
+  step "tdfiglet -> installing binary + fonts"
+  if ! sudo make -C "$build_dir" install >> "$log" 2>&1; then
+    log_tail tdfiglet.log
+    record "tools:tdfiglet" fail "failed (make install)"
+    rm -rf "$build_dir"
+    return 1
+  fi
+
+  step "tdfiglet -> copying unused-fonts (all 1198)"
+  if ! sudo cp "$build_dir"/unused-fonts/*.tdf /usr/local/share/tdfiglet/fonts/ >> "$log" 2>&1; then
+    log_tail tdfiglet.log
+    record "tools:tdfiglet" fail "failed (unused-fonts copy)"
+    rm -rf "$build_dir"
+    return 1
+  fi
+
+  record "tools:tdfiglet" ok "installed"
+  rm -rf "$build_dir"
+}
+
 install_tte() {
   local log="$LOG_DIR/tte.log"
   if command -v tte >/dev/null 2>&1; then
@@ -863,6 +908,7 @@ main() {
   run_step "tools:vagrant" install_vagrant
   run_step "tools:cliamp" install_cliamp
   run_step "tools:golazo" install_golazo
+  run_step "tools:tdfiglet" install_tdfiglet
   run_step "tools:tte" install_tte
   run_step "tools:rust" install_rust
   run_step "tools:silicon" install_silicon
