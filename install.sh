@@ -615,11 +615,11 @@ install_dotfiles() {
     "$HOME/.asoundrc|$BASE/dotfiles/asoundrc|link"
     "$HOME/.config/opencode/opencode.jsonc|$BASE/dotfiles/opencode.jsonc|link"
     "$HOME/.config/tmuxai/config.yaml|$BASE/dotfiles/tmuxai.yaml|link"
-    "$HOME/.config/fastfetch/config.jsonc|$BASE/dotfiles/config.jsonc|link"
-    "$HOME/.config/fastfetch/logo.png|$BASE/dotfiles/logo.png|link"
     "$HOME/.config/golazo/settings.yaml|$BASE/dotfiles/golazo-settings.yaml|link"
     "$HOME/.config/cliamp/radios.toml|$BASE/dotfiles/cliamp-radios.toml|link"
     "$HOME/.config/cliamp/config.toml|$BASE/dotfiles/cliamp.toml|copy"
+    "$HOME/.config/fastfetch/config.jsonc|$BASE/dotfiles/config.jsonc|link"
+    "$HOME/.config/fastfetch/logo.png|$BASE/dotfiles/logo.png|link"
   )
 
   record "system:link dot files" skip "pending"
@@ -670,42 +670,42 @@ install_dotfiles() {
 
 install_wslconfig() {
   if ! command -v cmd.exe >/dev/null 2>&1 || ! command -v wslpath >/dev/null 2>&1; then
-    record "system:wsl config (on windows host)" skip "not on WSL"
+    record "system:wsl config (on host)" skip "not on WSL"
     return 0
   fi
 
   local win_home win_config
   win_home="$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')"
   if [ -z "$win_home" ]; then
-    record "system:wsl config (on windows host)" skip "no Windows profile"
+    record "system:wsl config (on host)" skip "no Windows profile"
     return 0
   fi
 
   win_config="$(wslpath -u "$win_home")/.wslconfig"
   if [ ! -d "$(dirname "$win_config")" ]; then
-    record "system:wsl config (on windows host)" skip "Windows profile unreachable"
+    record "system:wsl config (on host)" skip "Windows profile unreachable"
     return 0
   fi
 
-  record "system:wsl config (on windows host)" skip "pending"
+  record "system:wsl config (on host)" skip "pending"
 
   if [ -f "$win_config" ]; then
     if cmp -s "$BASE/dotfiles/wslconfig" "$win_config"; then
-      record "system:wsl config (on windows host):$win_config" skip "already configured"
+      record "system:wsl config (on host):$win_config" skip "already configured"
     else
       step "wslconfig -> updating"
       cp "$BASE/dotfiles/wslconfig" "$win_config"
-      record "system:wsl config (on windows host):$win_config" ok "configured"
+      record "system:wsl config (on host):$win_config" ok "configured"
       RESTART_NEEDED=1
     fi
   else
     step "wslconfig -> installing"
     cp "$BASE/dotfiles/wslconfig" "$win_config"
-    record "system:wsl config (on windows host):$win_config" ok "configured"
+    record "system:wsl config (on host):$win_config" ok "configured"
     RESTART_NEEDED=1
   fi
 
-  publish "system:wsl config (on windows host)"
+  publish "system:wsl config (on host)"
 }
 
 mount_data_dir() {
@@ -907,6 +907,13 @@ report() {
       fi
     fi
     [[ "$pref" == tools:* ]] && bucket=1
+    if [ "$sec" = "system" ]; then
+      if [ -n "$parent" ]; then
+        ind="    "
+      else
+        ind="  "
+      fi
+    fi
     local col=""
     if [ -z "$parent" ] && { [ "$bucket" = 1 ] || [ "$sec" = "system" ]; }; then
       col="$C_GRP"
@@ -920,6 +927,18 @@ report() {
     local ln=$(( ${#I_IND[$i]} + ${#I_NAME[$i]} ))
     [ "$ln" -gt "$W" ] && W="$ln"
   done
+
+  local has_tools=0
+  for i in "${!I_SEC[@]}"; do
+    if [ "${I_SEC[$i]}" != "system" ]; then
+      has_tools=1
+      break
+    fi
+  done
+  if [ "$has_tools" = 1 ]; then
+    echo "${C_SKIP}TOOLS${RESET}"
+    echo ""
+  fi
 
   local first=1
   for s in "${sections[@]}"; do
@@ -937,7 +956,11 @@ report() {
       echo ""
     fi
     first=0
-    echo "  ${C_SECT}$s${RESET}"
+    if [ "$s" = "system" ]; then
+      echo "${C_SKIP}SYSTEM${RESET}"
+    else
+      echo "  ${C_SECT}$s${RESET}"
+    fi
     local -a ids=()
     if [ "$s" = "Remote" ] || [ "$s" = "system" ]; then
       ids=( "${oid[@]}" "${tid[@]}" )
@@ -945,7 +968,7 @@ report() {
       ids=( "${tid[@]}" "${oid[@]}" )
     fi
     for i in "${ids[@]}"; do
-      if [ "$s" = "system" ] && [ "${I_IND[$i]}" = "    " ]; then
+      if [ "$s" = "system" ] && [ "${I_IND[$i]}" = "  " ]; then
         echo ""
       fi
       local nm="${I_IND[$i]}${I_NAME[$i]}"
@@ -1007,7 +1030,7 @@ main() {
   run_step "tools:tmux-plugins" install_tmux_plugins
   run_step "system:config git" configure_git
   run_step "system:copy ssh keys" install_ssh
-  run_step "system:wsl config (on windows host)" install_wslconfig
+  run_step "system:wsl config (on host)" install_wslconfig
 
   report
 }
