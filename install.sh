@@ -509,11 +509,12 @@ install_silicon() {
 install_node() {
   local log="$LOG_DIR/node.log"
 
-  # nvm
+  # nvm (installed first, recorded after node)
+  local nvm_status="skip" nvm_note=""
   if [ -s "$HOME/.nvm/nvm.sh" ]; then
     export NVM_DIR="$HOME/.nvm"
     . "$NVM_DIR/nvm.sh"
-    record "tools:nvm" skip "already present ${C_SECT}($(nvm --version))${RESET}"
+    nvm_note="already present ${C_SECT}($(nvm --version))${RESET}"
   else
     step "node -> installing nvm"
     if ! curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh \
@@ -524,12 +525,9 @@ install_node() {
     fi
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-    record "tools:nvm" ok "installed ${C_SECT}($(nvm --version))${RESET}"
+    nvm_status="ok"
+    nvm_note="installed ${C_SECT}($(nvm --version))${RESET}"
   fi
-
-  # Load nvm for this run (nvm is a shell function, not on PATH).
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
   # node LTS
   if command -v node >/dev/null 2>&1; then
@@ -543,6 +541,9 @@ install_node() {
     fi
     record "tools:node" ok "installed ${C_SECT}($(node --version))${RESET}"
   fi
+
+  # nvm (recorded after node)
+  record "tools:nvm" "$nvm_status" "$nvm_note"
 
   # cfonts (global)
   if npm ls -g cfonts >/dev/null 2>&1; then
@@ -916,7 +917,11 @@ report() {
     fi
     local col=""
     if [ -z "$parent" ] && { [ "$bucket" = 1 ] || [ "$sec" = "system" ]; }; then
-      col="$C_GRP"
+      if [ "$bucket" = 1 ]; then
+        col="$C_SECT"
+      else
+        col="$C_GRP"
+      fi
     fi
     I_SEC+=( "$sec" ); I_NAME+=( "$name" ); I_IND+=( "$ind" ); I_COL+=( "$col" ); I_BKT+=( "$bucket" )
     I_CLS+=( "${STATUS[$k]}" ); I_LBL+=( "${NOTE[$k]}" )
@@ -959,7 +964,7 @@ report() {
     if [ "$s" = "system" ]; then
       echo "${C_SKIP}SYSTEM${RESET}"
     else
-      echo "  ${C_SECT}$s${RESET}"
+      echo "  ${C_GRP}$s${RESET}"
     fi
     local -a ids=()
     if [ "$s" = "Remote" ] || [ "$s" = "system" ]; then
