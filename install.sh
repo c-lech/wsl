@@ -9,12 +9,14 @@ C_OK=''
 C_SKIP=''
 C_FAIL=''
 C_GRP=''
+C_SECT=''
 RESET=''
 if [ -t 1 ]; then
   C_OK=$'\033[32m'
   C_SKIP=$'\033[33m'
   C_FAIL=$'\033[31m'
   C_GRP=$'\033[1;36m'
+  C_SECT=$'\033[1;95m'
   RESET=$'\033[0m'
 fi
 
@@ -39,6 +41,34 @@ record() {
   fi
 }
 
+publish() {
+  local key="$1"
+  local anyfail=0 anyok=0 n=0 k
+  for k in "${ORDER[@]}"; do
+    if [ "$k" != "$key" ] && [[ "$k" == "$key:"* ]]; then
+      n=1
+      case "${STATUS[$k]}" in
+        fail) anyfail=1;;
+        ok)   anyok=1;;
+      esac
+      [ "$anyfail" = 1 ] && break
+    fi
+  done
+  if [ "$n" = 0 ]; then
+    return 0
+  fi
+  if [ "$anyfail" = 1 ]; then
+    STATUS["$key"]=fail
+    NOTE["$key"]="some failed"
+  elif [ "$anyok" = 1 ]; then
+    STATUS["$key"]=ok
+    NOTE["$key"]="configured"
+  else
+    STATUS["$key"]=skip
+    NOTE["$key"]="already configured"
+  fi
+}
+
 get_version() {
   "$@" --version 2>/dev/null | head -1
 }
@@ -60,46 +90,53 @@ apt_update() {
 install_packages() {
   step "checking packages"
   local packages=(
-    # monitoring
-    btop htop glances
-    # disk tools
-    tree ncdu iotop sysstat
-    # parsing
-    jq yq
-    # networking
-    mtr nmap traceroute dnsutils whois telnet iftop net-tools snmp socat
-    # hardware
-    lm-sensors smartmontools nvtop
-    # remote
-    ansible sshpass
-    # others
-    fzf mc figlet cmatrix
-    # required by tmux (clipboard)
-    wl-clipboard
-    # required by fastfetch (logo render)
-    chafa
-    # cargo
-    pkg-config libfontconfig1-dev libfreetype-dev libxcb-composite0-dev libharfbuzz-dev libexpat1-dev
-    # cliamp
-    libasound2-plugins pulseaudio-utils ffmpeg
-    # python
-    python3-pip pipx
-    
+    # CPU
+    "CPU|btop" "CPU|htop" "CPU|glances"
+    # Disk
+    "Disk|tree" "Disk|ncdu" "Disk|iotop" "Disk|sysstat"
+    # Networking
+    "Networking|mtr" "Networking|nmap" "Networking|traceroute" "Networking|dnsutils"
+    "Networking|whois" "Networking|telnet" "Networking|iftop" "Networking|net-tools"
+    "Networking|snmp" "Networking|socat"
+    # Hardware
+    "Hardware|lm-sensors" "Hardware|smartmontools" "Hardware|nvtop"
+    # Remote
+    "Remote|ansible" "Remote|sshpass"
+    # Files
+    "Files|fzf" "Files|mc"
+    # Parse
+    "Parse|jq" "Parse|yq"
+    # Misc
+    "Misc|figlet" "Misc|cmatrix"
+    # Python pkg mgrs
+    "Python pkg mgrs|python3-pip" "Python pkg mgrs|pipx"
+    # Cargo deps
+    "Cargo deps|pkg-config" "Cargo deps|libfontconfig1-dev" "Cargo deps|libfreetype-dev"
+    "Cargo deps|libxcb-composite0-dev" "Cargo deps|libharfbuzz-dev" "Cargo deps|libexpat1-dev"
+    # Cliamp deps
+    "Cliamp deps|libasound2-plugins" "Cliamp deps|pulseaudio-utils" "Cliamp deps|ffmpeg"
+    # Fastfetch util
+    "Fastfetch util|chafa"
+    # TMUX integration
+    "TMUX integration|wl-clipboard"
+
     #pulseaudio yt-dlp alsa-utils
     #libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev
     #zstd
   )
 
-  local pkg to_install=()
-  for pkg in "${packages[@]}"; do
+  local entry group pkg to_install=() apt_pkgs=()
+  for entry in "${packages[@]}"; do
+    group="${entry%%|*}"
+    pkg="${entry#*|}"
     if dpkg -s "$pkg" >/dev/null 2>&1; then
       if [ "$pkg" = "ansible" ]; then
-        record "apt:$pkg" skip "already present ($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))"
+        record "apt:$group:$pkg" skip "already present ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
       else
-        record "apt:$pkg" skip "already present"
+        record "apt:$group:$pkg" skip "already present"
       fi
     else
-      to_install+=("$pkg")
+      to_install+=("$entry")
     fi
   done
 
@@ -109,19 +146,25 @@ install_packages() {
   fi
 
   if ! apt_update; then
-    for pkg in "${to_install[@]}"; do
-      record "apt:$pkg" fail "failed (apt update)"
+    for entry in "${to_install[@]}"; do
+      record "apt:${entry%%|*}:${entry#*|}" fail "failed (apt update)"
     done
     return 0
   fi
 
-  step "apt install ${#to_install[@]} packages (single run)"
-  if sudo apt install -y "${to_install[@]}" >> "$LOG_DIR/apt-install.log" 2>&1; then
-    for pkg in "${to_install[@]}"; do
+  for entry in "${to_install[@]}"; do
+    apt_pkgs+=("${entry#*|}")
+  done
+
+  step "apt install ${#apt_pkgs[@]} packages (single run)"
+  if sudo apt install -y "${apt_pkgs[@]}" >> "$LOG_DIR/apt-install.log" 2>&1; then
+    for entry in "${to_install[@]}"; do
+      group="${entry%%|*}"
+      pkg="${entry#*|}"
       if [ "$pkg" = "ansible" ]; then
-        record "apt:$pkg" ok "installed ($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))"
+        record "apt:$group:$pkg" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
       else
-        record "apt:$pkg" ok "installed"
+        record "apt:$group:$pkg" ok "installed"
       fi
     done
     return 0
@@ -129,21 +172,23 @@ install_packages() {
 
   step "batch install failed, retrying individually"
   log_tail apt-install.log
-  for pkg in "${to_install[@]}"; do
+  for entry in "${to_install[@]}"; do
+    group="${entry%%|*}"
+    pkg="${entry#*|}"
     if dpkg -s "$pkg" >/dev/null 2>&1; then
       if [ "$pkg" = "ansible" ]; then
-        record "apt:$pkg" ok "installed ($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))"
+        record "apt:$group:$pkg" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
       else
-        record "apt:$pkg" ok "installed"
+        record "apt:$group:$pkg" ok "installed"
       fi
     elif sudo apt install -y "$pkg" >> "$LOG_DIR/apt-$pkg.log" 2>&1; then
       if [ "$pkg" = "ansible" ]; then
-        record "apt:$pkg" ok "installed ($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))"
+        record "apt:$group:$pkg" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
       else
-        record "apt:$pkg" ok "installed"
+        record "apt:$group:$pkg" ok "installed"
       fi
     else
-      record "apt:$pkg" fail "failed"
+      record "apt:$group:$pkg" fail "failed"
       log_tail "apt-$pkg.log"
     fi
   done
@@ -180,11 +225,11 @@ install_opencode() {
     local ver
     ver="$("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1)"
     if [ "$(readlink /usr/local/bin/opencode 2>/dev/null)" = "$HOME/.opencode/bin/opencode" ]; then
-      record "tools:opencode" skip "already present ($ver)"
+      record "tools:opencode" skip "already present ${C_SECT}($ver)${RESET}"
     else
       echo "  -> opencode: relinking /usr/local/bin/opencode"
       sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
-      record "tools:opencode" ok "relinked ($ver)"
+      record "tools:opencode" ok "relinked ${C_SECT}($ver)${RESET}"
     fi
     return 0
   fi
@@ -201,7 +246,7 @@ install_opencode() {
     fi
   fi
   sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
-  record "tools:opencode" ok "installed ($("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1))"
+  record "tools:opencode" ok "installed ${C_SECT}($("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1))${RESET}"
 }
 
 install_tmuxai() {
@@ -234,7 +279,7 @@ install_ollama() {
   if command -v ollama >/dev/null 2>&1; then
     local ver
     ver="$(get_version ollama | awk '{print $3}')"
-    record "tools:ollama" skip "already present ($ver)"
+    record "tools:ollama" skip "already present ${C_SECT}($ver)${RESET}"
   else
     step "ollama -> installing"
     if ! curl -fsSL https://ollama.com/install.sh | sh >> "$log" 2>&1; then
@@ -250,7 +295,7 @@ install_ollama() {
       fi
       rm -f /tmp/ollama
     fi
-    record "tools:ollama" ok "installed ($(get_version ollama | awk '{print $3}'))"
+    record "tools:ollama" ok "installed ${C_SECT}($(get_version ollama | awk '{print $3}'))${RESET}"
   fi
 
   if model_present "qwen3:8b"; then
@@ -283,7 +328,7 @@ install_vagrant() {
   if dpkg -s vagrant >/dev/null 2>&1; then
     local ver
     ver="$(get_version vagrant | awk '{print $2}')"
-    record "tools:vagrant" skip "already present ($ver)"
+    record "tools:vagrant" skip "already present ${C_SECT}($ver)${RESET}"
   else
     local codename
     codename="$(lsb_release -cs 2>/dev/null || true)"
@@ -314,7 +359,7 @@ install_vagrant() {
       record "tools:vagrant" fail "failed"
       return 1
     fi
-    record "tools:vagrant" ok "installed ($(get_version vagrant | awk '{print $2}'))"
+    record "tools:vagrant" ok "installed ${C_SECT}($(get_version vagrant | awk '{print $2}'))${RESET}"
     RESTART_NEEDED=1
   fi
 
@@ -326,11 +371,11 @@ install_vagrant() {
   if vagrant plugin list | grep -qi virtualbox_wsl2; then
     local ver
     ver="$(vagrant plugin list | grep -i virtualbox_wsl2 | grep -oP '\(\K[^,]+')"
-    record "tools:vagrant:virtualbox_WSL2 plugin" skip "already present ($ver)"
+    record "tools:vagrant:virtualbox_WSL2 plugin" skip "already present ${C_SECT}($ver)${RESET}"
   else
     step "vagrant plugin virtualbox_WSL2 -> installing"
     if vagrant plugin install virtualbox_WSL2 >> "$log" 2>&1; then
-      record "tools:vagrant:virtualbox_WSL2 plugin" ok "installed ($(vagrant plugin list | grep -i virtualbox_wsl2 | grep -oP '\(\K[^,]+'))"
+      record "tools:vagrant:virtualbox_WSL2 plugin" ok "installed ${C_SECT}($(vagrant plugin list | grep -i virtualbox_wsl2 | grep -oP '\(\K[^,]+'))${RESET}"
       RESTART_NEEDED=1
     else
       log_tail vagrant.log
@@ -426,7 +471,7 @@ install_rust() {
   if command -v cargo >/dev/null 2>&1; then
     local ver
     ver="$(cargo --version 2>/dev/null | awk '{print $2}')"
-    record "tools:rust" skip "already present ($ver)"
+    record "tools:rust" skip "already present ${C_SECT}($ver)${RESET}"
   else
     step "rust -> installing via rustup"
     if ! curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable >> "$log" 2>&1; then
@@ -435,7 +480,7 @@ install_rust() {
       return 1
     fi
     [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
-    record "tools:rust" ok "installed ($(cargo --version 2>/dev/null | awk '{print $2}'))"
+    record "tools:rust" ok "installed ${C_SECT}($(cargo --version 2>/dev/null | awk '{print $2}'))${RESET}"
   fi
   [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
   command -v cargo >/dev/null 2>&1 || record "tools:rust" fail "cargo not on PATH after install"
@@ -468,7 +513,7 @@ install_node() {
   if [ -s "$HOME/.nvm/nvm.sh" ]; then
     export NVM_DIR="$HOME/.nvm"
     . "$NVM_DIR/nvm.sh"
-    record "tools:nvm" skip "already present ($(nvm --version))"
+    record "tools:nvm" skip "already present ${C_SECT}($(nvm --version))${RESET}"
   else
     step "node -> installing nvm"
     if ! curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh \
@@ -479,7 +524,7 @@ install_node() {
     fi
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-    record "tools:nvm" ok "installed ($(nvm --version))"
+    record "tools:nvm" ok "installed ${C_SECT}($(nvm --version))${RESET}"
   fi
 
   # Load nvm for this run (nvm is a shell function, not on PATH).
@@ -488,7 +533,7 @@ install_node() {
 
   # node LTS
   if command -v node >/dev/null 2>&1; then
-    record "tools:node" skip "already present ($(node --version))"
+    record "tools:node" skip "already present ${C_SECT}($(node --version))${RESET}"
   else
     step "node -> installing LTS"
     if ! nvm install --lts >> "$log" 2>&1; then
@@ -496,7 +541,7 @@ install_node() {
       record "tools:node" fail "failed"
       return 1
     fi
-    record "tools:node" ok "installed ($(node --version))"
+    record "tools:node" ok "installed ${C_SECT}($(node --version))${RESET}"
   fi
 
   # cfonts (global)
@@ -562,75 +607,65 @@ install_tmux_plugins() {
 }
 
 install_dotfiles() {
-  local -A links=(
-    ["$HOME/.tmux.conf"]="$BASE/dotfiles/tmux.conf"
-    ["$HOME/.bashrc"]="$BASE/dotfiles/bashrc"
-    ["$HOME/.bash_aliases"]="$BASE/dotfiles/bash_aliases"
-    ["$HOME/.asoundrc"]="$BASE/dotfiles/asoundrc"
-    ["$HOME/.config/opencode/opencode.jsonc"]="$BASE/dotfiles/opencode.jsonc"
-    ["$HOME/.config/tmuxai/config.yaml"]="$BASE/dotfiles/tmuxai.yaml"
-    ["$HOME/.config/fastfetch/config.jsonc"]="$BASE/dotfiles/config.jsonc"
-    ["$HOME/.config/fastfetch/logo.png"]="$BASE/dotfiles/logo.png"
-    ["$HOME/.config/golazo/settings.yaml"]="$BASE/dotfiles/golazo-settings.yaml"
-    ["$HOME/.config/cliamp/radios.toml"]="$BASE/dotfiles/cliamp-radios.toml"
+  step "dotfiles -> checking"
+  local entries=(
+    "$HOME/.tmux.conf|$BASE/dotfiles/tmux.conf|link"
+    "$HOME/.bashrc|$BASE/dotfiles/bashrc|link"
+    "$HOME/.bash_aliases|$BASE/dotfiles/bash_aliases|link"
+    "$HOME/.asoundrc|$BASE/dotfiles/asoundrc|link"
+    "$HOME/.config/opencode/opencode.jsonc|$BASE/dotfiles/opencode.jsonc|link"
+    "$HOME/.config/tmuxai/config.yaml|$BASE/dotfiles/tmuxai.yaml|link"
+    "$HOME/.config/fastfetch/config.jsonc|$BASE/dotfiles/config.jsonc|link"
+    "$HOME/.config/fastfetch/logo.png|$BASE/dotfiles/logo.png|link"
+    "$HOME/.config/golazo/settings.yaml|$BASE/dotfiles/golazo-settings.yaml|link"
+    "$HOME/.config/cliamp/radios.toml|$BASE/dotfiles/cliamp-radios.toml|link"
+    "$HOME/.config/cliamp/config.toml|$BASE/dotfiles/cliamp.toml|copy"
   )
 
-  local link up=1
-  for link in "${!links[@]}"; do
-    if [ "$(readlink "$link" 2>/dev/null)" != "${links[$link]}" ]; then
-      up=0
-      break
+  record "system:link dot files" skip "pending"
+
+  local entry dest rest src kind
+  for entry in "${entries[@]}"; do
+    dest="${entry%%|*}"
+    rest="${entry#*|}"
+    src="${rest%%|*}"
+    kind="${rest#*|}"
+    if [ "$kind" = "copy" ]; then
+      if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+        record "system:link dot files:$dest" skip "already copied"
+      else
+        step "dotfiles -> $dest (copy)"
+        mkdir -p "$(dirname "$dest")"
+        cp "$src" "$dest"
+        record "system:link dot files:$dest" ok "copied"
+      fi
+    else
+      if [ "$(readlink "$dest" 2>/dev/null)" = "$src" ]; then
+        record "system:link dot files:$dest" skip "already linked"
+      else
+        step "dotfiles -> $dest"
+        mkdir -p "$(dirname "$dest")"
+        ln -sfn "$src" "$dest"
+        record "system:link dot files:$dest" ok "linked"
+      fi
     fi
   done
 
-  if [ "$up" = 1 ] && [ -f "$HOME/.config/fastfetch/logo.txt" ]; then
-    record "system:link dot files" skip "already configured"
-    return 0
+  if [ -f "$HOME/.config/fastfetch/logo.txt" ]; then
+    record "system:link dot files:$HOME/.config/fastfetch/logo.txt" skip "already rendered"
+  else
+    step "dotfiles -> rendering fastfetch logo"
+    if ! chafa --size 60x30 --symbols block+border+space-wide-inverted \
+          "$HOME/.config/fastfetch/logo.png" > "$HOME/.config/fastfetch/logo.txt" 2> "$LOG_DIR/dotfiles.log"; then
+      log_tail dotfiles.log
+      record "system:link dot files:$HOME/.config/fastfetch/logo.txt" fail "failed (logo render)"
+      publish "system:link dot files"
+      return 1
+    fi
+    record "system:link dot files:$HOME/.config/fastfetch/logo.txt" ok "rendered"
   fi
 
-  step "dotfiles -> symlinking"
-
-  ln -sfn "$BASE/dotfiles/tmux.conf" "$HOME/.tmux.conf"
-  step "dotfiles -> ~/.bashrc"
-  ln -sfn "$BASE/dotfiles/bashrc" "$HOME/.bashrc"
-  step "dotfiles -> ~/.bash_aliases"
-  ln -sfn "$BASE/dotfiles/bash_aliases" "$HOME/.bash_aliases"
-  step "dotfiles -> ~/.asoundrc"
-  ln -sfn "$BASE/dotfiles/asoundrc" "$HOME/.asoundrc"
-
-  step "dotfiles -> ~/.config/opencode/opencode.jsonc"
-  mkdir -p "$HOME/.config/opencode"
-  ln -sfn "$BASE/dotfiles/opencode.jsonc" "$HOME/.config/opencode/opencode.jsonc"
-
-  step "dotfiles -> ~/.config/tmuxai/config.yaml"
-  mkdir -p "$HOME/.config/tmuxai"
-  ln -sfn "$BASE/dotfiles/tmuxai.yaml" "$HOME/.config/tmuxai/config.yaml"
-
-  step "dotfiles -> ~/.config/fastfetch"
-  mkdir -p "$HOME/.config/fastfetch"
-  ln -sfn "$BASE/dotfiles/config.jsonc" "$HOME/.config/fastfetch/config.jsonc"
-  ln -sfn "$BASE/dotfiles/logo.png" "$HOME/.config/fastfetch/logo.png"
-
-  step "dotfiles -> ~/.config/golazo/settings.yaml"
-  mkdir -p "$HOME/.config/golazo"
-  ln -sfn "$BASE/dotfiles/golazo-settings.yaml" "$HOME/.config/golazo/settings.yaml"
-
-  step "dotfiles -> ~/.config/cliamp/config.toml (copy)"
-  mkdir -p "$HOME/.config/cliamp"
-  cp "$BASE/dotfiles/cliamp.toml" "$HOME/.config/cliamp/config.toml"
-
-  step "dotfiles -> ~/.config/cliamp/radios.toml"
-  ln -sfn "$BASE/dotfiles/cliamp-radios.toml" "$HOME/.config/cliamp/radios.toml"
-
-  step "dotfiles -> rendering fastfetch logo"
-  if ! chafa --size 60x30 --symbols block+border+space-wide-inverted \
-        "$HOME/.config/fastfetch/logo.png" > "$HOME/.config/fastfetch/logo.txt" 2> "$LOG_DIR/dotfiles.log"; then
-    log_tail dotfiles.log
-    record "system:link dot files" fail "failed (logo render)"
-    return 1
-  fi
-
-  record "system:link dot files" ok "configured"
+  publish "system:link dot files"
 }
 
 install_wslconfig() {
@@ -652,30 +687,29 @@ install_wslconfig() {
     return 0
   fi
 
+  record "system:wsl config (on windows host)" skip "pending"
+
   if [ -f "$win_config" ]; then
     if cmp -s "$BASE/dotfiles/wslconfig" "$win_config"; then
-      record "system:wsl config (on windows host)" skip "already configured"
+      record "system:wsl config (on windows host):$win_config" skip "already configured"
     else
       step "wslconfig -> updating"
       cp "$BASE/dotfiles/wslconfig" "$win_config"
-      record "system:wsl config (on windows host)" ok "configured"
+      record "system:wsl config (on windows host):$win_config" ok "configured"
       RESTART_NEEDED=1
     fi
   else
     step "wslconfig -> installing"
     cp "$BASE/dotfiles/wslconfig" "$win_config"
-    record "system:wsl config (on windows host)" ok "configured"
+    record "system:wsl config (on windows host):$win_config" ok "configured"
     RESTART_NEEDED=1
   fi
+
+  publish "system:wsl config (on windows host)"
 }
 
 mount_data_dir() {
-  if mountpoint -q "$HOME/projects" && grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
-    record "system:mount shared data" skip "already configured"
-    return 0
-  fi
-
-  local changed=0
+  record "system:mount shared data" skip "pending"
 
   if ! mountpoint -q "$HOME/projects"; then
     step "mount data -> creating $HOME/projects"
@@ -688,11 +722,14 @@ mount_data_dir() {
     if ! sudo mount -t drvfs -o "defaults,metadata,uid=$uid,gid=$gid" \
           'C:\data\projects' "$HOME/projects" >> "$LOG_DIR/mount.log" 2>&1; then
       log_tail mount.log
-      record "system:mount shared data" fail "mount failed"
+      record "system:mount shared data:live mount (drvfs)" fail "mount failed"
+      publish "system:mount shared data"
       return 1
     fi
     sleep 2
-    changed=1
+    record "system:mount shared data:live mount (drvfs)" ok "mounted"
+  else
+    record "system:mount shared data:live mount (drvfs)" skip "already mounted"
   fi
 
   if ! grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
@@ -700,37 +737,49 @@ mount_data_dir() {
     uid="$(id -u)"
     gid="$(id -g)"
     step "mount data -> adding to /etc/fstab"
-    echo "C:\\data\\projects $HOME/projects drvfs defaults,metadata,uid=$uid,gid=$gid 0 0" \
-      | sudo tee -a /etc/fstab >> "$LOG_DIR/mount.log" 2>&1
-    changed=1
+    if echo "C:\\data\\projects $HOME/projects drvfs defaults,metadata,uid=$uid,gid=$gid 0 0" \
+        | sudo tee -a /etc/fstab >> "$LOG_DIR/mount.log" 2>&1; then
+      record "system:mount shared data:fstab entry" ok "added"
+    else
+      record "system:mount shared data:fstab entry" fail "failed"
+    fi
+  else
+    record "system:mount shared data:fstab entry" skip "already present"
   fi
 
-  if [ "$changed" = 1 ]; then
-    record "system:mount shared data" ok "configured"
-  fi
+  publish "system:mount shared data"
 }
 
 install_ssh() {
   local src="$HOME/projects/infra/wsl_ssh_key"
   if [ ! -f "$src/id_ed25519" ]; then
-    record "system:copy ssh public key" skip "no source key"
+    record "system:copy ssh keys" skip "no source key"
     return 0
   fi
-  if [ -f "$HOME/.ssh/id_ed25519" ] \
-      && [ -f "$HOME/.ssh/id_ed25519.pub" ] \
-      && cmp -s "$src/id_ed25519" "$HOME/.ssh/id_ed25519" \
-      && cmp -s "$src/id_ed25519.pub" "$HOME/.ssh/id_ed25519.pub"; then
-    record "system:copy ssh public key" skip "already configured"
-    return 0
+
+  record "system:copy ssh keys" skip "pending"
+
+  if [ -f "$HOME/.ssh/id_ed25519" ] && cmp -s "$src/id_ed25519" "$HOME/.ssh/id_ed25519"; then
+    record "system:copy ssh keys:id_ed25519" skip "already present (not copied)"
+  else
+    step "ssh -> copying private key"
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
+    cp "$src/id_ed25519" "$HOME/.ssh/"
+    chmod 600 "$HOME/.ssh/id_ed25519"
+    record "system:copy ssh keys:id_ed25519" ok "copied from $src/id_ed25519"
   fi
-  step "ssh -> copying keys"
-  mkdir -p "$HOME/.ssh"
-  chmod 700 "$HOME/.ssh"
-  cp "$src/id_ed25519" "$HOME/.ssh/"
-  chmod 600 "$HOME/.ssh/id_ed25519"
-  cp "$src/id_ed25519.pub" "$HOME/.ssh/"
-  chmod 644 "$HOME/.ssh/id_ed25519.pub"
-  record "system:copy ssh public key" ok "configured"
+
+  if [ -f "$HOME/.ssh/id_ed25519.pub" ] && cmp -s "$src/id_ed25519.pub" "$HOME/.ssh/id_ed25519.pub"; then
+    record "system:copy ssh keys:id_ed25519.pub" skip "already present (not copied)"
+  else
+    step "ssh -> copying public key"
+    cp "$src/id_ed25519.pub" "$HOME/.ssh/"
+    chmod 644 "$HOME/.ssh/id_ed25519.pub"
+    record "system:copy ssh keys:id_ed25519.pub" ok "copied from $src/id_ed25519.pub"
+  fi
+
+  publish "system:copy ssh keys"
 }
 
 configure_timezone() {
@@ -738,7 +787,7 @@ configure_timezone() {
   local current
   current="$(timedatectl show -p Timezone --value 2>/dev/null)"
   if [ "$current" = "$tz" ]; then
-    record "system:set time zone" skip "already configured ($tz)"
+    record "system:set time zone" skip "already configured ${C_SECT}($tz)${RESET}"
   else
     step "timezone -> setting to $tz"
     if ! sudo timedatectl set-timezone "$tz" \
@@ -746,26 +795,29 @@ configure_timezone() {
       record "system:set time zone" fail "failed"
       return 1
     fi
-    record "system:set time zone" ok "configured ($tz)"
+    record "system:set time zone" ok "configured ${C_SECT}($tz)${RESET}"
   fi
 }
 
 configure_git() {
-  local changed=0
+  record "system:config git" skip "pending"
 
   if [ -n "$(git config --global user.name)" ] && [ -n "$(git config --global user.email)" ]; then
     step "git -> identity already set"
+    record "system:config git:identity (c-lech)" skip "already set"
   else
     step "git -> setting identity"
     git config --global user.name "c-lech"
     git config --global user.email "126396070+c-lech@users.noreply.github.com"
-    changed=1
+    record "system:config git:identity (c-lech)" ok "set"
   fi
 
   if [ "$(git config --global credential.helper)" != "store" ]; then
     step "git -> enabling credential.helper store"
     git config --global credential.helper store
-    changed=1
+    record "system:config git:credential.helper store" ok "enabled"
+  else
+    record "system:config git:credential.helper store" skip "already enabled"
   fi
 
   local src="$HOME/projects/infra/git_credentials/git-credentials"
@@ -774,15 +826,15 @@ configure_git() {
       step "git -> copying credentials"
       cp "$src" "$HOME/.git-credentials"
       chmod 600 "$HOME/.git-credentials"
-      changed=1
+      record "system:config git:git-credentials" ok "copied"
+    else
+      record "system:config git:git-credentials" skip "already present"
     fi
+  else
+    record "system:config git:git-credentials" skip "no source credentials"
   fi
 
-  if [ "$changed" = 1 ]; then
-    record "system:config git" ok "configured"
-  else
-    record "system:config git" skip "already configured"
-  fi
+  publish "system:config git"
 }
 
 run_step() {
@@ -800,73 +852,118 @@ run_step() {
 
 report() {
   echo ""
-  local -A group_label=([apt]="apt packages" [tools]="tools" [system]="system")
-  local groups=(apt tools system)
-  local g k
   local n_ok=0 n_skip=0 n_fail=0
 
-  local W=0
-  for g in "${groups[@]}"; do
-    for k in "${ORDER[@]}"; do
-      [[ "$k" == "$g:"* ]] || continue
-      local rest="${k#"$g:"}"
-      local pre
-      if [[ "$rest" == *":"* ]]; then
-        pre="    ${rest#*:}"
-      else
-        pre="  $rest"
-      fi
-      if [ "${#pre}" -gt "$W" ]; then
-        W="${#pre}"
+  declare -A P=(
+    ["Python"]="apt:Python pkg mgrs"
+    ["node"]="tools:nvm;tools:node"
+    ["rust"]="tools:rust;apt:Cargo deps"
+    ["CPU"]="apt:CPU"
+    ["Disk"]="apt:Disk"
+    ["Networking"]="apt:Networking"
+    ["Hardware"]="apt:Hardware"
+    ["Remote"]="apt:Remote;tools:vagrant"
+    ["Files"]="apt:Files"
+    ["Parse"]="apt:Parse"
+    ["AI"]="tools:opencode;tools:ollama"
+    ["Misc"]="tools:golazo;tools:tdfiglet;tools:tte;tools:cfonts;tools:silicon;apt:Misc"
+    ["tmux"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
+    ["fastfetch"]="tools:fastfetch;apt:Fastfetch util"
+    ["cliamp"]="tools:cliamp;apt:Cliamp deps"
+    ["system"]="system"
+  )
+  local sections=(Python node rust CPU Disk Networking Hardware Remote Files Parse AI Misc tmux fastfetch cliamp system)
+
+  local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT
+  for k in "${ORDER[@]}"; do
+    local sec="" pref="" s plist p
+    for s in "${sections[@]}"; do
+      IFS=';' read -ra plist <<< "${P[$s]}"
+      for p in "${plist[@]}"; do
+        if [ "$k" = "$p" ] || [[ "$k" == "$p:"* ]]; then
+          sec="$s"; pref="$p"; break 2
+        fi
+      done
+    done
+    if [ -z "$sec" ]; then
+      sec="Misc"; pref="apt:Misc"
+    fi
+    local parent=""
+    local a
+    for a in "${ORDER[@]}"; do
+      if [ "$a" != "$k" ] && [[ "$k" == "$a:"* ]] && [ "${#a}" -gt "${#parent}" ]; then
+        parent="$a"
       fi
     done
+    local name ind="    " bucket=0
+    if [ -n "$parent" ]; then
+      name="${k#"$parent:"}"
+      ind="      "
+    else
+      if [ "$k" = "$pref" ]; then
+        name="${k##*:}"
+      else
+        name="${k#"$pref:"}"
+      fi
+    fi
+    [[ "$pref" == tools:* ]] && bucket=1
+    local col=""
+    if [ -z "$parent" ] && { [ "$bucket" = 1 ] || [ "$sec" = "system" ]; }; then
+      col="$C_GRP"
+    fi
+    I_SEC+=( "$sec" ); I_NAME+=( "$name" ); I_IND+=( "$ind" ); I_COL+=( "$col" ); I_BKT+=( "$bucket" )
+    I_CLS+=( "${STATUS[$k]}" ); I_LBL+=( "${NOTE[$k]}" )
   done
 
-  for g in "${groups[@]}"; do
-    local names=() cls=() lbls=()
-    local empty=1
+  local W=0 i
+  for i in "${!I_SEC[@]}"; do
+    local ln=$(( ${#I_IND[$i]} + ${#I_NAME[$i]} ))
+    [ "$ln" -gt "$W" ] && W="$ln"
+  done
 
-    for k in "${ORDER[@]}"; do
-      [[ "$k" == "$g:"* ]] || continue
-      empty=0
-      local rest="${k#"$g:"}"
-      local indent name
-      if [[ "$rest" == *":"* ]]; then
-        indent="    "
-        name="${rest#*:}"
+  local first=1
+  for s in "${sections[@]}"; do
+    local -a tid=() oid=()
+    for i in "${!I_SEC[@]}"; do
+      [ "${I_SEC[$i]}" = "$s" ] || continue
+      if [ "${I_BKT[$i]}" = 1 ]; then
+        tid+=( "$i" )
       else
-        indent="  "
-        name="$rest"
+        oid+=( "$i" )
       fi
-      local pre="${indent}${name}"
-      names+=("$pre")
-      cls+=("${STATUS[$k]}")
-      lbls+=("${NOTE[$k]}")
     done
-
-    [ "$empty" = 1 ] && continue
-
-    echo "${C_GRP}${group_label[$g]}:${RESET}"
-    local i
-    for i in "${!names[@]}"; do
-      printf "%s" "${names[$i]}"
-      local w="$W"
-      local pad=$(( w - ${#names[$i]} ))
-      local j
+    [ "${#tid[@]}" -eq 0 ] && [ "${#oid[@]}" -eq 0 ] && continue
+    if [ "$first" = 0 ]; then
+      echo ""
+    fi
+    first=0
+    echo "  ${C_SECT}$s${RESET}"
+    local -a ids=()
+    if [ "$s" = "Remote" ] || [ "$s" = "system" ]; then
+      ids=( "${oid[@]}" "${tid[@]}" )
+    else
+      ids=( "${tid[@]}" "${oid[@]}" )
+    fi
+    for i in "${ids[@]}"; do
+      if [ "$s" = "system" ] && [ "${I_IND[$i]}" = "    " ]; then
+        echo ""
+      fi
+      local nm="${I_IND[$i]}${I_NAME[$i]}"
+      printf "%s%s%s" "${I_COL[$i]}" "$nm" "$RESET"
+      local pad=$(( W - ${#nm} )) j
       for (( j=0; j<pad; j++ )); do
         printf "."
       done
-      case "${cls[$i]}" in
-        ok)   printf "  %s[ok]%s   %s\n"   "$C_OK"   "$RESET" "${lbls[$i]}";   n_ok=$(( n_ok + 1 ));;
-        skip) printf "  %s[skip]%s %s\n"  "$C_SKIP" "$RESET" "${lbls[$i]}";   n_skip=$(( n_skip + 1 ));;
-        fail) printf "  %s[FAIL]%s %s\n"  "$C_FAIL" "$RESET" "${lbls[$i]}";   n_fail=$(( n_fail + 1 ));;
-        *)    printf "  [%s]   %s\n" "${cls[$i]}" "${lbls[$i]}";;
+      case "${I_CLS[$i]}" in
+        ok)   printf "  %s[ok]%s   %s\n"   "$C_OK"   "$RESET" "${I_LBL[$i]}";   n_ok=$(( n_ok + 1 ));;
+        skip) printf "  %s[skip]%s %s\n"  "$C_SKIP" "$RESET" "${I_LBL[$i]}";   n_skip=$(( n_skip + 1 ));;
+        fail) printf "  %s[FAIL]%s %s\n"  "$C_FAIL" "$RESET" "${I_LBL[$i]}";   n_fail=$(( n_fail + 1 ));;
+        *)    printf "  [%s]   %s\n" "${I_CLS[$i]}" "${I_LBL[$i]}";;
       esac
     done
-    echo ""
   done
 
-  printf "%s  %s%d ok%s | %s%d skip%s | %s%d failed%s\n" \
+  printf "\n%s  %s%d ok%s | %s%d skip%s | %s%d failed%s\n" \
     "$C_GRP" "$C_OK" "$n_ok" "$RESET" "$C_SKIP" "$n_skip" "$RESET" "$C_FAIL" "$n_fail" "$RESET"
 
   echo ""
@@ -909,7 +1006,7 @@ main() {
   run_step "system:link dot files" install_dotfiles
   run_step "tools:tmux-plugins" install_tmux_plugins
   run_step "system:config git" configure_git
-  run_step "system:copy ssh public key" install_ssh
+  run_step "system:copy ssh keys" install_ssh
   run_step "system:wsl config (on windows host)" install_wslconfig
 
   report
