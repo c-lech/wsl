@@ -10,6 +10,7 @@ C_SKIP=''
 C_FAIL=''
 C_GRP=''
 C_SECT=''
+C_WHITE=''
 RESET=''
 if [ -t 1 ]; then
   C_OK=$'\033[32m'
@@ -17,6 +18,7 @@ if [ -t 1 ]; then
   C_FAIL=$'\033[31m'
   C_GRP=$'\033[1;36m'
   C_SECT=$'\033[1;95m'
+  C_WHITE=$'\033[1;37m'
   RESET=$'\033[0m'
 fi
 
@@ -869,13 +871,13 @@ report() {
     ["parse"]="apt:Parse"
     ["render"]="tools:silicon"
     ["AI"]="tools:opencode;tools:ollama"
-    ["misc"]="tools:golazo;tools:cliamp;apt:Misc:cmatrix;apt:Cliamp deps"
+    ["MISC"]="tools:golazo;tools:cliamp;apt:Misc:cmatrix;apt:Cliamp deps"
     ["tmux"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
     ["fastfetch"]="tools:fastfetch;apt:Fastfetch util"
     ["ascii"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet"
     ["system"]="system"
   )
-  local sections=(python nodejs rust CPU disk networking hardware remote files parse render AI misc tmux fastfetch ascii system)
+  local sections=(python nodejs rust CPU disk networking hardware remote files parse render AI tmux fastfetch ascii MISC system)
 
   local -A SUB_MEMBER=(
     [python]=dev [nodejs]=dev [rust]=dev
@@ -885,11 +887,11 @@ report() {
     [tmux]=looks [fastfetch]=looks [ascii]=looks
   )
   local -A SUB_FIRST=(
-    [python]="dev environments"
-    [CPU]="monitoring"
-    [remote]="infra"
-    [files]="tools"
-    [tmux]="terminal & looks"
+    [python]="DEV ENVIRONMENTS"
+    [CPU]="MONITORING"
+    [remote]="INFRA"
+    [files]="TOOLS"
+    [tmux]="TERMINAL & LOOKS"
   )
 
   local -A VPARENT=( ["apt:Cliamp deps"]="tools:cliamp" )
@@ -906,7 +908,7 @@ report() {
       done
     done
     if [ -z "$sec" ]; then
-      sec="misc"; pref="apt:Misc"
+      sec="MISC"; pref="apt:Misc"
     fi
     local parent="" vp=""
     local a
@@ -1011,7 +1013,7 @@ report() {
       if [ "$first" = 0 ]; then
         echo ""
       fi
-      echo "  ${C_GRP}${SUB_FIRST[$s]}${RESET}"
+      echo "  ${C_SKIP}${SUB_FIRST[$s]}${RESET}"
       echo ""
       first=0
       skip_blank=1
@@ -1025,6 +1027,10 @@ report() {
     first=0
     if [ "$s" = "system" ]; then
       echo "${C_SKIP}SYSTEM${RESET}"
+    elif [ "$s" = "AI" ]; then
+      echo "  ${C_SKIP}AI${RESET}"
+    elif [ "$s" = "MISC" ]; then
+      echo "  ${C_SKIP}MISC${RESET}"
     else
       echo "${s_ind}${C_GRP}$s${RESET}"
     fi
