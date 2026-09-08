@@ -394,7 +394,7 @@ install_cliamp() {
     return 0
   fi
   step "cliamp -> installing"
-  if ! curl -fsSL https://raw.githubusercontent.com/bjarneo/cliamp/HEAD/install.sh | sh >> "$log" 2>&1; then
+  if ! curl -fsSL https://cliamp.stream/install.sh | sh >> "$log" 2>&1; then
     log_tail cliamp.log
     record "tools:cliamp" fail "failed"
     return 1
