@@ -857,24 +857,24 @@ report() {
   local n_ok=0 n_skip=0 n_fail=0
 
   declare -A P=(
-    ["Python"]="apt:Python pkg mgrs"
-    ["node"]="tools:nvm;tools:node"
+    ["python"]="apt:Python pkg mgrs"
+    ["nodejs"]="tools:nvm;tools:node"
     ["rust"]="tools:rust;apt:Cargo deps"
     ["CPU"]="apt:CPU"
-    ["Disk"]="apt:Disk"
-    ["Networking"]="apt:Networking"
-    ["Hardware"]="apt:Hardware"
-    ["Remote"]="apt:Remote;tools:vagrant"
-    ["Files"]="apt:Files"
-    ["Parse"]="apt:Parse"
+    ["disk"]="apt:Disk"
+    ["networking"]="apt:Networking"
+    ["hardware"]="apt:Hardware"
+    ["remote"]="apt:Remote;tools:vagrant"
+    ["files"]="apt:Files"
+    ["parse"]="apt:Parse"
     ["AI"]="tools:opencode;tools:ollama"
-    ["Misc"]="tools:golazo;tools:tdfiglet;tools:tte;tools:cfonts;tools:silicon;apt:Misc"
+    ["misc"]="tools:golazo;tools:tdfiglet;tools:tte;tools:cfonts;tools:silicon;apt:Misc"
     ["tmux"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
     ["fastfetch"]="tools:fastfetch;apt:Fastfetch util"
     ["cliamp"]="tools:cliamp;apt:Cliamp deps"
     ["system"]="system"
   )
-  local sections=(Python node rust CPU Disk Networking Hardware Remote Files Parse AI Misc tmux fastfetch cliamp system)
+  local sections=(python nodejs rust CPU disk networking hardware remote files parse AI misc tmux fastfetch cliamp system)
 
   local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT I_GRP
   for k in "${ORDER[@]}"; do
@@ -908,6 +908,10 @@ report() {
         name="${k#"$pref:"}"
       fi
     fi
+    case "$k" in
+      "system:config git")           name="configure git";;
+      "system:wsl config (on host)") name="configure wsl (on host)";;
+    esac
     [[ "$pref" == tools:* ]] && bucket=1
     if [ "$sec" = "system" ]; then
       if [ -n "$parent" ]; then
@@ -974,7 +978,7 @@ report() {
       echo "  ${C_GRP}$s${RESET}"
     fi
     local -a ids=()
-    if [ "$s" = "Remote" ] || [ "$s" = "system" ]; then
+    if [ "$s" = "remote" ] || [ "$s" = "system" ]; then
       ids=( "${oid[@]}" "${tid[@]}" )
     else
       ids=( "${tid[@]}" "${oid[@]}" )
