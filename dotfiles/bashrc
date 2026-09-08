@@ -139,4 +139,4 @@ export NVM_DIR="$HOME/.nvm"
 cfonts " access restricted " -c red,yellowBright -f tiny; fastfetch; cfonts "              system monitored!" -f tiny -a left -c red
 
 # pipx bins (managed)
-export PATH="$PATH:/home/benito/.local/bin"
+export PATH="$PATH:$HOME/.local/bin"

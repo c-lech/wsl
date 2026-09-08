@@ -693,6 +693,15 @@ install_wslconfig() {
 
   record "system:wsl config (on host)" skip "pending"
 
+  if [ "$(readlink /etc/wsl.conf 2>/dev/null)" = "$BASE/dotfiles/wsl.conf" ]; then
+    record "system:wsl config (on host):/etc/wsl.conf" skip "already linked"
+  else
+    step "wsl.conf -> linking"
+    sudo ln -sfn "$BASE/dotfiles/wsl.conf" /etc/wsl.conf
+    record "system:wsl config (on host):/etc/wsl.conf" ok "linked"
+    RESTART_NEEDED=1
+  fi
+
   if [ -f "$win_config" ]; then
     if cmp -s "$BASE/dotfiles/wslconfig" "$win_config"; then
       record "system:wsl config (on host):$win_config" skip "already copied"
@@ -948,7 +957,7 @@ report() {
     fi
     case "$k" in
       "system:config git")           name="configure git";;
-      "system:wsl config (on host)") name="configure wsl (on host)";;
+      "system:wsl config (on host)") name="configure wsl";;
     esac
     [[ "$pref" == tools:* ]] && bucket=1
     if [ "$sec" = "system" ]; then
