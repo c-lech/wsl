@@ -27,12 +27,20 @@ wsl/
 │   ├── bashrc
 │   ├── bash_aliases
 │   ├── tmux.conf
+│   ├── asoundrc
 │   ├── opencode.jsonc
 │   ├── tmuxai.yaml
 │   ├── cliamp.toml
-│   └── cliamp-radios.toml
+│   ├── cliamp-radios.toml
+│   ├── config.jsonc
+│   ├── logo.png
+│   └── golazo-settings.yaml
 ├── createenv.sh
 ├── install.sh
+├── tmux5.sh
+├── tdf-show.sh
+├── chafa-show.sh
+├── diff.sh
 ├── pull.sh
 ├── push.sh
 └── README.md
@@ -47,7 +55,7 @@ keeps running past individual failures, and verbose command output (apt, curl in
 etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fails. Use
 `./install.sh -v` to watch each step live. It exits 0 when nothing failed. It:
 
-- installs required packages (`jq`, `zstd`, `tree`, `figlet`, `cmatrix`, `mtr`, `nmap`, `netcat-openbsd`, `traceroute`, `dnsutils`, `whois`, `telnet`, `socat`, `iftop`, `net-tools`, `htop`, `btop`, `glances`, `ncdu`, `nvtop`, `iotop`, `sysstat`, `lm-sensors`, `smartmontools`, `snmp`, `ansible`, `sshpass`, `rsync`, `fzf`)
+- installs required packages (`btop`, `htop`, `glances`, `tree`, `ncdu`, `iotop`, `sysstat`, `mtr`, `nmap`, `traceroute`, `dnsutils`, `whois`, `telnet`, `iftop`, `net-tools`, `snmp`, `socat`, `lm-sensors`, `smartmontools`, `nvtop`, `ansible`, `sshpass`, `fzf`, `mc`, `jq`, `yq`, `figlet`, `cmatrix`, `python3-pip`, `pipx`, `chafa`, `wl-clipboard`, `ffmpeg`, `libasound2-plugins`, `pulseaudio-utils`, and the `cargo` build deps `pkg-config`, `libfontconfig1-dev`, `libfreetype-dev`, `libxcb-composite0-dev`, `libharfbuzz-dev`, `libexpat1-dev`)
 - installs `fastfetch` (from PPA)
 - installs `opencode`
 - installs `tmuxai`
@@ -81,7 +89,7 @@ Project work lives under `$HOME/projects` so it's accessible from both Windows a
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
+`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
 Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
