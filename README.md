@@ -116,6 +116,13 @@ installs; only your own setting changes need syncing back to the repo.
 An existing file that differs is overwritten. Changes
 take effect after `wsl --shutdown` in PowerShell, then reopening WSL.
 
+`/etc/wsl.conf` intentionally has no `[user] default=`, so WSL logs in as the
+distro's install-time default user. This keeps the shared config portable
+instead of hardcoding a username. To force a specific user on one machine, run
+once from PowerShell: `wsl --manage <distro> --set-default-user <user>`.
+After pulling, re-run `install.sh` (re-links `/etc/wsl.conf`) or check for a
+stale `[user]` section locally, then `wsl --shutdown`.
+
 Note: on WSLg, audio travels through the RDP bridge — if cliamp audio stutters or
 "corks" after a while, update WSL itself (`wsl.exe --update`, then `wsl.exe
 --shutdown`) rather than touching cliamp's buffer settings.
