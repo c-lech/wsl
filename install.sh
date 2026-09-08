@@ -22,7 +22,7 @@ fi
 
 VERBOSE=0
 
-declare -A STATUS NOTE IN_ORDER
+declare -A STATUS NOTE IN_ORDER GROUP
 ORDER=()
 
 step() {
@@ -57,15 +57,16 @@ publish() {
   if [ "$n" = 0 ]; then
     return 0
   fi
+  GROUP["$key"]=1
   if [ "$anyfail" = 1 ]; then
     STATUS["$key"]=fail
     NOTE["$key"]="some failed"
   elif [ "$anyok" = 1 ]; then
     STATUS["$key"]=ok
-    NOTE["$key"]="configured"
+    NOTE["$key"]=""
   else
     STATUS["$key"]=skip
-    NOTE["$key"]="already configured"
+    NOTE["$key"]=""
   fi
 }
 
@@ -131,9 +132,9 @@ install_packages() {
     pkg="${entry#*|}"
     if dpkg -s "$pkg" >/dev/null 2>&1; then
       if [ "$pkg" = "ansible" ]; then
-        record "apt:$group:$pkg" skip "already present ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
+        record "apt:$group:$pkg" skip "already installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
       else
-        record "apt:$group:$pkg" skip "already present"
+        record "apt:$group:$pkg" skip "already installed"
       fi
     else
       to_install+=("$entry")
@@ -197,7 +198,7 @@ install_packages() {
 install_fastfetch() {
   local log="$LOG_DIR/fastfetch.log"
   if command -v fastfetch >/dev/null 2>&1; then
-    record "tools:fastfetch" skip "already present"
+    record "tools:fastfetch" skip "already installed"
     return 0
   fi
   step "fastfetch -> adding PPA"
@@ -225,7 +226,7 @@ install_opencode() {
     local ver
     ver="$("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1)"
     if [ "$(readlink /usr/local/bin/opencode 2>/dev/null)" = "$HOME/.opencode/bin/opencode" ]; then
-      record "tools:opencode" skip "already present ${C_SECT}($ver)${RESET}"
+      record "tools:opencode" skip "already installed ${C_SECT}($ver)${RESET}"
     else
       echo "  -> opencode: relinking /usr/local/bin/opencode"
       sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
@@ -252,7 +253,7 @@ install_opencode() {
 install_tmuxai() {
   local log="$LOG_DIR/tmuxai.log"
   if command -v tmuxai >/dev/null 2>&1; then
-    record "tools:tmuxai" skip "already present"
+    record "tools:tmuxai" skip "already installed"
     return 0
   fi
   step "tmuxai -> installing"
@@ -279,7 +280,7 @@ install_ollama() {
   if command -v ollama >/dev/null 2>&1; then
     local ver
     ver="$(get_version ollama | awk '{print $3}')"
-    record "tools:ollama" skip "already present ${C_SECT}($ver)${RESET}"
+    record "tools:ollama" skip "already installed ${C_SECT}($ver)${RESET}"
   else
     step "ollama -> installing"
     if ! curl -fsSL https://ollama.com/install.sh | sh >> "$log" 2>&1; then
@@ -310,7 +311,7 @@ install_ollama() {
   fi
 
   if model_present "qwen3:8b-16k"; then
-    record "tools:ollama:model qwen3:8b-16k" skip "already present"
+    record "tools:ollama:model qwen3:8b-16k" skip "already created"
   else
     step "ollama -> creating qwen3:8b-16k"
     printf 'FROM qwen3:8b\nPARAMETER num_ctx 16384\n' > /tmp/Modelfile-qwen3-16k
@@ -328,7 +329,7 @@ install_vagrant() {
   if dpkg -s vagrant >/dev/null 2>&1; then
     local ver
     ver="$(get_version vagrant | awk '{print $2}')"
-    record "tools:vagrant" skip "already present ${C_SECT}($ver)${RESET}"
+    record "tools:vagrant" skip "already installed ${C_SECT}($ver)${RESET}"
   else
     local codename
     codename="$(lsb_release -cs 2>/dev/null || true)"
@@ -371,7 +372,7 @@ install_vagrant() {
   if vagrant plugin list | grep -qi virtualbox_wsl2; then
     local ver
     ver="$(vagrant plugin list | grep -i virtualbox_wsl2 | grep -oP '\(\K[^,]+')"
-    record "tools:vagrant:virtualbox_WSL2 plugin" skip "already present ${C_SECT}($ver)${RESET}"
+    record "tools:vagrant:virtualbox_WSL2 plugin" skip "already installed ${C_SECT}($ver)${RESET}"
   else
     step "vagrant plugin virtualbox_WSL2 -> installing"
     if vagrant plugin install virtualbox_WSL2 >> "$log" 2>&1; then
@@ -387,7 +388,7 @@ install_vagrant() {
 install_cliamp() {
   local log="$LOG_DIR/cliamp.log"
   if command -v cliamp >/dev/null 2>&1; then
-    record "tools:cliamp" skip "already present"
+    record "tools:cliamp" skip "already installed"
     return 0
   fi
   step "cliamp -> installing"
@@ -402,7 +403,7 @@ install_cliamp() {
 install_golazo() {
   local log="$LOG_DIR/golazo.log"
   if command -v golazo >/dev/null 2>&1; then
-    record "tools:golazo" skip "already present"
+    record "tools:golazo" skip "already installed"
     return 0
   fi
   step "golazo -> installing"
@@ -417,7 +418,7 @@ install_golazo() {
 install_tdfiglet() {
   local log="$LOG_DIR/tdfiglet.log"
   if command -v tdfiglet >/dev/null 2>&1; then
-    record "tools:tdfiglet" skip "already present"
+    record "tools:tdfiglet" skip "already installed"
     return 0
   fi
 
@@ -454,7 +455,7 @@ install_tdfiglet() {
 install_tte() {
   local log="$LOG_DIR/tte.log"
   if command -v tte >/dev/null 2>&1; then
-    record "tools:tte" skip "already present"
+    record "tools:tte" skip "already installed"
     return 0
   fi
   step "tte -> installing terminaltexteffects"
@@ -471,7 +472,7 @@ install_rust() {
   if command -v cargo >/dev/null 2>&1; then
     local ver
     ver="$(cargo --version 2>/dev/null | awk '{print $2}')"
-    record "tools:rust" skip "already present ${C_SECT}($ver)${RESET}"
+    record "tools:rust" skip "already installed ${C_SECT}($ver)${RESET}"
   else
     step "rust -> installing via rustup"
     if ! curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable >> "$log" 2>&1; then
@@ -489,7 +490,7 @@ install_rust() {
 install_silicon() {
   local log="$LOG_DIR/silicon.log"
   if command -v silicon >/dev/null 2>&1; then
-    record "tools:silicon" skip "already present"
+    record "tools:silicon" skip "already installed"
     return 0
   fi
   [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
@@ -514,7 +515,7 @@ install_node() {
   if [ -s "$HOME/.nvm/nvm.sh" ]; then
     export NVM_DIR="$HOME/.nvm"
     . "$NVM_DIR/nvm.sh"
-    nvm_note="already present ${C_SECT}($(nvm --version))${RESET}"
+    nvm_note="already installed ${C_SECT}($(nvm --version))${RESET}"
   else
     step "node -> installing nvm"
     if ! curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh \
@@ -531,7 +532,7 @@ install_node() {
 
   # node LTS
   if command -v node >/dev/null 2>&1; then
-    record "tools:node" skip "already present ${C_SECT}($(node --version))${RESET}"
+    record "tools:node" skip "already installed ${C_SECT}($(node --version))${RESET}"
   else
     step "node -> installing LTS"
     if ! nvm install --lts >> "$log" 2>&1; then
@@ -547,7 +548,7 @@ install_node() {
 
   # cfonts (global)
   if npm ls -g cfonts >/dev/null 2>&1; then
-    record "tools:cfonts" skip "already present"
+    record "tools:cfonts" skip "already installed"
   else
     step "node -> installing cfonts"
     if ! npm i -g cfonts >> "$log" 2>&1; then
@@ -603,7 +604,7 @@ install_tmux_plugins() {
       record "tools:tmux-plugins" fail "reinstall failed"
     fi
   else
-    record "tools:tmux-plugins" skip "already present"
+    record "tools:tmux-plugins" skip "already installed"
   fi
 }
 
@@ -692,17 +693,17 @@ install_wslconfig() {
 
   if [ -f "$win_config" ]; then
     if cmp -s "$BASE/dotfiles/wslconfig" "$win_config"; then
-      record "system:wsl config (on host):$win_config" skip "already configured"
+      record "system:wsl config (on host):$win_config" skip "already copied"
     else
       step "wslconfig -> updating"
       cp "$BASE/dotfiles/wslconfig" "$win_config"
-      record "system:wsl config (on host):$win_config" ok "configured"
+      record "system:wsl config (on host):$win_config" ok "copied"
       RESTART_NEEDED=1
     fi
   else
     step "wslconfig -> installing"
     cp "$BASE/dotfiles/wslconfig" "$win_config"
-    record "system:wsl config (on host):$win_config" ok "configured"
+    record "system:wsl config (on host):$win_config" ok "copied"
     RESTART_NEEDED=1
   fi
 
@@ -745,7 +746,7 @@ mount_data_dir() {
       record "system:mount shared data:fstab entry" fail "failed"
     fi
   else
-    record "system:mount shared data:fstab entry" skip "already present"
+    record "system:mount shared data:fstab entry" skip "already added"
   fi
 
   publish "system:mount shared data"
@@ -761,23 +762,23 @@ install_ssh() {
   record "system:copy ssh keys" skip "pending"
 
   if [ -f "$HOME/.ssh/id_ed25519" ] && cmp -s "$src/id_ed25519" "$HOME/.ssh/id_ed25519"; then
-    record "system:copy ssh keys:id_ed25519" skip "already present (not copied)"
+    record "system:copy ssh keys:id_ed25519" skip "already copied"
   else
     step "ssh -> copying private key"
     mkdir -p "$HOME/.ssh"
     chmod 700 "$HOME/.ssh"
     cp "$src/id_ed25519" "$HOME/.ssh/"
     chmod 600 "$HOME/.ssh/id_ed25519"
-    record "system:copy ssh keys:id_ed25519" ok "copied from $src/id_ed25519"
+    record "system:copy ssh keys:id_ed25519" ok "copied"
   fi
 
   if [ -f "$HOME/.ssh/id_ed25519.pub" ] && cmp -s "$src/id_ed25519.pub" "$HOME/.ssh/id_ed25519.pub"; then
-    record "system:copy ssh keys:id_ed25519.pub" skip "already present (not copied)"
+    record "system:copy ssh keys:id_ed25519.pub" skip "already copied"
   else
     step "ssh -> copying public key"
     cp "$src/id_ed25519.pub" "$HOME/.ssh/"
     chmod 644 "$HOME/.ssh/id_ed25519.pub"
-    record "system:copy ssh keys:id_ed25519.pub" ok "copied from $src/id_ed25519.pub"
+    record "system:copy ssh keys:id_ed25519.pub" ok "copied"
   fi
 
   publish "system:copy ssh keys"
@@ -805,12 +806,12 @@ configure_git() {
 
   if [ -n "$(git config --global user.name)" ] && [ -n "$(git config --global user.email)" ]; then
     step "git -> identity already set"
-    record "system:config git:identity (c-lech)" skip "already set"
+    record "system:config git:identity" skip "already set"
   else
     step "git -> setting identity"
     git config --global user.name "c-lech"
     git config --global user.email "126396070+c-lech@users.noreply.github.com"
-    record "system:config git:identity (c-lech)" ok "set"
+    record "system:config git:identity" ok "set"
   fi
 
   if [ "$(git config --global credential.helper)" != "store" ]; then
@@ -829,7 +830,7 @@ configure_git() {
       chmod 600 "$HOME/.git-credentials"
       record "system:config git:git-credentials" ok "copied"
     else
-      record "system:config git:git-credentials" skip "already present"
+      record "system:config git:git-credentials" skip "already copied"
     fi
   else
     record "system:config git:git-credentials" skip "no source credentials"
@@ -875,7 +876,7 @@ report() {
   )
   local sections=(Python node rust CPU Disk Networking Hardware Remote Files Parse AI Misc tmux fastfetch cliamp system)
 
-  local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT
+  local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT I_GRP
   for k in "${ORDER[@]}"; do
     local sec="" pref="" s plist p
     for s in "${sections[@]}"; do
@@ -916,15 +917,21 @@ report() {
       fi
     fi
     local col=""
+    case "$k" in
+      "system:config git:git-credentials"|\
+      "system:copy ssh keys:id_ed25519"|\
+      "system:copy ssh keys:id_ed25519.pub") col="$C_FAIL";;
+    esac
     if [ -z "$parent" ] && { [ "$bucket" = 1 ] || [ "$sec" = "system" ]; }; then
       if [ "$bucket" = 1 ]; then
-        col="$C_SECT"
+        [ -z "$col" ] && col="$C_SECT"
       else
-        col="$C_GRP"
+        [ -z "$col" ] && col="$C_GRP"
       fi
     fi
     I_SEC+=( "$sec" ); I_NAME+=( "$name" ); I_IND+=( "$ind" ); I_COL+=( "$col" ); I_BKT+=( "$bucket" )
     I_CLS+=( "${STATUS[$k]}" ); I_LBL+=( "${NOTE[$k]}" )
+    I_GRP+=( "$([[ -n "${GROUP[$k]+x}" ]] && echo 1 || echo 0)" )
   done
 
   local W=0 i
@@ -982,6 +989,10 @@ report() {
       for (( j=0; j<pad; j++ )); do
         printf "."
       done
+      if [ "${I_GRP[$i]}" = 1 ]; then
+        printf "\n"
+        continue
+      fi
       case "${I_CLS[$i]}" in
         ok)   printf "  %s[ok]%s   %s\n"   "$C_OK"   "$RESET" "${I_LBL[$i]}";   n_ok=$(( n_ok + 1 ));;
         skip) printf "  %s[skip]%s %s\n"  "$C_SKIP" "$RESET" "${I_LBL[$i]}";   n_skip=$(( n_skip + 1 ));;
