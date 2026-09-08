@@ -867,16 +867,34 @@ report() {
     ["remote"]="apt:Remote;tools:vagrant"
     ["files"]="apt:Files"
     ["parse"]="apt:Parse"
+    ["render"]="tools:silicon"
     ["AI"]="tools:opencode;tools:ollama"
-    ["misc"]="tools:golazo;tools:tdfiglet;tools:tte;tools:cfonts;tools:silicon;apt:Misc"
+    ["misc"]="tools:golazo;tools:cliamp;apt:Misc:cmatrix;apt:Cliamp deps"
     ["tmux"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
     ["fastfetch"]="tools:fastfetch;apt:Fastfetch util"
-    ["cliamp"]="tools:cliamp;apt:Cliamp deps"
+    ["ascii"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet"
     ["system"]="system"
   )
-  local sections=(python nodejs rust CPU disk networking hardware remote files parse AI misc tmux fastfetch cliamp system)
+  local sections=(python nodejs rust CPU disk networking hardware remote files parse render AI misc tmux fastfetch ascii system)
 
-  local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT I_GRP
+  local -A SUB_MEMBER=(
+    [python]=dev [nodejs]=dev [rust]=dev
+    [CPU]=mon [disk]=mon [networking]=mon [hardware]=mon
+    [remote]=infra
+    [files]=tools [parse]=tools [render]=tools
+    [tmux]=looks [fastfetch]=looks [ascii]=looks
+  )
+  local -A SUB_FIRST=(
+    [python]="dev environments"
+    [CPU]="monitoring"
+    [remote]="infra"
+    [files]="tools"
+    [tmux]="terminal & looks"
+  )
+
+  local -A VPARENT=( ["apt:Cliamp deps"]="tools:cliamp" )
+
+  local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT I_GRP I_KEY I_PKEY
   for k in "${ORDER[@]}"; do
     local sec="" pref="" s plist p
     for s in "${sections[@]}"; do
@@ -888,18 +906,36 @@ report() {
       done
     done
     if [ -z "$sec" ]; then
-      sec="Misc"; pref="apt:Misc"
+      sec="misc"; pref="apt:Misc"
     fi
-    local parent=""
+    local parent="" vp=""
     local a
     for a in "${ORDER[@]}"; do
       if [ "$a" != "$k" ] && [[ "$k" == "$a:"* ]] && [ "${#a}" -gt "${#parent}" ]; then
         parent="$a"
       fi
     done
+    if [ -z "$parent" ]; then
+      local vk t
+      for vk in "${!VPARENT[@]}"; do
+        if [[ "$k" == "$vk:"* ]]; then
+          for t in "${ORDER[@]}"; do
+            if [ "$t" = "${VPARENT[$vk]}" ]; then
+              parent="$t"; vp="$vk"; break
+            fi
+          done
+        fi
+        [ -n "$parent" ] && break
+      done
+      unset vk t
+    fi
     local name ind="    " bucket=0
     if [ -n "$parent" ]; then
-      name="${k#"$parent:"}"
+      if [ -n "$vp" ]; then
+        name="${k#"$vp:"}"
+      else
+        name="${k#"$parent:"}"
+      fi
       ind="      "
     else
       if [ "$k" = "$pref" ]; then
@@ -920,21 +956,23 @@ report() {
         ind="  "
       fi
     fi
+    [[ "${SUB_MEMBER[$sec]+x}" = x ]] && ind="  $ind"
     local col=""
     case "$k" in
       "system:config git:git-credentials"|\
       "system:copy ssh keys:id_ed25519"|\
       "system:copy ssh keys:id_ed25519.pub") col="$C_FAIL";;
     esac
-    if [ -z "$parent" ] && { [ "$bucket" = 1 ] || [ "$sec" = "system" ]; }; then
+    if [ "$bucket" = 1 ] || [ "$sec" = "system" ]; then
       if [ "$bucket" = 1 ]; then
         [ -z "$col" ] && col="$C_SECT"
       else
-        [ -z "$col" ] && col="$C_GRP"
+        [ -z "$parent" ] && [ -z "$col" ] && col="$C_GRP"
       fi
     fi
     I_SEC+=( "$sec" ); I_NAME+=( "$name" ); I_IND+=( "$ind" ); I_COL+=( "$col" ); I_BKT+=( "$bucket" )
     I_CLS+=( "${STATUS[$k]}" ); I_LBL+=( "${NOTE[$k]}" )
+    I_KEY+=( "$k" ); I_PKEY+=( "${parent:-}" )
     I_GRP+=( "$([[ -n "${GROUP[$k]+x}" ]] && echo 1 || echo 0)" )
   done
 
@@ -968,20 +1006,77 @@ report() {
       fi
     done
     [ "${#tid[@]}" -eq 0 ] && [ "${#oid[@]}" -eq 0 ] && continue
-    if [ "$first" = 0 ]; then
+    local s_ind="  " skip_blank=0
+    if [ "${SUB_FIRST[$s]+x}" = x ]; then
+      if [ "$first" = 0 ]; then
+        echo ""
+      fi
+      echo "  ${C_GRP}${SUB_FIRST[$s]}${RESET}"
+      echo ""
+      first=0
+      skip_blank=1
+      s_ind="    "
+    elif [ "${SUB_MEMBER[$s]+x}" = x ]; then
+      s_ind="    "
+    fi
+    if [ "$first" = 0 ] && [ "$skip_blank" = 0 ]; then
       echo ""
     fi
     first=0
     if [ "$s" = "system" ]; then
       echo "${C_SKIP}SYSTEM${RESET}"
     else
-      echo "  ${C_GRP}$s${RESET}"
+      echo "${s_ind}${C_GRP}$s${RESET}"
     fi
     local -a ids=()
-    if [ "$s" = "remote" ] || [ "$s" = "system" ]; then
+    if [ "$s" = "system" ]; then
       ids=( "${oid[@]}" "${tid[@]}" )
     else
-      ids=( "${tid[@]}" "${oid[@]}" )
+      local -a all=() order=()
+      for r in "${tid[@]}" "${oid[@]}"; do all+=( "$r" ); done
+      if [ "$s" = "remote" ]; then
+        order=( "${oid[@]}" "${tid[@]}" )
+      else
+        order=( "${tid[@]}" "${oid[@]}" )
+      fi
+      local -A seen=()
+      local r j isp
+      for r in "${order[@]}"; do
+        [ -n "${I_PKEY[$r]}" ] && continue
+        isp=0
+        for j in "${all[@]}"; do
+          [ "$j" = "$r" ] && continue
+          [ "${I_PKEY[$j]}" = "${I_KEY[$r]}" ] && { isp=1; break; }
+        done
+        [ "$isp" = 1 ] && continue
+        ids+=( "$r" ); seen[$r]=1
+      done
+      for r in "${order[@]}"; do
+        [ -n "${I_PKEY[$r]}" ] && continue
+        isp=0
+        for j in "${all[@]}"; do
+          [ "$j" = "$r" ] && continue
+          [ "${I_PKEY[$j]}" = "${I_KEY[$r]}" ] && { isp=1; break; }
+        done
+        [ "$isp" = 0 ] && continue
+        local -a st=()
+        st+=( "$r" )
+        while [ "${#st[@]}" -gt 0 ]; do
+          local cur="${st[0]}"
+          st=( "${st[@]:1}" )
+          ids+=( "$cur" ); seen[$cur]=1
+          for j in "${all[@]}"; do
+            [ "${I_PKEY[$j]}" = "${I_KEY[$cur]}" ] || continue
+            st+=( "$j" )
+          done
+        done
+      done
+      for r in "${all[@]}"; do
+        [ -z "${I_PKEY[$r]}" ] && continue
+        [ -n "${seen[$r]+x}" ] && continue
+        ids+=( "$r" ); seen[$r]=1
+      done
+      unset seen all order r j isp cur st
     fi
     for i in "${ids[@]}"; do
       if [ "$s" = "system" ] && [ "${I_IND[$i]}" = "  " ]; then
