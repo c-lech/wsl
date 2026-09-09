@@ -86,7 +86,6 @@ log_tail() {
 apt_update() {
   step "apt update"
   if ! sudo apt update >> "$LOG_DIR/apt-update.log" 2>&1; then
-    log_tail apt-update.log
     return 1
   fi
 }
@@ -183,7 +182,6 @@ install_packages() {
   fi
 
   step "batch install failed, retrying individually"
-  log_tail apt-install.log
   for entry in "${to_install[@]}"; do
     group="${entry%%|*}"
     pkg="${entry#*|}"
@@ -249,7 +247,6 @@ install_opencode() {
   fi
   step "opencode -> installing"
   if ! curl -fsSL https://opencode.ai/install 2>>"$log" | bash >> "$log" 2>&1; then
-    log_tail opencode.log
     step "opencode -> install script failed, trying tarball"
     mkdir -p "$HOME/.opencode/bin"
     if ! curl -fsL "https://github.com/anomalyco/opencode/releases/latest/download/opencode-linux-x64.tar.gz" \
@@ -274,7 +271,6 @@ install_tmuxai() {
   fi
   step "tmuxai -> installing"
   if ! curl -fsSL https://get.tmuxai.dev 2>>"$log" | bash >> "$log" 2>&1; then
-    log_tail tmuxai.log
     step "tmuxai -> install script failed, trying tarball"
     if ! curl -fsL "https://github.com/alvinunreal/tmuxai/releases/latest/download/tmuxai_Linux_amd64.tar.gz" \
         | sudo tar xz -C /usr/local/bin --strip-components=0 tmuxai >> "$log" 2>&1; then
@@ -301,7 +297,6 @@ install_ollama() {
   else
     step "ollama -> installing"
     if ! curl -fsSL https://ollama.com/install.sh 2>>"$log" | sh >> "$log" 2>&1; then
-      log_tail ollama.log
       step "ollama -> install script failed, trying binary"
       if ! curl -fsL "https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64" \
             -o /tmp/ollama >> "$log" 2>&1 \
@@ -427,9 +422,16 @@ install_golazo() {
   fi
   step "golazo -> installing"
   if ! curl -fsSL https://raw.githubusercontent.com/0xjuanma/golazo/main/scripts/install.sh 2>>"$log" | bash >> "$log" 2>&1; then
-    log_tail golazo.log
-    record "tools:golazo" fail "failed"
-    return 1
+    step "golazo -> install script failed, trying binary"
+    if ! curl -fsL "https://github.com/0xjuanma/golazo/releases/latest/download/golazo-linux-amd64" \
+        -o /tmp/golazo >> "$log" 2>&1 \
+        || ! sudo install -o root -g root -m 755 /tmp/golazo /usr/local/bin/golazo >> "$log" 2>&1; then
+      rm -f /tmp/golazo
+      log_tail golazo.log
+      record "tools:golazo" fail "failed"
+      return 1
+    fi
+    rm -f /tmp/golazo
   fi
   record "tools:golazo" ok "installed"
 }
@@ -868,6 +870,8 @@ run_step() {
   local key="$1" name="$2"
   shift 2
 
+  [ "$VERBOSE" = 1 ] && printf "  %s\n" "$name"
+
   set +e
   "$@"
   local rc=$?
@@ -876,8 +880,6 @@ run_step() {
   if [ "$rc" -ne 0 ] && [ -z "${STATUS[$key]+x}" ]; then
     record "$key" fail "failed (exit $rc)"
   fi
-
-  [ "$VERBOSE" = 1 ] && printf "  %s\n" "$name"
 
   return 0
 }
