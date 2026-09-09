@@ -1186,7 +1186,7 @@ report() {
     echo "  This window will close. Open a new WSL session for Vagrant to work."
     echo ""
     sleep 5
-    wsl.exe --shutdown
+    #wsl.exe --shutdown
   fi
 
   [ "$n_fail" -eq 0 ]
