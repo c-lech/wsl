@@ -1182,11 +1182,7 @@ report() {
 
   if [ "$VAGRANT_RESTART_NEEDED" = 1 ]; then
     echo ""
-    printf "  %sVagrant installed in WSL — restarting in 5 seconds...%s\n" "$C_SECT" "$RESET"
-    echo "  This window will close. Open a new WSL session for Vagrant to work."
-    echo ""
-    sleep 5
-    #wsl.exe --shutdown
+    printf "  %sBefore using Vagrant, please restart WSL!%s\n" "$C_SECT" "$RESET"
   fi
 
   [ "$n_fail" -eq 0 ]
