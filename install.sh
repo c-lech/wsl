@@ -71,7 +71,7 @@ publish() {
 }
 
 get_version() {
-  "$@" --version 2>/dev/null | head -1
+  "$@" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1
 }
 
 log_tail() {
@@ -292,7 +292,7 @@ install_ollama() {
 
   if command -v ollama >/dev/null 2>&1; then
     local ver
-    ver="$(get_version ollama | awk '{print $NF}')"
+    ver="$(get_version ollama)"
     record "tools:ollama:server" skip "already installed ${C_SECT}($ver)${RESET}"
   else
     step "ollama -> installing"
@@ -311,7 +311,7 @@ install_ollama() {
       fi
       rm -f /tmp/ollama
     fi
-    record "tools:ollama:server" ok "installed ${C_SECT}($(get_version ollama | awk '{print $NF}'))${RESET}"
+    record "tools:ollama:server" ok "installed ${C_SECT}($(get_version ollama))${RESET}"
   fi
 
   if model_present "qwen3:8b"; then
@@ -344,7 +344,7 @@ install_vagrant() {
 
   if dpkg -s vagrant >/dev/null 2>&1; then
     local ver
-    ver="$(get_version vagrant | awk '{print $2}')"
+    ver="$(get_version vagrant)"
     record "tools:vagrant" skip "already installed ${C_SECT}($ver)${RESET}"
   else
     local codename
@@ -376,7 +376,7 @@ install_vagrant() {
       record "tools:vagrant" fail "failed"
       return 1
     fi
-    record "tools:vagrant" ok "installed ${C_SECT}($(get_version vagrant | awk '{print $2}'))${RESET}"
+    record "tools:vagrant" ok "installed ${C_SECT}($(get_version vagrant))${RESET}"
     VAGRANT_RESTART_NEEDED=1
   fi
 
