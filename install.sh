@@ -309,7 +309,7 @@ install_ollama() {
       fi
       rm -f /tmp/ollama
     fi
-    record "tools:ollama:server" ok "installed ${C_SECT}($(get_version ollama | grep -oP '\d+\.\d+\.\d+'))${RESET}"
+    record "tools:ollama:server" ok "installed ${C_SECT}($(get_version ollama | awk '{print $NF}'))${RESET}"
   fi
 
   if model_present "qwen3:8b"; then
@@ -541,9 +541,13 @@ install_node() {
     step "node -> installing nvm"
     if ! curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh \
         | bash >> "$log" 2>&1; then
-      log_tail node.log
-      record "tools:nvm" fail "failed"
-      return 1
+      step "nvm -> curl failed, trying git clone"
+      if ! git clone --branch v0.40.7 --depth 1 \
+          https://github.com/nvm-sh/nvm.git "$HOME/.nvm" >> "$log" 2>&1; then
+        log_tail node.log
+        record "tools:nvm" fail "failed"
+        return 1
+      fi
     fi
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
