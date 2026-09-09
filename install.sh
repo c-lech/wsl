@@ -867,10 +867,11 @@ configure_git() {
 }
 
 run_step() {
-  local key="$1" name="$2"
+  local key="$1" name="$2" quiet=""
   shift 2
+  [ "$1" = "--quiet" ] && quiet=1 && shift
 
-  [ "$VERBOSE" = 1 ] && printf "  %s\n" "$name"
+  [ "$VERBOSE" = 1 ] && [ "$quiet" != 1 ] && printf "  %s\n" "$name"
 
   set +e
   "$@"
@@ -1204,18 +1205,19 @@ main() {
 
   run_step "system:mount shared data" "Mounting shared data" mount_data_dir
   run_step "apt:packages" "Installing apt packages" install_packages
-  run_step "tools:fastfetch" "Installing Fastfetch" install_fastfetch
-  run_step "tools:agent" "Installing opencode" install_opencode
-  run_step "tools:tmuxai" "Installing tmuxai" install_tmuxai
-  run_step "tools:ollama" "Installing Ollama" install_ollama
-  run_step "tools:vagrant" "Installing vagrant" install_vagrant
-  run_step "tools:cliamp" "Installing cliamp" install_cliamp
-  run_step "tools:golazo" "Installing golazo" install_golazo
-  run_step "tools:tdfiglet" "Installing tdfiglet" install_tdfiglet
-  run_step "tools:tte" "Installing terminal effects" install_tte
-  run_step "tools:rust" "Installing Rust" install_rust
-  run_step "tools:silicon" "Installing silicon" install_silicon
-  run_step "tools:node" "Installing Node.js" install_node
+  [ "$VERBOSE" = 1 ] && printf "  %s\n" "Installing not apt packages"
+  run_step "tools:fastfetch" "Installing Fastfetch" --quiet install_fastfetch
+  run_step "tools:agent" "Installing opencode" --quiet install_opencode
+  run_step "tools:tmuxai" "Installing tmuxai" --quiet install_tmuxai
+  run_step "tools:ollama" "Installing Ollama" --quiet install_ollama
+  run_step "tools:vagrant" "Installing vagrant" --quiet install_vagrant
+  run_step "tools:cliamp" "Installing cliamp" --quiet install_cliamp
+  run_step "tools:golazo" "Installing golazo" --quiet install_golazo
+  run_step "tools:tdfiglet" "Installing tdfiglet" --quiet install_tdfiglet
+  run_step "tools:tte" "Installing terminal effects" --quiet install_tte
+  run_step "tools:rust" "Installing Rust" --quiet install_rust
+  run_step "tools:silicon" "Installing silicon" --quiet install_silicon
+  run_step "tools:node" "Installing Node.js" --quiet install_node
   run_step "system:set time zone" "Configuring time zone" configure_timezone
   run_step "system:link dot files" "Linking dot files" install_dotfiles
   run_step "tools:tmux-plugins" "Installing tmux plugins" install_tmux_plugins
