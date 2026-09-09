@@ -309,7 +309,7 @@ install_ollama() {
       fi
       rm -f /tmp/ollama
     fi
-    record "tools:ollama:server" ok "installed ${C_SECT}($(get_version ollama | awk '{print $NF}'))${RESET}"
+    record "tools:ollama:server" ok "installed ${C_SECT}($(get_version ollama | grep -oP '\d+\.\d+\.\d+'))${RESET}"
   fi
 
   if model_present "qwen3:8b"; then
