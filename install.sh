@@ -77,9 +77,11 @@ get_version() {
 }
 
 log_tail() {
-  local f="$LOG_DIR/$1"
-  echo "  ! last output of $f:"
-  tail -n 20 "$f" 2>/dev/null | sed 's/^/    /'
+  if [ "$VERBOSE" = 1 ]; then
+    local f="$LOG_DIR/$1"
+    echo "  ! last output of $f:"
+    tail -n 20 "$f" 2>/dev/null | sed 's/^/    /'
+  fi
 }
 
 apt_update() {
@@ -247,7 +249,7 @@ install_opencode() {
     return 0
   fi
   step "opencode -> installing"
-  if ! curl -fsSL https://opencode.ai/install | bash >> "$log" 2>&1; then
+  if ! curl -fsSL https://opencode.ai/install 2>>"$log" | bash >> "$log" 2>&1; then
     log_tail opencode.log
     step "opencode -> install script failed, trying tarball"
     mkdir -p "$HOME/.opencode/bin"
@@ -271,7 +273,7 @@ install_tmuxai() {
     return 0
   fi
   step "tmuxai -> installing"
-  if ! curl -fsSL https://get.tmuxai.dev | bash >> "$log" 2>&1; then
+  if ! curl -fsSL https://get.tmuxai.dev 2>>"$log" | bash >> "$log" 2>&1; then
     log_tail tmuxai.log
     step "tmuxai -> install script failed, trying tarball"
     if ! curl -fsL "https://github.com/alvinunreal/tmuxai/releases/latest/download/tmuxai_Linux_amd64.tar.gz" \
@@ -298,7 +300,7 @@ install_ollama() {
     record "tools:ollama:server" skip "already installed ${C_SECT}($ver)${RESET}"
   else
     step "ollama -> installing"
-    if ! curl -fsSL https://ollama.com/install.sh | sh >> "$log" 2>&1; then
+    if ! curl -fsSL https://ollama.com/install.sh 2>>"$log" | sh >> "$log" 2>&1; then
       log_tail ollama.log
       step "ollama -> install script failed, trying binary"
       if ! curl -fsL "https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64" \
@@ -313,18 +315,6 @@ install_ollama() {
       rm -f /tmp/ollama
     fi
     record "tools:ollama:server" ok "installed ${C_SECT}($(get_version ollama | awk '{print $NF}'))${RESET}"
-  fi
-
-  if command -v zstd >/dev/null 2>&1; then
-    record "tools:ollama:server:zstd" skip "already installed"
-  else
-    step "ollama -> installing zstd"
-    if sudo apt install -y zstd >> "$LOG_DIR/zstd.log" 2>&1; then
-      record "tools:ollama:server:zstd" ok "installed"
-    else
-      record "tools:ollama:server:zstd" fail "failed"
-      log_tail "zstd.log"
-    fi
   fi
 
   if model_present "qwen3:8b"; then
@@ -421,7 +411,7 @@ install_cliamp() {
     return 0
   fi
   step "cliamp -> installing"
-  if ! curl -fsSL https://cliamp.stream/install.sh | sh >> "$log" 2>&1; then
+  if ! curl -fsSL https://cliamp.stream/install.sh 2>>"$log" | sh >> "$log" 2>&1; then
     log_tail cliamp.log
     record "tools:cliamp" fail "failed"
     return 1
@@ -436,7 +426,7 @@ install_golazo() {
     return 0
   fi
   step "golazo -> installing"
-  if ! curl -fsSL https://raw.githubusercontent.com/0xjuanma/golazo/main/scripts/install.sh | bash >> "$log" 2>&1; then
+  if ! curl -fsSL https://raw.githubusercontent.com/0xjuanma/golazo/main/scripts/install.sh 2>>"$log" | bash >> "$log" 2>&1; then
     log_tail golazo.log
     record "tools:golazo" fail "failed"
     return 1
@@ -504,7 +494,7 @@ install_rust() {
     record "tools:rust" skip "already installed ${C_SECT}($ver)${RESET}"
   else
     step "rust -> installing via rustup"
-    if ! curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable >> "$log" 2>&1; then
+    if ! curl -sSf https://sh.rustup.rs 2>>"$log" | sh -s -- -y --profile minimal --default-toolchain stable >> "$log" 2>&1; then
       log_tail rust.log
       record "tools:rust" fail "failed (rustup)"
       return 1
