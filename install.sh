@@ -363,7 +363,7 @@ install_vagrant() {
       return 1
     fi
     record "tools:vagrant" ok "installed ${C_SECT}($(get_version vagrant | awk '{print $2}'))${RESET}"
-    RESTART_NEEDED=1
+    VAGRANT_RESTART_NEEDED=1
   fi
 
   if ! command -v vagrant >/dev/null 2>&1; then
@@ -379,7 +379,7 @@ install_vagrant() {
     step "vagrant plugin virtualbox_WSL2 -> installing"
     if vagrant plugin install virtualbox_WSL2 >> "$log" 2>&1; then
       record "tools:vagrant:virtualbox_WSL2 plugin" ok "installed ${C_SECT}($(vagrant plugin list | grep -i virtualbox_wsl2 | grep -oP '\(\K[^,]+'))${RESET}"
-      RESTART_NEEDED=1
+      VAGRANT_RESTART_NEEDED=1
     else
       log_tail vagrant.log
       record "tools:vagrant:virtualbox_WSL2 plugin" fail "failed"
@@ -699,7 +699,6 @@ install_wslconfig() {
     step "wsl.conf -> linking"
     sudo ln -sfn "$BASE/dotfiles/wsl.conf" /etc/wsl.conf
     record "system:wsl config (on host):/etc/wsl.conf" ok "linked"
-    RESTART_NEEDED=1
   fi
 
   if [ -f "$win_config" ]; then
@@ -709,13 +708,11 @@ install_wslconfig() {
       step "wslconfig -> updating"
       cp "$BASE/dotfiles/wslconfig" "$win_config"
       record "system:wsl config (on host):$win_config" ok "copied"
-      RESTART_NEEDED=1
     fi
   else
     step "wslconfig -> installing"
     cp "$BASE/dotfiles/wslconfig" "$win_config"
     record "system:wsl config (on host):$win_config" ok "copied"
-    RESTART_NEEDED=1
   fi
 
   publish "system:wsl config (on host)"
@@ -835,13 +832,13 @@ configure_git() {
 
   local src="$HOME/projects/infra/git_credentials/git-credentials"
   if [ -f "$src" ]; then
-    if [ ! -f "$HOME/.git-credentials" ] || ! cmp -s "$src" "$HOME/.git-credentials"; then
+    if [ -f "$HOME/.git-credentials" ]; then
+      record "system:config git:git-credentials" skip "already copied"
+    else
       step "git -> copying credentials"
       cp "$src" "$HOME/.git-credentials"
       chmod 600 "$HOME/.git-credentials"
       record "system:config git:git-credentials" ok "copied"
-    else
-      record "system:config git:git-credentials" skip "already copied"
     fi
   else
     record "system:config git:git-credentials" skip "no source credentials"
@@ -1121,7 +1118,12 @@ report() {
 
   echo ""
 
-  if [ "$RESTART_NEEDED" = 1 ]; then
+  if [ "$VAGRANT_RESTART_NEEDED" = 1 ]; then
+    echo ""
+    printf "  %sVagrant installed in WSL — restarting in 5 seconds...%s\n" "$C_SECT" "$RESET"
+    echo "  This window will close. Open a new WSL session for Vagrant to work."
+    echo ""
+    sleep 5
     wsl.exe --shutdown
   fi
 
@@ -1136,7 +1138,7 @@ main() {
     esac
   done
 
-  RESTART_NEEDED=0
+  VAGRANT_RESTART_NEEDED=0
   mkdir -p "$LOG_DIR"
 
   sudo -v
