@@ -28,9 +28,7 @@ declare -A STATUS NOTE IN_ORDER GROUP
 ORDER=()
 
 step() {
-  if [ "$VERBOSE" = 1 ]; then
-    echo "  -> $1"
-  fi
+  :
 }
 
 record() {
@@ -83,6 +81,7 @@ log_tail() {
     tail -n 20 "$f" 2>/dev/null | sed 's/^/    /'
   fi
 }
+
 
 apt_update() {
   step "apt update"
@@ -241,7 +240,7 @@ install_opencode() {
     if [ "$(readlink /usr/local/bin/opencode 2>/dev/null)" = "$HOME/.opencode/bin/opencode" ]; then
       record "tools:agent:opencode" skip "already installed ${C_SECT}($ver)${RESET}"
     else
-      echo "  -> opencode: relinking /usr/local/bin/opencode"
+      step "opencode -> relinking binary"
       sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
       record "tools:agent:opencode" ok "relinked ${C_SECT}($ver)${RESET}"
     fi
@@ -261,6 +260,7 @@ install_opencode() {
       return 1
     fi
   fi
+  step "opencode -> linking binary"
   sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
   record "tools:agent:opencode" ok "installed ${C_SECT}($("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1))${RESET}"
   publish "tools:agent"
@@ -865,15 +865,20 @@ configure_git() {
 }
 
 run_step() {
-  local key="$1"
-  shift
+  local key="$1" name="$2"
+  shift 2
+
   set +e
   "$@"
   local rc=$?
   set -e
+
   if [ "$rc" -ne 0 ] && [ -z "${STATUS[$key]+x}" ]; then
     record "$key" fail "failed (exit $rc)"
   fi
+
+  [ "$VERBOSE" = 1 ] && printf "  %s\n" "$name"
+
   return 0
 }
 
@@ -1195,26 +1200,26 @@ main() {
   SUDO_KEEPALIVE_PID=$!
   trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null' EXIT
 
-  run_step "system:mount shared data" mount_data_dir
-  run_step "apt:packages" install_packages
-  run_step "tools:fastfetch" install_fastfetch
-  run_step "tools:agent" install_opencode
-  run_step "tools:tmuxai" install_tmuxai
-  run_step "tools:ollama" install_ollama
-  run_step "tools:vagrant" install_vagrant
-  run_step "tools:cliamp" install_cliamp
-  run_step "tools:golazo" install_golazo
-  run_step "tools:tdfiglet" install_tdfiglet
-  run_step "tools:tte" install_tte
-  run_step "tools:rust" install_rust
-  run_step "tools:silicon" install_silicon
-  run_step "tools:node" install_node
-  run_step "system:set time zone" configure_timezone
-  run_step "system:link dot files" install_dotfiles
-  run_step "tools:tmux-plugins" install_tmux_plugins
-  run_step "system:config git" configure_git
-  run_step "system:copy ssh keys" install_ssh
-  run_step "system:wsl config (on host)" install_wslconfig
+  run_step "system:mount shared data" "Mounting shared data" mount_data_dir
+  run_step "apt:packages" "Installing apt packages" install_packages
+  run_step "tools:fastfetch" "Installing Fastfetch" install_fastfetch
+  run_step "tools:agent" "Installing opencode" install_opencode
+  run_step "tools:tmuxai" "Installing tmuxai" install_tmuxai
+  run_step "tools:ollama" "Installing Ollama" install_ollama
+  run_step "tools:vagrant" "Installing vagrant" install_vagrant
+  run_step "tools:cliamp" "Installing cliamp" install_cliamp
+  run_step "tools:golazo" "Installing golazo" install_golazo
+  run_step "tools:tdfiglet" "Installing tdfiglet" install_tdfiglet
+  run_step "tools:tte" "Installing terminal effects" install_tte
+  run_step "tools:rust" "Installing Rust" install_rust
+  run_step "tools:silicon" "Installing silicon" install_silicon
+  run_step "tools:node" "Installing Node.js" install_node
+  run_step "system:set time zone" "Configuring time zone" configure_timezone
+  run_step "system:link dot files" "Linking dot files" install_dotfiles
+  run_step "tools:tmux-plugins" "Installing tmux plugins" install_tmux_plugins
+  run_step "system:config git" "Configuring git" configure_git
+  run_step "system:copy ssh keys" "Copying SSH keys" install_ssh
+  run_step "system:wsl config (on host)" "Configuring WSL" install_wslconfig
 
   report
 }
