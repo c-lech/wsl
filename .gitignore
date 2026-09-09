@@ -1,0 +1,27 @@
+# Credentials
+.git-credentials
+git-credentials
+*credentials*
+
+# SSH keys (NOT *.pub — public keys aren't secret)
+id_rsa*
+id_ed25519*
+*.pem
+*.ppk
+*.key
+
+# Env / secrets
+.env
+.env.*
+*.env
+!.env.example
+*.secrets*
+
+# Logs
+*.log
+
+# Local / editor state
+.bash_history
+.zsh_history
+*~
+*.swp
