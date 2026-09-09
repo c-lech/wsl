@@ -304,6 +304,8 @@ install_ollama() {
         rm -f /tmp/ollama
         log_tail ollama.log
         record "tools:ollama:server" fail "failed"
+        record "tools:ollama:qwen3:8b" fail "not installed (ollama missing)"
+        record "tools:ollama:qwen3:8b-16k" fail "not installed (ollama missing)"
         publish "tools:ollama"
         return 1
       fi
@@ -546,6 +548,8 @@ install_node() {
           https://github.com/nvm-sh/nvm.git "$HOME/.nvm" >> "$log" 2>&1; then
         log_tail node.log
         record "tools:nvm" fail "failed"
+        record "tools:node" fail "not installed (nvm missing)"
+        record "tools:cfonts" fail "not installed (node missing)"
         return 1
       fi
     fi
@@ -563,6 +567,7 @@ install_node() {
     if ! nvm install --lts >> "$log" 2>&1; then
       log_tail node.log
       record "tools:node" fail "failed"
+      record "tools:cfonts" fail "not installed (node missing)"
       return 1
     fi
     record "tools:node" ok "installed ${C_SECT}($(node --version))${RESET}"
