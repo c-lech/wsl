@@ -90,6 +90,15 @@ apt_update() {
   fi
 }
 
+apt_key() {
+  local g="$1" p="$2"
+  if [ "$p" = "zstd" ]; then
+    echo "tools:ollama:server:zstd"
+  else
+    echo "apt:$g:$p"
+  fi
+}
+
 install_packages() {
   step "checking packages"
   local packages=(
@@ -122,10 +131,9 @@ install_packages() {
     "Fastfetch util|chafa"
     # TMUX integration
     "TMUX integration|wl-clipboard"
-
-    #pulseaudio yt-dlp alsa-utils
-    #libxml2-dev pkg-config libasound2-dev libssl-dev cmake libfreetype-dev
-    #zstd
+    # Ollama deps
+    # required by ollama server installation
+    "Ollama deps|zstd"
   )
 
   local entry group pkg to_install=() apt_pkgs=()
@@ -134,9 +142,9 @@ install_packages() {
     pkg="${entry#*|}"
     if dpkg -s "$pkg" >/dev/null 2>&1; then
       if [ "$pkg" = "ansible" ]; then
-        record "apt:$group:$pkg" skip "already installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
+        record "$(apt_key "$group" "$pkg")" skip "already installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
       else
-        record "apt:$group:$pkg" skip "already installed"
+        record "$(apt_key "$group" "$pkg")" skip "already installed"
       fi
     else
       to_install+=("$entry")
@@ -150,7 +158,7 @@ install_packages() {
 
   if ! apt_update; then
     for entry in "${to_install[@]}"; do
-      record "apt:${entry%%|*}:${entry#*|}" fail "failed (apt update)"
+      record "$(apt_key "${entry%%|*}" "${entry#*|}")" fail "failed (apt update)"
     done
     return 0
   fi
@@ -165,9 +173,9 @@ install_packages() {
       group="${entry%%|*}"
       pkg="${entry#*|}"
       if [ "$pkg" = "ansible" ]; then
-        record "apt:$group:$pkg" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
+        record "$(apt_key "$group" "$pkg")" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
       else
-        record "apt:$group:$pkg" ok "installed"
+        record "$(apt_key "$group" "$pkg")" ok "installed"
       fi
     done
     return 0
@@ -180,18 +188,18 @@ install_packages() {
     pkg="${entry#*|}"
     if dpkg -s "$pkg" >/dev/null 2>&1; then
       if [ "$pkg" = "ansible" ]; then
-        record "apt:$group:$pkg" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
+        record "$(apt_key "$group" "$pkg")" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
       else
-        record "apt:$group:$pkg" ok "installed"
+        record "$(apt_key "$group" "$pkg")" ok "installed"
       fi
     elif sudo apt install -y "$pkg" >> "$LOG_DIR/apt-$pkg.log" 2>&1; then
       if [ "$pkg" = "ansible" ]; then
-        record "apt:$group:$pkg" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
+        record "$(apt_key "$group" "$pkg")" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
       else
-        record "apt:$group:$pkg" ok "installed"
+        record "$(apt_key "$group" "$pkg")" ok "installed"
       fi
     else
-      record "apt:$group:$pkg" fail "failed"
+      record "$(apt_key "$group" "$pkg")" fail "failed"
       log_tail "apt-$pkg.log"
     fi
   done
@@ -224,16 +232,18 @@ install_fastfetch() {
 
 install_opencode() {
   local log="$LOG_DIR/opencode.log"
+  record "tools:agent" skip "pending"
   if [ -x "$HOME/.opencode/bin/opencode" ]; then
     local ver
     ver="$("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1)"
     if [ "$(readlink /usr/local/bin/opencode 2>/dev/null)" = "$HOME/.opencode/bin/opencode" ]; then
-      record "tools:opencode" skip "already installed ${C_SECT}($ver)${RESET}"
+      record "tools:agent:opencode" skip "already installed ${C_SECT}($ver)${RESET}"
     else
       echo "  -> opencode: relinking /usr/local/bin/opencode"
       sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
-      record "tools:opencode" ok "relinked ${C_SECT}($ver)${RESET}"
+      record "tools:agent:opencode" ok "relinked ${C_SECT}($ver)${RESET}"
     fi
+    publish "tools:agent"
     return 0
   fi
   step "opencode -> installing"
@@ -244,12 +254,14 @@ install_opencode() {
     if ! curl -fsL "https://github.com/anomalyco/opencode/releases/latest/download/opencode-linux-x64.tar.gz" \
         | tar xz -C "$HOME/.opencode/bin" >> "$log" 2>&1; then
       log_tail opencode.log
-      record "tools:opencode" fail "failed"
+      record "tools:agent:opencode" fail "failed"
+      publish "tools:agent"
       return 1
     fi
   fi
   sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
-  record "tools:opencode" ok "installed ${C_SECT}($("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1))${RESET}"
+  record "tools:agent:opencode" ok "installed ${C_SECT}($("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1))${RESET}"
+  publish "tools:agent"
 }
 
 install_tmuxai() {
@@ -278,11 +290,12 @@ model_present() {
 
 install_ollama() {
   local log="$LOG_DIR/ollama.log"
+  record "tools:ollama" skip "pending"
 
   if command -v ollama >/dev/null 2>&1; then
     local ver
-    ver="$(get_version ollama | awk '{print $3}')"
-    record "tools:ollama" skip "already installed ${C_SECT}($ver)${RESET}"
+    ver="$(get_version ollama | awk '{print $NF}')"
+    record "tools:ollama:server" skip "already installed ${C_SECT}($ver)${RESET}"
   else
     step "ollama -> installing"
     if ! curl -fsSL https://ollama.com/install.sh | sh >> "$log" 2>&1; then
@@ -293,36 +306,50 @@ install_ollama() {
           || ! sudo install -o root -g root -m 755 /tmp/ollama /usr/local/bin/ollama >> "$log" 2>&1; then
         rm -f /tmp/ollama
         log_tail ollama.log
-        record "tools:ollama" fail "failed"
+        record "tools:ollama:server" fail "failed"
+        publish "tools:ollama"
         return 1
       fi
       rm -f /tmp/ollama
     fi
-    record "tools:ollama" ok "installed ${C_SECT}($(get_version ollama | awk '{print $3}'))${RESET}"
+    record "tools:ollama:server" ok "installed ${C_SECT}($(get_version ollama | awk '{print $NF}'))${RESET}"
+  fi
+
+  if command -v zstd >/dev/null 2>&1; then
+    record "tools:ollama:server:zstd" skip "already installed"
+  else
+    step "ollama -> installing zstd"
+    if sudo apt install -y zstd >> "$LOG_DIR/zstd.log" 2>&1; then
+      record "tools:ollama:server:zstd" ok "installed"
+    else
+      record "tools:ollama:server:zstd" fail "failed"
+      log_tail "zstd.log"
+    fi
   fi
 
   if model_present "qwen3:8b"; then
-    record "tools:ollama:model qwen3:8b" skip "already pulled"
+    record "tools:ollama:qwen3:8b" skip "already pulled"
   else
     step "ollama -> pulling qwen3:8b"
     if ollama pull qwen3:8b >> "$log" 2>&1; then
-      record "tools:ollama:model qwen3:8b" ok "pulled"
+      record "tools:ollama:qwen3:8b" ok "pulled"
     else
-      record "tools:ollama:model qwen3:8b" fail "pull failed"
+      record "tools:ollama:qwen3:8b" fail "pull failed"
     fi
   fi
 
   if model_present "qwen3:8b-16k"; then
-    record "tools:ollama:model qwen3:8b-16k" skip "already created"
+    record "tools:ollama:qwen3:8b-16k" skip "already created"
   else
     step "ollama -> creating qwen3:8b-16k"
     printf 'FROM qwen3:8b\nPARAMETER num_ctx 16384\n' > /tmp/Modelfile-qwen3-16k
     if ollama create qwen3:8b-16k -f /tmp/Modelfile-qwen3-16k >> "$log" 2>&1; then
-      record "tools:ollama:model qwen3:8b-16k" ok "created"
+      record "tools:ollama:qwen3:8b-16k" ok "created"
     else
-      record "tools:ollama:model qwen3:8b-16k" fail "create failed"
+      record "tools:ollama:qwen3:8b-16k" fail "create failed"
     fi
   fi
+  publish "tools:ollama"
 }
 
 install_vagrant() {
@@ -876,7 +903,7 @@ report() {
     ["files"]="apt:Files"
     ["parse"]="apt:Parse"
     ["render"]="tools:silicon"
-    ["AI"]="tools:opencode;tools:ollama"
+    ["AI"]="tools:agent;tools:ollama"
     ["MISC"]="tools:golazo;tools:cliamp;apt:Misc:cmatrix;apt:Cliamp deps"
     ["tmux"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
     ["fastfetch"]="tools:fastfetch;apt:Fastfetch util"
@@ -937,14 +964,24 @@ report() {
       done
       unset vk t
     fi
-    local name ind="    " bucket=0
+    local name ind="    " bucket=0 gparent=""
     if [ -n "$parent" ]; then
+      local g
+      for g in "${ORDER[@]}"; do
+        if [ "$g" != "$parent" ] && [ "$g" != "$k" ] && [[ "$parent" == "$g:"* ]] && [ "${#g}" -gt "${#gparent}" ]; then
+          gparent="$g"
+        fi
+      done
       if [ -n "$vp" ]; then
         name="${k#"$vp:"}"
       else
         name="${k#"$parent:"}"
       fi
-      ind="      "
+      if [ -n "$gparent" ]; then
+        ind="        "
+      else
+        ind="      "
+      fi
     else
       if [ "$k" = "$pref" ]; then
         name="${k##*:}"
@@ -971,7 +1008,16 @@ report() {
       "system:copy ssh keys:id_ed25519"|\
       "system:copy ssh keys:id_ed25519.pub") col="$C_FAIL";;
     esac
-    if [ "$bucket" = 1 ] || [ "$sec" = "system" ]; then
+    case "$k" in
+      "tools:ollama:server") name="ollama server";;
+    esac
+    if [ "$sec" = "AI" ]; then
+      case "$k" in
+        "tools:agent"|"tools:ollama")           col="$C_GRP";;
+        "tools:agent:opencode"|"tools:ollama:server") col="$C_SECT";;
+        *)                                        col="";;
+      esac
+    elif [ "$bucket" = 1 ] || [ "$sec" = "system" ]; then
       if [ "$bucket" = 1 ]; then
         [ -z "$col" ] && col="$C_SECT"
       else
@@ -1035,6 +1081,7 @@ report() {
       echo "${C_SKIP}SYSTEM${RESET}"
     elif [ "$s" = "AI" ]; then
       echo "  ${C_SKIP}AI${RESET}"
+      echo ""
     elif [ "$s" = "MISC" ]; then
       echo "  ${C_SKIP}MISC${RESET}"
     else
@@ -1077,9 +1124,15 @@ report() {
           local cur="${st[0]}"
           st=( "${st[@]:1}" )
           ids+=( "$cur" ); seen[$cur]=1
+          local -a ch=()
+          local ci
           for j in "${all[@]}"; do
             [ "${I_PKEY[$j]}" = "${I_KEY[$cur]}" ] || continue
-            st+=( "$j" )
+            [ -n "${seen[$j]+x}" ] && continue
+            ch+=( "$j" )
+          done
+          for (( ci=${#ch[@]}-1; ci>=0; ci-- )); do
+            st=( "${ch[$ci]}" "${st[@]}" )
           done
         done
       done
@@ -1092,6 +1145,8 @@ report() {
     fi
     for i in "${ids[@]}"; do
       if [ "$s" = "system" ] && [ "${I_IND[$i]}" = "  " ]; then
+        echo ""
+      elif [ "$s" = "AI" ] && [ "${I_KEY[$i]}" = "tools:ollama" ]; then
         echo ""
       fi
       local nm="${I_IND[$i]}${I_NAME[$i]}"
@@ -1142,13 +1197,20 @@ main() {
   mkdir -p "$LOG_DIR"
 
   sudo -v
+  # keep sudo credentials fresh for the entire run (long steps exceed the 15-min window)
+  while true; do
+    sudo -n true >/dev/null 2>&1 || exit 1
+    sleep 60
+  done &
+  SUDO_KEEPALIVE_PID=$!
+  trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null' EXIT
 
   run_step "system:mount shared data" mount_data_dir
   run_step "apt:packages" install_packages
   run_step "tools:fastfetch" install_fastfetch
-  run_step "tools:opencode" install_opencode
+  run_step "tools:agent" install_opencode
   run_step "tools:tmuxai" install_tmuxai
-  #run_step "tools:ollama" install_ollama
+  run_step "tools:ollama" install_ollama
   run_step "tools:vagrant" install_vagrant
   run_step "tools:cliamp" install_cliamp
   run_step "tools:golazo" install_golazo
