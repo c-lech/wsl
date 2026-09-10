@@ -477,6 +477,7 @@ install_tdfiglet() {
 
 install_tte() {
   local log="$LOG_DIR/tte.log"
+  [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH"
   if command -v tte >/dev/null 2>&1; then
     record "tools:tte" skip "already installed"
     return 0
@@ -492,6 +493,7 @@ install_tte() {
 
 install_rust() {
   local log="$LOG_DIR/rust.log"
+  [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
   if command -v cargo >/dev/null 2>&1; then
     local ver
     ver="$(cargo --version 2>/dev/null | awk '{print $2}')"
