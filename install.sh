@@ -1244,10 +1244,17 @@ main() {
 
   sudo -v
   # keep sudo credentials fresh for the entire run (long steps exceed the 15-min window)
-  while true; do
-    sudo -n true >/dev/null 2>&1 || exit 1
-    sleep 60
-  done &
+  (
+    trap '' HUP
+    sleep 30
+    while true; do
+      if ! sudo -n true >/dev/null 2>&1; then
+        sleep 5
+        continue
+      fi
+      sleep 60
+    done
+  ) &
   SUDO_KEEPALIVE_PID=$!
   trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null' EXIT
 
