@@ -508,17 +508,16 @@ install_rust() {
     [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
     record "tools:rust" ok "installed ${C_SECT}($(cargo --version 2>/dev/null | awk '{print $2}'))${RESET}"
   fi
-  [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
   command -v cargo >/dev/null 2>&1 || record "tools:rust" fail "cargo not on PATH after install"
 }
 
 install_silicon() {
   local log="$LOG_DIR/silicon.log"
+  [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
   if command -v silicon >/dev/null 2>&1; then
     record "tools:silicon" skip "already installed"
     return 0
   fi
-  [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
   if ! command -v cargo >/dev/null 2>&1; then
     record "tools:silicon" fail "cargo missing"
     return 1
