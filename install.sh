@@ -1182,7 +1182,7 @@ report() {
 
   if [ "$VAGRANT_RESTART_NEEDED" = 1 ]; then
     echo ""
-    printf "  %sBefore using Vagrant, please restart WSL!%s\n" "$C_SECT" "$RESET"
+    cfonts '... Restart WSL before using vagrant!' -c white -b red -f tiny
   fi
 
   [ "$n_fail" -eq 0 ]
