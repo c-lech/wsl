@@ -1175,10 +1175,23 @@ report() {
     done
   done
 
-  printf "\n%s  %s%d ok%s | %s%d skip%s | %s%d failed%s\n" \
-    "$C_GRP" "$C_OK" "$n_ok" "$RESET" "$C_SKIP" "$n_skip" "$RESET" "$C_FAIL" "$n_fail" "$RESET"
+  local elapsed=$SECONDS
+  local mins=$(( elapsed / 60 ))
+  local secs=$(( elapsed % 60 ))
 
   echo ""
+  echo "${C_SKIP}SUMMARY${RESET}"
+  echo ""
+  printf "  %s%d ok%s | %s%d skip%s | %s%d failed%s   %s%dm %ds%s\n" \
+    "$C_OK" "$n_ok" "$RESET" "$C_SKIP" "$n_skip" "$RESET" "$C_FAIL" "$n_fail" "$RESET" \
+    "$C_WHITE" "$mins" "$secs" "$RESET"
+  echo ""
+
+  if [ "$n_fail" -eq 0 ]; then
+    printf "  \033[1;32mALL PASSED\033[0m\n"
+  else
+    printf "  \033[1;31m%d FAILED\033[0m\n" "$n_fail"
+  fi
 
   if [ "$VAGRANT_RESTART_NEEDED" = 1 ]; then
     echo ""
@@ -1197,6 +1210,7 @@ main() {
   done
 
   VAGRANT_RESTART_NEEDED=0
+  SECONDS=0
   mkdir -p "$LOG_DIR"
 
   sudo -v
@@ -1214,7 +1228,7 @@ main() {
   run_step "tools:fastfetch" "Installing Fastfetch" --quiet install_fastfetch
   run_step "tools:agent" "Installing opencode" --quiet install_opencode
   run_step "tools:tmuxai" "Installing tmuxai" --quiet install_tmuxai
-  run_step "tools:ollama" "Installing Ollama" --quiet install_ollama
+  #run_step "tools:ollama" "Installing Ollama" --quiet install_ollama
   run_step "tools:vagrant" "Installing vagrant" --quiet install_vagrant
   run_step "tools:cliamp" "Installing cliamp" --quiet install_cliamp
   run_step "tools:golazo" "Installing golazo" --quiet install_golazo
