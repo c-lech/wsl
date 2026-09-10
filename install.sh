@@ -946,12 +946,12 @@ report() {
     ["runtime"]="tools:ollama"
     ["models"]="models"
     ["MISC"]="tools:golazo;tools:cliamp;apt:Misc:cmatrix;apt:Cliamp deps"
-    ["tmux"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
-    ["fastfetch"]="tools:fastfetch;apt:Fastfetch util"
-    ["ascii"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet"
+    ["multiplexer"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
+    ["system-info"]="tools:fastfetch;apt:Fastfetch util"
+    ["text-art"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet"
     ["system"]="system"
   )
-  local sections=(python nodejs rust CPU disk networking hardware provisioning configuration automation files parse render agent runtime models tmux fastfetch ascii MISC system)
+  local sections=(python nodejs rust CPU disk networking hardware provisioning configuration automation files parse render agent runtime models multiplexer system-info text-art MISC system)
 
   local -A SUB_MEMBER=(
     [python]=dev [nodejs]=dev [rust]=dev
@@ -959,7 +959,7 @@ report() {
     [provisioning]=infra [configuration]=infra [automation]=infra
     [agent]=ai [runtime]=ai [models]=ai
     [files]=tools [parse]=tools [render]=tools
-    [tmux]=looks [fastfetch]=looks [ascii]=looks
+    [multiplexer]=looks [system-info]=looks [text-art]=looks
   )
   local -A SUB_FIRST=(
     [python]="DEV ENVIRONMENTS"
@@ -967,10 +967,10 @@ report() {
     [provisioning]="INFRA"
     [agent]="AI"
     [files]="TOOLS"
-    [tmux]="TERMINAL & LOOKS"
+    [multiplexer]="TERMINAL"
   )
 
-  local -A VPARENT=( ["apt:Cliamp deps"]="tools:cliamp" )
+  local -A VPARENT=( ["apt:Cliamp deps"]="tools:cliamp" ["apt:Fastfetch util"]="tools:fastfetch" )
 
   local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT I_GRP I_KEY I_PKEY
   for k in "${ORDER[@]}"; do
