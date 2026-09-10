@@ -1194,8 +1194,9 @@ report() {
   fi
 
   if [ "$VAGRANT_RESTART_NEEDED" = 1 ]; then
-    echo ""
     cfonts '... Restart WSL before using vagrant!' -c white -b red -f tiny
+  else
+    echo ""
   fi
 
   [ "$n_fail" -eq 0 ]
