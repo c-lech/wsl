@@ -112,8 +112,8 @@ install_packages() {
     "Networking|snmp" "Networking|socat" "Networking|gping"
     # Hardware
     "Hardware|lm-sensors" "Hardware|smartmontools" "Hardware|nvtop"
-    # Remote
-    "Remote|ansible" "Remote|sshpass"
+    # Remote / Automation
+    "Remote|ansible" "Automation|sshpass"
     # Files
     "Files|fzf" "Files|mc"
     # Parse
@@ -231,7 +231,6 @@ install_fastfetch() {
 
 install_opencode() {
   local log="$LOG_DIR/opencode.log"
-  record "tools:agent" skip "pending"
   if [ -x "$HOME/.opencode/bin/opencode" ]; then
     local ver
     ver="$("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1)"
@@ -242,7 +241,6 @@ install_opencode() {
       sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
       record "tools:agent:opencode" ok "relinked ${C_SECT}($ver)${RESET}"
     fi
-    publish "tools:agent"
     return 0
   fi
   step "opencode -> installing"
@@ -253,14 +251,12 @@ install_opencode() {
         | tar xz -C "$HOME/.opencode/bin" >> "$log" 2>&1; then
       log_tail opencode.log
       record "tools:agent:opencode" fail "failed"
-      publish "tools:agent"
       return 1
     fi
   fi
   step "opencode -> linking binary"
   sudo ln -sfn "$HOME/.opencode/bin/opencode" /usr/local/bin/opencode
   record "tools:agent:opencode" ok "installed ${C_SECT}($("$HOME/.opencode/bin/opencode" --version 2>/dev/null | head -1))${RESET}"
-  publish "tools:agent"
 }
 
 install_tmuxai() {
@@ -288,7 +284,6 @@ model_present() {
 
 install_ollama() {
   local log="$LOG_DIR/ollama.log"
-  record "tools:ollama" skip "pending"
 
   if command -v ollama >/dev/null 2>&1; then
     local ver
@@ -304,9 +299,8 @@ install_ollama() {
         rm -f /tmp/ollama
         log_tail ollama.log
         record "tools:ollama:server" fail "failed"
-        record "tools:ollama:qwen3:8b" fail "not installed (ollama missing)"
-        record "tools:ollama:qwen3:8b-16k" fail "not installed (ollama missing)"
-        publish "tools:ollama"
+        record "models:qwen3:8b" fail "not installed (ollama missing)"
+        record "models:qwen3:8b-16k" fail "not installed (ollama missing)"
         return 1
       fi
       rm -f /tmp/ollama
@@ -315,28 +309,27 @@ install_ollama() {
   fi
 
   if model_present "qwen3:8b"; then
-    record "tools:ollama:qwen3:8b" skip "already pulled"
+    record "models:qwen3:8b" skip "already pulled"
   else
     step "ollama -> pulling qwen3:8b"
     if ollama pull qwen3:8b >> "$log" 2>&1; then
-      record "tools:ollama:qwen3:8b" ok "pulled"
+      record "models:qwen3:8b" ok "pulled"
     else
-      record "tools:ollama:qwen3:8b" fail "pull failed"
+      record "models:qwen3:8b" fail "pull failed"
     fi
   fi
 
   if model_present "qwen3:8b-16k"; then
-    record "tools:ollama:qwen3:8b-16k" skip "already created"
+    record "models:qwen3:8b-16k" skip "already created"
   else
     step "ollama -> creating qwen3:8b-16k"
     printf 'FROM qwen3:8b\nPARAMETER num_ctx 16384\n' > /tmp/Modelfile-qwen3-16k
     if ollama create qwen3:8b-16k -f /tmp/Modelfile-qwen3-16k >> "$log" 2>&1; then
-      record "tools:ollama:qwen3:8b-16k" ok "created"
+      record "models:qwen3:8b-16k" ok "created"
     else
-      record "tools:ollama:qwen3:8b-16k" fail "create failed"
+      record "models:qwen3:8b-16k" fail "create failed"
     fi
   fi
-  publish "tools:ollama"
 }
 
 install_vagrant() {
@@ -529,6 +522,42 @@ install_silicon() {
     return 1
   fi
   record "tools:silicon" ok "installed"
+}
+
+install_watchexec() {
+  local log="$LOG_DIR/watchexec.log"
+  [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+  if command -v watchexec >/dev/null 2>&1; then
+    record "tools:watchexec" skip "already installed"
+    return 0
+  fi
+  if ! command -v cargo >/dev/null 2>&1; then
+    record "tools:watchexec" fail "cargo missing"
+    return 1
+  fi
+  step "watchexec -> cargo install (this may take a while)"
+  if ! cargo install watchexec-cli >> "$log" 2>&1; then
+    log_tail watchexec.log
+    step "watchexec -> cargo failed, trying GitHub binary"
+    local ver url tmp
+    ver="$(curl -fsSL https://api.github.com/repos/watchexec/watchexec/releases/latest 2>>"$log" | grep -oP '"tag_name": "\K[^"]+')"
+    if [ -z "$ver" ]; then
+      record "tools:watchexec" fail "failed"
+      return 1
+    fi
+    url="https://github.com/watchexec/watchexec/releases/download/${ver}/watchexec-${ver}-x86_64-unknown-linux-gnu.tar.xz"
+    tmp="$(mktemp -d)"
+    if ! curl -fsSL "$url" -o "$tmp/watchexec.tar.xz" >> "$log" 2>&1 \
+      || ! tar -xJf "$tmp/watchexec.tar.xz" -C "$tmp" >> "$log" 2>&1 \
+      || ! sudo install -o root -g root -m 755 "$tmp/watchexec-${ver}-x86_64-unknown-linux-gnu/watchexec" /usr/local/bin/watchexec >> "$log" 2>&1; then
+      rm -rf "$tmp"
+      log_tail watchexec.log
+      record "tools:watchexec" fail "failed"
+      return 1
+    fi
+    rm -rf "$tmp"
+  fi
+  record "tools:watchexec" ok "installed"
 }
 
 install_node() {
@@ -907,30 +936,36 @@ report() {
     ["disk"]="apt:Disk"
     ["networking"]="apt:Networking"
     ["hardware"]="apt:Hardware"
-    ["remote"]="apt:Remote;tools:vagrant"
+    ["provisioning"]="tools:vagrant"
+    ["configuration"]="apt:Remote"
+    ["automation"]="apt:Automation;tools:watchexec"
     ["files"]="apt:Files"
     ["parse"]="apt:Parse"
     ["render"]="tools:silicon"
-    ["AI"]="tools:agent;tools:ollama"
+    ["agent"]="tools:agent"
+    ["runtime"]="tools:ollama"
+    ["models"]="models"
     ["MISC"]="tools:golazo;tools:cliamp;apt:Misc:cmatrix;apt:Cliamp deps"
     ["tmux"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
     ["fastfetch"]="tools:fastfetch;apt:Fastfetch util"
     ["ascii"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet"
     ["system"]="system"
   )
-  local sections=(python nodejs rust CPU disk networking hardware remote files parse render AI tmux fastfetch ascii MISC system)
+  local sections=(python nodejs rust CPU disk networking hardware provisioning configuration automation files parse render agent runtime models tmux fastfetch ascii MISC system)
 
   local -A SUB_MEMBER=(
     [python]=dev [nodejs]=dev [rust]=dev
     [CPU]=mon [disk]=mon [networking]=mon [hardware]=mon
-    [remote]=infra
+    [provisioning]=infra [configuration]=infra [automation]=infra
+    [agent]=ai [runtime]=ai [models]=ai
     [files]=tools [parse]=tools [render]=tools
     [tmux]=looks [fastfetch]=looks [ascii]=looks
   )
   local -A SUB_FIRST=(
     [python]="DEV ENVIRONMENTS"
     [CPU]="MONITORING"
-    [remote]="INFRA"
+    [provisioning]="INFRA"
+    [agent]="AI"
     [files]="TOOLS"
     [tmux]="TERMINAL & LOOKS"
   )
@@ -1000,6 +1035,7 @@ report() {
     case "$k" in
       "system:config git")           name="configure git";;
       "system:wsl config (on host)") name="configure wsl";;
+      "tools:ollama:server")         name="ollama server";;
     esac
     [[ "$pref" == tools:* ]] && bucket=1
     if [ "$sec" = "system" ]; then
@@ -1016,13 +1052,9 @@ report() {
       "system:copy ssh keys:id_ed25519"|\
       "system:copy ssh keys:id_ed25519.pub") col="$C_FAIL";;
     esac
-    case "$k" in
-      "tools:ollama:server") name="ollama server";;
-    esac
-    if [ "$sec" = "AI" ]; then
-      case "$k" in
-        "tools:agent"|"tools:ollama")           col="$C_GRP";;
-        "tools:agent:opencode"|"tools:ollama:server") col="$C_SECT";;
+    if [[ "$sec" =~ ^(agent|runtime|models)$ ]]; then
+case "$k" in
+      "tools:agent:opencode"|"tools:ollama:server") col="$C_SECT";;
         *)                                        col="";;
       esac
     elif [ "$bucket" = 1 ] || [ "$sec" = "system" ]; then
@@ -1087,9 +1119,6 @@ report() {
     first=0
     if [ "$s" = "system" ]; then
       echo "${C_SKIP}SYSTEM${RESET}"
-    elif [ "$s" = "AI" ]; then
-      echo "  ${C_SKIP}AI${RESET}"
-      echo ""
     elif [ "$s" = "MISC" ]; then
       echo "  ${C_SKIP}MISC${RESET}"
     else
@@ -1101,7 +1130,7 @@ report() {
     else
       local -a all=() order=()
       for r in "${tid[@]}" "${oid[@]}"; do all+=( "$r" ); done
-      if [ "$s" = "remote" ]; then
+      if [ "$s" = "automation" ]; then
         order=( "${oid[@]}" "${tid[@]}" )
       else
         order=( "${tid[@]}" "${oid[@]}" )
@@ -1153,8 +1182,6 @@ report() {
     fi
     for i in "${ids[@]}"; do
       if [ "$s" = "system" ] && [ "${I_IND[$i]}" = "  " ]; then
-        echo ""
-      elif [ "$s" = "AI" ] && [ "${I_KEY[$i]}" = "tools:ollama" ]; then
         echo ""
       fi
       local nm="${I_IND[$i]}${I_NAME[$i]}"
@@ -1238,6 +1265,7 @@ main() {
   run_step "tools:tte" "Installing terminal effects" --quiet install_tte
   run_step "tools:rust" "Installing Rust" --quiet install_rust
   run_step "tools:silicon" "Installing silicon" --quiet install_silicon
+  run_step "tools:watchexec" "Installing watchexec" --quiet install_watchexec
   run_step "tools:node" "Installing Node.js" --quiet install_node
   run_step "system:set time zone" "Configuring time zone" configure_timezone
   run_step "system:link dot files" "Linking dot files" install_dotfiles
