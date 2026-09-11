@@ -1306,7 +1306,7 @@ main() {
   run_step "tools:fastfetch" "Installing Fastfetch" --quiet install_fastfetch
   run_step "tools:agent" "Installing opencode" --quiet install_opencode
   run_step "tools:tmuxai" "Installing tmuxai" --quiet install_tmuxai
-  run_step "tools:ollama" "Installing Ollama" --quiet install_ollama
+  #run_step "tools:ollama" "Installing Ollama" --quiet install_ollama
   run_step "tools:vagrant" "Installing vagrant" --quiet install_vagrant
   run_step "tools:cliamp" "Installing cliamp" --quiet install_cliamp
   run_step "tools:golazo" "Installing golazo" --quiet install_golazo
