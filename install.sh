@@ -978,9 +978,9 @@ report() {
     ["networking"]="apt:Networking"
     ["hardware"]="apt:Hardware"
     ["log analysis"]="apt:Log Analysis;tools:gonzo"
-    ["provisioning"]="tools:vagrant"
-    ["configuration"]="apt:Remote"
-    ["automation"]="apt:Automation;tools:watchexec"
+    ["provision"]="tools:vagrant"
+    ["configure"]="apt:Remote"
+    ["automate"]="apt:Automation;tools:watchexec"
     ["files"]="apt:Files"
     ["parse"]="apt:Parse"
     ["render"]="tools:silicon"
@@ -993,12 +993,12 @@ report() {
     ["text-art"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet"
     ["system"]="system"
   )
-  local sections=(python nodejs rust CPU disk networking hardware "log analysis" provisioning configuration automation files parse render agent runtime models multiplexer system-info text-art MISC system)
+  local sections=(provision configure automate CPU disk networking hardware "log analysis" python nodejs rust agent runtime models files parse render multiplexer system-info text-art MISC system)
 
   local -A SUB_MEMBER=(
     [python]=dev [nodejs]=dev [rust]=dev
     [CPU]=mon [disk]=mon [networking]=mon [hardware]=mon ["log analysis"]=mon
-    [provisioning]=infra [configuration]=infra [automation]=infra
+    [provision]=infra [configure]=infra [automate]=infra
     [agent]=ai [runtime]=ai [models]=ai
     [files]=tools [parse]=tools [render]=tools
     [multiplexer]=looks [system-info]=looks [text-art]=looks
@@ -1006,9 +1006,9 @@ report() {
   local -A SUB_FIRST=(
     [python]="DEV ENVIRONMENTS"
     [CPU]="OBSERVABILITY"
-    [provisioning]="DEVOPS"
+    [provision]="DEVOPS"
     [agent]="AI"
-    [files]="TOOLS"
+    [files]="UTIL"
     [multiplexer]="TERMINAL"
   )
 
@@ -1172,7 +1172,7 @@ case "$k" in
     else
       local -a all=() order=()
       for r in "${tid[@]}" "${oid[@]}"; do all+=( "$r" ); done
-      if [ "$s" = "automation" ]; then
+      if [ "$s" = "automate" ]; then
         order=( "${oid[@]}" "${tid[@]}" )
       else
         order=( "${tid[@]}" "${oid[@]}" )
