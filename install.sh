@@ -964,7 +964,7 @@ report() {
   local -A SUB_FIRST=(
     [python]="DEV ENVIRONMENTS"
     [CPU]="MONITORING"
-    [provisioning]="INFRA"
+    [provisioning]="DEVOPS"
     [agent]="AI"
     [files]="TOOLS"
     [multiplexer]="TERMINAL"
@@ -1185,15 +1185,15 @@ case "$k" in
         echo ""
       fi
       local nm="${I_IND[$i]}${I_NAME[$i]}"
+      if [ "${I_GRP[$i]}" = 1 ]; then
+        printf "%s%s%s\n" "${I_COL[$i]}" "$nm" "$RESET"
+        continue
+      fi
       printf "%s%s%s" "${I_COL[$i]}" "$nm" "$RESET"
       local pad=$(( W - ${#nm} )) j
       for (( j=0; j<pad; j++ )); do
         printf "."
       done
-      if [ "${I_GRP[$i]}" = 1 ]; then
-        printf "\n"
-        continue
-      fi
       case "${I_CLS[$i]}" in
         ok)   printf "  %s[ok]%s   %s\n"   "$C_OK"   "$RESET" "${I_LBL[$i]}";   n_ok=$(( n_ok + 1 ));;
         skip) printf "  %s[skip]%s %s\n"  "$C_SKIP" "$RESET" "${I_LBL[$i]}";   n_skip=$(( n_skip + 1 ));;
