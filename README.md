@@ -55,7 +55,7 @@ keeps running past individual failures, and verbose command output (apt, curl in
 etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fails. Use
 `./install.sh -v` to watch each step live. It exits 0 when nothing failed. It:
 
-- installs required packages (`btop`, `htop`, `glances`, `tree`, `ncdu`, `iotop`, `sysstat`, `mtr`, `nmap`, `traceroute`, `dnsutils`, `whois`, `telnet`, `iftop`, `net-tools`, `snmp`, `socat`, `gping`, `lm-sensors`, `smartmontools`, `nvtop`, `ansible`, `sshpass`, `fzf`, `mc`, `jq`, `yq`, `figlet`, `cmatrix`, `python3-pip`, `pipx`, `chafa`, `wl-clipboard`, `ffmpeg`, `libasound2-plugins`, `pulseaudio-utils`, and the `cargo` build deps `pkg-config`, `libfontconfig1-dev`, `libfreetype-dev`, `libxcb-composite0-dev`, `libharfbuzz-dev`, `libexpat1-dev`)
+- installs required packages (`btop`, `htop`, `glances`, `tree`, `ncdu`, `iotop`, `sysstat`, `mtr`, `nmap`, `traceroute`, `dnsutils`, `whois`, `telnet`, `iftop`, `net-tools`, `snmp`, `socat`, `gping`, `lm-sensors`, `smartmontools`, `nvtop`, `lnav`, `ansible`, `sshpass`, `fzf`, `mc`, `jq`, `yq`, `figlet`, `cmatrix`, `python3-pip`, `pipx`, `chafa`, `wl-clipboard`, `ffmpeg`, `libasound2-plugins`, `pulseaudio-utils`, and the `cargo` build deps `pkg-config`, `libfontconfig1-dev`, `libfreetype-dev`, `libxcb-composite0-dev`, `libharfbuzz-dev`, `libexpat1-dev`)
 - installs `fastfetch` (from PPA)
 - installs `opencode`
 - installs `tmuxai`
@@ -63,6 +63,7 @@ etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fai
 - installs `vagrant` (HashiCorp repo) + `virtualbox_WSL2` plugin
 - installs Rust (`cargo`, via rustup) and `silicon` (code screenshot tool, `cargo install`), `watchexec` (file-change trigger, `cargo install` with GitHub binary fallback)
 - installs `golazo` (football TUI)
+- installs `gonzo` (log analysis TUI, GitHub release binary with go install fallback)
 - symlinks dotfiles (incl. opencode and tmuxai config)
 - copies `dotfiles/wslconfig` as `.wslconfig` to the Windows user profile
 - copies `dotfiles/cliamp.toml` to `~/.config/cliamp/config.toml` (symlinks `cliamp-radios.toml`)

@@ -112,6 +112,8 @@ install_packages() {
     "Networking|snmp" "Networking|socat" "Networking|gping"
     # Hardware
     "Hardware|lm-sensors" "Hardware|smartmontools" "Hardware|nvtop"
+    # Log Analysis
+    "Log Analysis|lnav"
     # Remote / Automation
     "Remote|ansible" "Automation|sshpass"
     # Files
@@ -429,6 +431,45 @@ install_golazo() {
     rm -f /tmp/golazo
   fi
   record "tools:golazo" ok "installed"
+}
+
+install_gonzo() {
+  local log="$LOG_DIR/gonzo.log"
+  if command -v gonzo >/dev/null 2>&1; then
+    record "tools:gonzo" skip "already installed"
+    return 0
+  fi
+  step "gonzo -> downloading latest release binary"
+  local ver url tmp
+  ver="$(curl -fsSL https://api.github.com/repos/control-theory/gonzo/releases/latest 2>>"$log" | grep -oP '"tag_name": "\K[^"]+')"
+  if [ -n "$ver" ]; then
+    url="https://github.com/control-theory/gonzo/releases/download/${ver}/gonzo-${ver#v}-linux-amd64.tar.gz"
+    tmp="$(mktemp -d)"
+    if curl -fsSL "$url" -o "$tmp/gonzo.tar.gz" >> "$log" 2>&1 \
+      && tar xzf "$tmp/gonzo.tar.gz" -C "$tmp" >> "$log" 2>&1 \
+      && sudo install -o root -g root -m 755 "$tmp/gonzo" /usr/local/bin/gonzo >> "$log" 2>&1; then
+      rm -rf "$tmp"
+      record "tools:gonzo" ok "installed"
+      return 0
+    fi
+    rm -rf "$tmp"
+  fi
+  step "gonzo -> release binary failed, trying go install"
+  if command -v go >/dev/null 2>&1; then
+    if go install github.com/control-theory/gonzo/cmd/gonzo@latest >> "$log" 2>&1; then
+      local bin
+      bin="$(go env GOPATH 2>/dev/null)/bin/gonzo"
+      if [ -x "$bin" ]; then
+        sudo install -o root -g root -m 755 "$bin" /usr/local/bin/gonzo >> "$log" 2>&1
+      fi
+      record "tools:gonzo" ok "installed"
+      return 0
+    fi
+  else
+    record "tools:gonzo" fail "failed (go missing for fallback)"
+  fi
+  log_tail gonzo.log
+  record "tools:gonzo" fail "failed"
 }
 
 install_tdfiglet() {
@@ -936,6 +977,7 @@ report() {
     ["disk"]="apt:Disk"
     ["networking"]="apt:Networking"
     ["hardware"]="apt:Hardware"
+    ["log analysis"]="apt:Log Analysis;tools:gonzo"
     ["provisioning"]="tools:vagrant"
     ["configuration"]="apt:Remote"
     ["automation"]="apt:Automation;tools:watchexec"
@@ -951,11 +993,11 @@ report() {
     ["text-art"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet"
     ["system"]="system"
   )
-  local sections=(python nodejs rust CPU disk networking hardware provisioning configuration automation files parse render agent runtime models multiplexer system-info text-art MISC system)
+  local sections=(python nodejs rust CPU disk networking hardware "log analysis" provisioning configuration automation files parse render agent runtime models multiplexer system-info text-art MISC system)
 
   local -A SUB_MEMBER=(
     [python]=dev [nodejs]=dev [rust]=dev
-    [CPU]=mon [disk]=mon [networking]=mon [hardware]=mon
+    [CPU]=mon [disk]=mon [networking]=mon [hardware]=mon ["log analysis"]=mon
     [provisioning]=infra [configuration]=infra [automation]=infra
     [agent]=ai [runtime]=ai [models]=ai
     [files]=tools [parse]=tools [render]=tools
@@ -963,7 +1005,7 @@ report() {
   )
   local -A SUB_FIRST=(
     [python]="DEV ENVIRONMENTS"
-    [CPU]="MONITORING"
+    [CPU]="OBSERVABILITY"
     [provisioning]="DEVOPS"
     [agent]="AI"
     [files]="TOOLS"
@@ -1268,6 +1310,7 @@ main() {
   run_step "tools:vagrant" "Installing vagrant" --quiet install_vagrant
   run_step "tools:cliamp" "Installing cliamp" --quiet install_cliamp
   run_step "tools:golazo" "Installing golazo" --quiet install_golazo
+  run_step "tools:gonzo" "Installing gonzo" --quiet install_gonzo
   run_step "tools:tdfiglet" "Installing tdfiglet" --quiet install_tdfiglet
   run_step "tools:tte" "Installing terminal effects" --quiet install_tte
   run_step "tools:rust" "Installing Rust" --quiet install_rust
