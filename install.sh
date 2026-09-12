@@ -74,6 +74,14 @@ get_version() {
   "$@" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1
 }
 
+pkg_v() {
+  case "$1" in
+    ansible)     ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']' ;;
+    python3-pip) pip3 --version 2>/dev/null | awk '{print $2}' ;;
+    pipx)        pipx --version 2>/dev/null ;;
+  esac
+}
+
 log_tail() {
   if [ "$VERBOSE" = 1 ]; then
     local f="$LOG_DIR/$1"
@@ -150,11 +158,9 @@ install_packages() {
     group="${entry%%|*}"
     pkg="${entry#*|}"
     if dpkg -s "$pkg" >/dev/null 2>&1; then
-      if [ "$pkg" = "ansible" ]; then
-        record "$(apt_key "$group" "$pkg")" skip "already installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
-      else
-        record "$(apt_key "$group" "$pkg")" skip "already installed"
-      fi
+      local v
+      v="$(pkg_v "$pkg")"
+      record "$(apt_key "$group" "$pkg")" skip "already installed${v:+ ${C_SECT}($v)${RESET}}"
     else
       to_install+=("$entry")
     fi
@@ -181,11 +187,9 @@ install_packages() {
     for entry in "${to_install[@]}"; do
       group="${entry%%|*}"
       pkg="${entry#*|}"
-      if [ "$pkg" = "ansible" ]; then
-        record "$(apt_key "$group" "$pkg")" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
-      else
-        record "$(apt_key "$group" "$pkg")" ok "installed"
-      fi
+      local v
+      v="$(pkg_v "$pkg")"
+      record "$(apt_key "$group" "$pkg")" ok "installed${v:+ ${C_SECT}($v)${RESET}}"
     done
     return 0
   fi
@@ -194,18 +198,12 @@ install_packages() {
   for entry in "${to_install[@]}"; do
     group="${entry%%|*}"
     pkg="${entry#*|}"
+    local v
+    v="$(pkg_v "$pkg")"
     if dpkg -s "$pkg" >/dev/null 2>&1; then
-      if [ "$pkg" = "ansible" ]; then
-        record "$(apt_key "$group" "$pkg")" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
-      else
-        record "$(apt_key "$group" "$pkg")" ok "installed"
-      fi
+      record "$(apt_key "$group" "$pkg")" ok "installed${v:+ ${C_SECT}($v)${RESET}}"
     elif sudo apt install -y "$pkg" >> "$LOG_DIR/apt-$pkg.log" 2>&1; then
-      if [ "$pkg" = "ansible" ]; then
-        record "$(apt_key "$group" "$pkg")" ok "installed ${C_SECT}($(ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']'))${RESET}"
-      else
-        record "$(apt_key "$group" "$pkg")" ok "installed"
-      fi
+      record "$(apt_key "$group" "$pkg")" ok "installed${v:+ ${C_SECT}($v)${RESET}}"
     else
       record "$(apt_key "$group" "$pkg")" fail "failed"
       log_tail "apt-$pkg.log"
@@ -482,7 +480,7 @@ install_gonzo() {
 install_kew() {
   local log="$LOG_DIR/kew.log"
   if command -v kew >/dev/null 2>&1; then
-    record "tools:kew" skip "already installed ${C_SECT}($(get_version kew))${RESET}"
+    record "tools:kew" skip "already installed"
     return 0
   fi
 
@@ -521,7 +519,7 @@ install_kew() {
     return 1
   fi
 
-  record "tools:kew" ok "installed ${C_SECT}($(get_version kew))${RESET}"
+  record "tools:kew" ok "installed"
   rm -rf "$build_dir"
 }
 
