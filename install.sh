@@ -129,6 +129,11 @@ install_packages() {
     "Cargo deps|libxcb-composite0-dev" "Cargo deps|libharfbuzz-dev" "Cargo deps|libexpat1-dev"
     # Cliamp deps
     "Cliamp deps|libasound2-plugins" "Cliamp deps|pulseaudio-utils" "Cliamp deps|ffmpeg"
+    # Kew deps
+    "Kew deps|git" "Kew deps|gcc" "Kew deps|make" "Kew deps|pkg-config"
+    "Kew deps|libfaad-dev" "Kew deps|libtag1-dev" "Kew deps|libfftw3-dev" "Kew deps|libopus-dev"
+    "Kew deps|libopusfile-dev" "Kew deps|libvorbis-dev" "Kew deps|libogg-dev" "Kew deps|libchafa-dev"
+    "Kew deps|libglib2.0-dev" "Kew deps|libgdk-pixbuf-2.0-dev" "Kew deps|libdbus-1-dev"
     # Fastfetch util
     "Fastfetch util|chafa"
     # TMUX integration
@@ -470,6 +475,52 @@ install_gonzo() {
   fi
   log_tail gonzo.log
   record "tools:gonzo" fail "failed"
+}
+
+install_kew() {
+  local log="$LOG_DIR/kew.log"
+  if command -v kew >/dev/null 2>&1; then
+    record "tools:kew" skip "already installed ${C_SECT}($(get_version kew))${RESET}"
+    return 0
+  fi
+
+  local build_dir="/tmp/kew"
+  rm -rf "$build_dir"
+
+  local ver tag
+  ver="$(curl -fsSL https://api.github.com/repos/ravachol/kew/releases/latest 2>>"$log" | grep -oP '"tag_name": "\K[^"]+')"
+  tag="${ver:-v4.3.2}"
+
+  step "kew -> cloning repo ($tag)"
+  if ! git clone --depth 1 --branch "$tag" https://github.com/ravachol/kew.git "$build_dir" >> "$log" 2>&1; then
+    step "kew -> tag clone failed, trying default branch"
+    rm -rf "$build_dir"
+    if ! git clone --depth 1 https://github.com/ravachol/kew.git "$build_dir" >> "$log" 2>&1; then
+      log_tail kew.log
+      record "tools:kew" fail "failed (clone)"
+      rm -rf "$build_dir"
+      return 1
+    fi
+  fi
+
+  step "kew -> building"
+  if ! make -j -C "$build_dir" >> "$log" 2>&1; then
+    log_tail kew.log
+    record "tools:kew" fail "failed (make)"
+    rm -rf "$build_dir"
+    return 1
+  fi
+
+  step "kew -> installing"
+  if ! sudo make -C "$build_dir" install >> "$log" 2>&1; then
+    log_tail kew.log
+    record "tools:kew" fail "failed (make install)"
+    rm -rf "$build_dir"
+    return 1
+  fi
+
+  record "tools:kew" ok "installed ${C_SECT}($(get_version kew))${RESET}"
+  rm -rf "$build_dir"
 }
 
 install_tdfiglet() {
@@ -987,7 +1038,7 @@ report() {
     ["agent"]="tools:agent"
     ["runtime"]="tools:ollama"
     ["models"]="models"
-    ["MISC"]="tools:golazo;tools:cliamp;apt:Misc:cmatrix;apt:Cliamp deps"
+    ["MISC"]="tools:golazo;tools:cliamp;tools:kew;apt:Misc:cmatrix;apt:Cliamp deps;apt:Kew deps"
     ["multiplexer"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
     ["system-info"]="tools:fastfetch;apt:Fastfetch util"
     ["text-art"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet"
@@ -1012,7 +1063,7 @@ report() {
     [multiplexer]="TERMINAL"
   )
 
-  local -A VPARENT=( ["apt:Cliamp deps"]="tools:cliamp" ["apt:Fastfetch util"]="tools:fastfetch" )
+  local -A VPARENT=( ["apt:Cliamp deps"]="tools:cliamp" ["apt:Fastfetch util"]="tools:fastfetch" ["apt:Kew deps"]="tools:kew" ["apt:Cargo deps"]="tools:rust" )
 
   local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT I_GRP I_KEY I_PKEY
   for k in "${ORDER[@]}"; do
@@ -1309,6 +1360,7 @@ main() {
   #run_step "tools:ollama" "Installing Ollama" --quiet install_ollama
   run_step "tools:vagrant" "Installing vagrant" --quiet install_vagrant
   run_step "tools:cliamp" "Installing cliamp" --quiet install_cliamp
+  run_step "tools:kew" "Installing kew" --quiet install_kew
   run_step "tools:golazo" "Installing golazo" --quiet install_golazo
   run_step "tools:gonzo" "Installing gonzo" --quiet install_gonzo
   run_step "tools:tdfiglet" "Installing tdfiglet" --quiet install_tdfiglet
