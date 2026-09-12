@@ -438,6 +438,32 @@ install_golazo() {
   record "tools:golazo" ok "installed"
 }
 
+install_drawbox() {
+  local log="$LOG_DIR/drawbox.log"
+  if command -v drawbox >/dev/null 2>&1; then
+    record "tools:drawbox" skip "already installed"
+    return 0
+  fi
+  step "drawbox -> installing via update.sh"
+  if ! curl -fsSL https://raw.githubusercontent.com/KaliforniaGator/DrawBox/main/update.sh \
+      2>>"$log" | bash >> "$log" 2>&1; then
+    step "drawbox -> update.sh failed, compiling from source"
+    rm -rf /tmp/drawbox
+    if ! git clone -q https://github.com/KaliforniaGator/DrawBox.git /tmp/drawbox \
+        >> "$log" 2>&1 \
+        || ! g++ -O2 -o /tmp/drawbox/drawbox /tmp/drawbox/drawbox.cpp \
+            >> "$log" 2>&1 \
+        || ! sudo install -o root -g root -m 755 /tmp/drawbox/drawbox \
+            /usr/local/bin/drawbox >> "$log" 2>&1; then
+      log_tail drawbox.log
+      record "tools:drawbox" fail "failed"
+      return 1
+    fi
+    rm -rf /tmp/drawbox
+  fi
+  record "tools:drawbox" ok "installed"
+}
+
 install_gonzo() {
   local log="$LOG_DIR/gonzo.log"
   if command -v gonzo >/dev/null 2>&1; then
@@ -1042,7 +1068,7 @@ report() {
     ["MISC"]="tools:golazo;tools:cliamp;tools:kew;apt:Misc:cmatrix;apt:Cliamp deps;apt:Kew deps"
     ["multiplexer"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
     ["system-info"]="tools:fastfetch;apt:Cpufetch util"
-    ["ASCII/ANSI"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet;apt:Misc:toilet;apt:Misc:lolcat;apt:Misc:cmatrix;apt:ASCII"
+    ["ASCII/ANSI"]="tools:tdfiglet;tools:tte;tools:cfonts;tools:drawbox;apt:Misc:figlet;apt:Misc:toilet;apt:Misc:lolcat;apt:Misc:cmatrix;apt:ASCII"
     ["system"]="system"
   )
   local sections=(provision configure automate CPU disk networking hardware "log analysis" python nodejs rust agent runtime models files parse render multiplexer system-info "ASCII/ANSI" MISC system)
@@ -1364,6 +1390,7 @@ main() {
   run_step "tools:kew" "Installing kew" --quiet install_kew
   run_step "tools:golazo" "Installing golazo" --quiet install_golazo
   run_step "tools:gonzo" "Installing gonzo" --quiet install_gonzo
+  run_step "tools:drawbox" "Installing DrawBox" --quiet install_drawbox
   run_step "tools:tdfiglet" "Installing tdfiglet" --quiet install_tdfiglet
   run_step "tools:tte" "Installing terminal effects" --quiet install_tte
   run_step "tools:rust" "Installing Rust" --quiet install_rust
