@@ -129,7 +129,7 @@ install_packages() {
     # Parse
     "Parse|jq" "Parse|yq"
     # Misc
-    "Misc|figlet" "Misc|cmatrix" "Misc|lolcat" "Misc|toilet"
+    "Misc|cava" "Misc|nyancat"
     # Python pkg mgrs
     "Python pkg mgrs|python3-pip" "Python pkg mgrs|pipx"
     # Cargo deps
@@ -145,7 +145,7 @@ install_packages() {
     # Fastfetch util
     "Cpufetch util|cpufetch"
     # ASCII art
-    "ASCII|boxes" "ASCII|jp2a" "ASCII|chafa" "ASCII|caca-utils"
+    "ASCII|boxes" "ASCII|jp2a" "ASCII|chafa" "ASCII|caca-utils" "ASCII|figlet" "ASCII|cmatrix" "ASCII|lolcat" "ASCII|toilet"
     # TMUX integration
     "TMUX integration|wl-clipboard"
     # Ollama deps
@@ -462,6 +462,25 @@ install_drawbox() {
     rm -rf /tmp/drawbox
   fi
   record "tools:drawbox" ok "installed"
+}
+
+install_lavat() {
+  local log="$LOG_DIR/lavat.log"
+  if command -v lavat >/dev/null 2>&1; then
+    record "tools:lavat" skip "already installed"
+    return 0
+  fi
+  step "lavat -> cloning repo"
+  rm -rf /tmp/lavat
+  if ! git clone -q https://github.com/AngelJumbo/lavat /tmp/lavat >> "$log" 2>&1 \
+      || ! make -C /tmp/lavat >> "$log" 2>&1 \
+      || ! sudo make -C /tmp/lavat install >> "$log" 2>&1; then
+    log_tail lavat.log
+    record "tools:lavat" fail "failed"
+    return 1
+  fi
+  rm -rf /tmp/lavat
+  record "tools:lavat" ok "installed"
 }
 
 install_gonzo() {
@@ -1065,10 +1084,10 @@ report() {
     ["agent"]="tools:agent"
     ["runtime"]="tools:ollama"
     ["models"]="models"
-    ["MISC"]="tools:golazo;tools:cliamp;tools:kew;apt:Misc:cmatrix;apt:Cliamp deps;apt:Kew deps"
+    ["MISC"]="tools:golazo;tools:cliamp;tools:kew;tools:lavat;apt:Cliamp deps;apt:Kew deps;apt:Misc:cava;apt:Misc:nyancat"
     ["multiplexer"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
     ["system-info"]="tools:fastfetch;apt:Cpufetch util"
-    ["ASCII/ANSI"]="tools:tdfiglet;tools:tte;tools:cfonts;tools:drawbox;apt:Misc:figlet;apt:Misc:toilet;apt:Misc:lolcat;apt:Misc:cmatrix;apt:ASCII"
+    ["ASCII/ANSI"]="tools:tdfiglet;tools:tte;tools:cfonts;tools:drawbox;apt:ASCII"
     ["system"]="system"
   )
   local sections=(provision configure automate CPU disk networking hardware "log analysis" python nodejs rust agent runtime models files parse render multiplexer system-info "ASCII/ANSI" MISC system)
@@ -1391,6 +1410,7 @@ main() {
   run_step "tools:golazo" "Installing golazo" --quiet install_golazo
   run_step "tools:gonzo" "Installing gonzo" --quiet install_gonzo
   run_step "tools:drawbox" "Installing DrawBox" --quiet install_drawbox
+  run_step "tools:lavat" "Installing lavat" --quiet install_lavat
   run_step "tools:tdfiglet" "Installing tdfiglet" --quiet install_tdfiglet
   run_step "tools:tte" "Installing terminal effects" --quiet install_tte
   run_step "tools:rust" "Installing Rust" --quiet install_rust
