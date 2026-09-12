@@ -121,7 +121,7 @@ install_packages() {
     # Parse
     "Parse|jq" "Parse|yq"
     # Misc
-    "Misc|figlet" "Misc|cmatrix"
+    "Misc|figlet" "Misc|cmatrix" "Misc|lolcat" "Misc|toilet"
     # Python pkg mgrs
     "Python pkg mgrs|python3-pip" "Python pkg mgrs|pipx"
     # Cargo deps
@@ -135,7 +135,9 @@ install_packages() {
     "Kew deps|libopusfile-dev" "Kew deps|libvorbis-dev" "Kew deps|libogg-dev" "Kew deps|libchafa-dev"
     "Kew deps|libglib2.0-dev" "Kew deps|libgdk-pixbuf-2.0-dev" "Kew deps|libdbus-1-dev"
     # Fastfetch util
-    "Fastfetch util|chafa"
+    "Cpufetch util|cpufetch"
+    # ASCII art
+    "ASCII|boxes" "ASCII|jp2a" "ASCII|chafa"
     # TMUX integration
     "TMUX integration|wl-clipboard"
     # Ollama deps
@@ -1041,11 +1043,11 @@ report() {
     ["models"]="models"
     ["MISC"]="tools:golazo;tools:cliamp;tools:kew;apt:Misc:cmatrix;apt:Cliamp deps;apt:Kew deps"
     ["multiplexer"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
-    ["system-info"]="tools:fastfetch;apt:Fastfetch util"
-    ["text-art"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet"
+    ["system-info"]="tools:fastfetch;apt:Cpufetch util"
+    ["ASCII/ANSI"]="tools:tdfiglet;tools:tte;tools:cfonts;apt:Misc:figlet;apt:Misc:toilet;apt:Misc:lolcat;apt:Misc:cmatrix;apt:ASCII"
     ["system"]="system"
   )
-  local sections=(provision configure automate CPU disk networking hardware "log analysis" python nodejs rust agent runtime models files parse render multiplexer system-info text-art MISC system)
+  local sections=(provision configure automate CPU disk networking hardware "log analysis" python nodejs rust agent runtime models files parse render multiplexer system-info "ASCII/ANSI" MISC system)
 
   local -A SUB_MEMBER=(
     [python]=dev [nodejs]=dev [rust]=dev
@@ -1053,7 +1055,7 @@ report() {
     [provision]=infra [configure]=infra [automate]=infra
     [agent]=ai [runtime]=ai [models]=ai
     [files]=tools [parse]=tools [render]=tools
-    [multiplexer]=looks [system-info]=looks [text-art]=looks
+    [multiplexer]=looks [system-info]=looks ["ASCII/ANSI"]=looks
   )
   local -A SUB_FIRST=(
     [python]="DEV ENVIRONMENTS"
@@ -1064,7 +1066,7 @@ report() {
     [multiplexer]="TERMINAL"
   )
 
-  local -A VPARENT=( ["apt:Cliamp deps"]="tools:cliamp" ["apt:Fastfetch util"]="tools:fastfetch" ["apt:Kew deps"]="tools:kew" ["apt:Cargo deps"]="tools:rust" )
+  local -A VPARENT=( ["apt:Cliamp deps"]="tools:cliamp" ["apt:Kew deps"]="tools:kew" ["apt:Cargo deps"]="tools:rust" )
 
   local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT I_GRP I_KEY I_PKEY
   for k in "${ORDER[@]}"; do
