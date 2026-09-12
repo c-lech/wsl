@@ -136,7 +136,7 @@ export NVM_DIR="$HOME/.nvm"
 
 # --- Startup banner (custom) ---
 # "system" ASCII art, system info, and "monitored!" shown on each shell.
-fastfetch | perl -pe 's/ +(\e\[[0-9;]*m)+[ \t]*$/\e[0m/' | boxes -p v1h2 |  boxes -d unicornthink ; echo
+fastfetch | perl -pe 's/ +(\e\[[0-9;]*m)+[ \t]*$/\e[0m/' | boxes -d spring -pv0h4 | boxes -d unicornthink -pv0h4 ; echo
 
 # pipx bins (managed)
 export PATH="$PATH:$HOME/.local/bin"
