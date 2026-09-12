@@ -772,6 +772,7 @@ install_dotfiles() {
     "$HOME/.config/golazo/settings.yaml|$BASE/dotfiles/golazo-settings.yaml|link"
     "$HOME/.config/cliamp/radios.toml|$BASE/dotfiles/cliamp-radios.toml|link"
     "$HOME/.config/cliamp/config.toml|$BASE/dotfiles/cliamp.toml|copy"
+    "$HOME/.config/kew/kewrc|$BASE/dotfiles/kewrc|copy"
     "$HOME/.config/fastfetch/config.jsonc|$BASE/dotfiles/config.jsonc|link"
     "$HOME/.config/fastfetch/logo.png|$BASE/dotfiles/logo.png|link"
   )
