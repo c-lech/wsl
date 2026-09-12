@@ -145,7 +145,7 @@ install_packages() {
     # Fastfetch util
     "Cpufetch util|cpufetch"
     # ASCII art
-    "ASCII|boxes" "ASCII|jp2a" "ASCII|chafa"
+    "ASCII|boxes" "ASCII|jp2a" "ASCII|chafa" "ASCII|caca-utils"
     # TMUX integration
     "TMUX integration|wl-clipboard"
     # Ollama deps
