@@ -5,3 +5,7 @@ url = "http://pureplay.cdnstream1.com/6040_128.mp3?DIST=TuneIn&TGT=TuneIn&maxSer
 [[station]]
 name = "Radio FM"
 url = "https://icecast.stv.livebox.sk/fm_128.mp3"
+
+[[station]]
+name = "KEXP [162k] · United States Of America"
+url = "https://kexp.streamguys1.com/kexp160.aac?listenerid=f4bcb5c771d830fbdd4195088a946ea6&awparams=companionAds%3Atrue"
