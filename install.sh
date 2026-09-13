@@ -795,7 +795,7 @@ install_node() {
 
   # node LTS
   if command -v node >/dev/null 2>&1; then
-    record "tools:node" skip "already installed ${C_SECT}($(node --version))${RESET}"
+    record "tools:node" skip "already installed ${C_SECT}($(node --version | sed 's/^v//'))${RESET}"
   else
     step "node -> installing LTS"
     if ! nvm install --lts >> "$log" 2>&1; then
@@ -804,7 +804,7 @@ install_node() {
       record "tools:cfonts" fail "not installed (node missing)"
       return 1
     fi
-    record "tools:node" ok "installed ${C_SECT}($(node --version))${RESET}"
+    record "tools:node" ok "installed ${C_SECT}($(node --version | sed 's/^v//'))${RESET}"
   fi
 
   # nvm (recorded after node)
