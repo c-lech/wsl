@@ -11,6 +11,7 @@ C_FAIL=''
 C_GRP=''
 C_SECT=''
 C_WHITE=''
+C_DIM=''
 RESET=''
 if [ -t 1 ]; then
   C_OK=$'\033[32m'
@@ -19,6 +20,7 @@ if [ -t 1 ]; then
   C_GRP=$'\033[1;36m'
   C_SECT=$'\033[1;95m'
   C_WHITE=$'\033[1;37m'
+  C_DIM=$'\033[2m'
   RESET=$'\033[0m'
 fi
 
@@ -28,7 +30,7 @@ declare -A STATUS NOTE IN_ORDER GROUP
 ORDER=()
 
 step() {
-  :
+  [ "$VERBOSE" = 1 ] && printf "    %s\n" "$@"
 }
 
 record() {
@@ -98,9 +100,21 @@ go_install_tool() {
 log_tail() {
   if [ "$VERBOSE" = 1 ]; then
     local f="$LOG_DIR/$1"
-    echo "  ! last output of $f:"
-    tail -n 20 "$f" 2>/dev/null | sed 's/^/    /'
+    echo "    ! last 5 lines of $f:"
+    tail -n 5 "$f" 2>/dev/null | sed 's/^/        /'
+    echo "    ! full trace:  tail -n 200 \"$f\""
   fi
+}
+
+apt_live() {
+  local line m
+  while IFS= read -r line; do
+    [ "$VERBOSE" = 1 ] || continue
+    case "$line" in
+      "Unpacking "*) m="${line%...}"; m="${m%%[[:space:]]}"; step "apt -> ${m,,}" ;;
+      "Setting up "*) m="${line%...}"; m="${m%%[[:space:]]}"; step "apt -> ${m,,}" ;;
+    esac
+  done
 }
 
 
@@ -198,7 +212,7 @@ install_packages() {
   done
 
   step "apt install ${#apt_pkgs[@]} packages (single run)"
-  if sudo apt install -y "${apt_pkgs[@]}" >> "$LOG_DIR/apt-install.log" 2>&1; then
+  if sudo apt install -y "${apt_pkgs[@]}" 2>&1 | tee -a "$LOG_DIR/apt-install.log" | apt_live; then
     for entry in "${to_install[@]}"; do
       group="${entry%%|*}"
       pkg="${entry#*|}"
@@ -1110,23 +1124,63 @@ configure_git() {
   publish "system:config git"
 }
 
+step_status() {
+  local key="$1" rc="$2" st f=0 o=0 n=0 k
+  st="${STATUS[$key]:-}"
+  if [ -n "$st" ]; then
+    printf '%s' "$st"
+    return
+  fi
+  for k in "${ORDER[@]}"; do
+    if [ "$k" != "$key" ] && [[ "$k" == "$key:"* ]]; then
+      n=1
+      case "${STATUS[$k]}" in
+        fail) f=1 ;;
+        ok)   o=1 ;;
+      esac
+      [ "$f" = 1 ] && break
+    fi
+  done
+  if [ "$n" = 1 ]; then
+    [ "$f" = 1 ] && { printf 'fail'; return; }
+    [ "$o" = 1 ] && { printf 'ok'; return; }
+    printf 'skip'
+    return
+  fi
+  [ "$rc" -eq 0 ] && printf 'ok' || printf 'fail'
+}
+
 run_step() {
-  local key="$1" name="$2" quiet=""
+  local key="$1" name="$2" logfile="" t0 dt rc st tag c
   shift 2
-  [ "$1" = "--quiet" ] && quiet=1 && shift
+  [ "$1" = "--log" ] && { logfile="$2"; shift 2; }
 
-  [ "$VERBOSE" = 1 ] && [ "$quiet" != 1 ] && printf "  %s\n" "$name"
+  [ "$VERBOSE" = 1 ] && printf "  %s\n" "$name"
 
+  t0="$(date +%s.%N)"
   set +e
   "$@"
-  local rc=$?
+  rc=$?
   set -e
 
   if [ "$rc" -ne 0 ] && [ -z "${STATUS[$key]+x}" ]; then
     record "$key" fail "failed (exit $rc)"
   fi
 
-  return 0
+  [ "$VERBOSE" = 1 ] || return 0
+
+  dt="$(awk -v a="$(date +%s.%N)" -v b="$t0" 'BEGIN{printf "%.1f", a-b}')"
+  st="$(step_status "$key" "$rc")"
+  case "$st" in
+    ok)   tag="[ok]";   c="$C_OK" ;;
+    skip) tag="[skip]"; c="$C_SKIP" ;;
+    fail) tag="[FAIL]"; c="$C_FAIL" ;;
+  esac
+  printf "  %s%s%s  %s%ss%s" "$c" "$tag" "$RESET" "$C_DIM" "$dt" "$RESET"
+  [ -n "$logfile" ] && printf "  %slog: ~/.install-logs/%s%s" "$C_DIM" "$logfile" "$RESET"
+  printf "\n"
+  [ "$st" = fail ] && [ -n "$logfile" ] && log_tail "$logfile"
+  printf "\n"
 }
 
 report() {
@@ -1465,30 +1519,29 @@ main() {
   SUDO_KEEPALIVE_PID=$!
   trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null' EXIT
 
-  run_step "system:mount shared data" "Mounting shared data" mount_data_dir
-  run_step "apt:packages" "Installing apt packages" install_packages
-  [ "$VERBOSE" = 1 ] && printf "  %s\n" "Installing not apt packages"
-  run_step "tools:fastfetch" "Installing Fastfetch" --quiet install_fastfetch
-  run_step "tools:agent" "Installing opencode" --quiet install_opencode
-  run_step "tools:tmuxai" "Installing tmuxai" --quiet install_tmuxai
-  #run_step "tools:ollama" "Installing Ollama" --quiet install_ollama
-  run_step "tools:vagrant" "Installing vagrant" --quiet install_vagrant
-  run_step "tools:cliamp" "Installing cliamp" --quiet install_cliamp
-  run_step "tools:kew" "Installing kew" --quiet install_kew
-  run_step "tools:golazo" "Installing golazo" --quiet install_golazo
-  run_step "tools:gonzo" "Installing gonzo" --quiet install_gonzo
-  run_step "tools:drawbox" "Installing DrawBox" --quiet install_drawbox
-  run_step "tools:lavat" "Installing lavat" --quiet install_lavat
-  run_step "tools:tdfiglet" "Installing tdfiglet" --quiet install_tdfiglet
-  run_step "tools:tte" "Installing terminal effects" --quiet install_tte
-  run_step "tools:drift" "Installing drift" --quiet install_drift
-  run_step "tools:rust" "Installing Rust" --quiet install_rust
-  run_step "tools:silicon" "Installing silicon" --quiet install_silicon
-  run_step "tools:watchexec" "Installing watchexec" --quiet install_watchexec
-  run_step "tools:node" "Installing Node.js" --quiet install_node
+  run_step "system:mount shared data" "Mounting shared data" --log mount.log mount_data_dir
+  run_step "apt" "Installing apt packages" --log apt-install.log install_packages
+  run_step "tools:fastfetch" "Installing Fastfetch" --log fastfetch.log install_fastfetch
+  run_step "tools:agent" "Installing opencode" --log opencode.log install_opencode
+  run_step "tools:tmuxai" "Installing tmuxai" --log tmuxai.log install_tmuxai
+  #run_step "tools:ollama" "Installing Ollama" --log ollama.log install_ollama
+  run_step "tools:vagrant" "Installing vagrant" --log vagrant.log install_vagrant
+  run_step "tools:cliamp" "Installing cliamp" --log cliamp.log install_cliamp
+  run_step "tools:kew" "Installing kew" --log kew.log install_kew
+  run_step "tools:golazo" "Installing golazo" --log golazo.log install_golazo
+  run_step "tools:gonzo" "Installing gonzo" --log gonzo.log install_gonzo
+  run_step "tools:drawbox" "Installing DrawBox" --log drawbox.log install_drawbox
+  run_step "tools:lavat" "Installing lavat" --log lavat.log install_lavat
+  run_step "tools:tdfiglet" "Installing tdfiglet" --log tdfiglet.log install_tdfiglet
+  run_step "tools:tte" "Installing terminal effects" --log tte.log install_tte
+  run_step "tools:drift" "Installing drift" --log drift.log install_drift
+  run_step "tools:rust" "Installing Rust" --log rust.log install_rust
+  run_step "tools:silicon" "Installing silicon" --log silicon.log install_silicon
+  run_step "tools:watchexec" "Installing watchexec" --log watchexec.log install_watchexec
+  run_step "tools:node" "Installing Node.js" --log node.log install_node
   run_step "system:set time zone" "Configuring time zone" configure_timezone
-  run_step "system:link dot files" "Linking dot files" install_dotfiles
-  run_step "tools:tmux-plugins" "Installing tmux plugins" install_tmux_plugins
+  run_step "system:link dot files" "Linking dot files" --log dotfiles.log install_dotfiles
+  run_step "tools:tmux-plugins" "Installing tmux plugins" --log tmux-plugins.log install_tmux_plugins
   run_step "system:config git" "Configuring git" configure_git
   run_step "system:copy ssh keys" "Copying SSH keys" install_ssh
   run_step "system:wsl config (on host)" "Configuring WSL" install_wslconfig
