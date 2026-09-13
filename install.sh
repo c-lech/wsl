@@ -874,7 +874,7 @@ install_dotfiles() {
     record "system:link dot files:$HOME/.config/fastfetch/logo.txt" skip "already rendered"
   else
     step "dotfiles -> rendering fastfetch logo"
-    if ! chafa --size 60x30 --symbols block+border+space-wide-inverted \
+    if ! chafa -f symbols --symbols "block+border" --colors 256 -s 60x30 \
           "$HOME/.config/fastfetch/logo.png" > "$HOME/.config/fastfetch/logo.txt" 2> "$LOG_DIR/dotfiles.log"; then
       log_tail dotfiles.log
       record "system:link dot files:$HOME/.config/fastfetch/logo.txt" fail "failed (logo render)"
