@@ -797,7 +797,6 @@ install_node() {
         log_tail node.log
         record "tools:nvm" fail "failed"
         record "tools:node" fail "not installed (nvm missing)"
-        record "tools:cfonts" fail "not installed (node missing)"
         return 1
       fi
     fi
@@ -815,7 +814,6 @@ install_node() {
     if ! nvm install --lts >> "$log" 2>&1; then
       log_tail node.log
       record "tools:node" fail "failed"
-      record "tools:cfonts" fail "not installed (node missing)"
       return 1
     fi
     record "tools:node" ok "installed ${C_SECT}($(node --version | sed 's/^v//'))${RESET}"
@@ -823,14 +821,16 @@ install_node() {
 
   # nvm (recorded after node)
   record "tools:nvm" "$nvm_status" "$nvm_note"
+}
 
-  # cfonts (global)
+install_cfonts() {
+  local log="$LOG_DIR/cfonts.log"
   if npm ls -g cfonts >/dev/null 2>&1; then
     record "tools:cfonts" skip "already installed"
   else
-    step "node -> installing cfonts"
+    step "cfonts -> installing"
     if ! npm i -g cfonts >> "$log" 2>&1; then
-      log_tail node.log
+      log_tail cfonts.log
       record "tools:cfonts" fail "failed"
       return 1
     fi
@@ -1539,6 +1539,7 @@ main() {
   run_step "tools:silicon" "Installing silicon" --log silicon.log install_silicon
   run_step "tools:watchexec" "Installing watchexec" --log watchexec.log install_watchexec
   run_step "tools:node" "Installing Node.js" --log node.log install_node
+  run_step "tools:cfonts" "Installing cfonts" --log cfonts.log install_cfonts
   run_step "system:set time zone" "Configuring time zone" configure_timezone
   run_step "system:link dot files" "Linking dot files" --log dotfiles.log install_dotfiles
   run_step "tools:tmux-plugins" "Installing tmux plugins" --log tmux-plugins.log install_tmux_plugins
