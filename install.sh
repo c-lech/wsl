@@ -79,7 +79,20 @@ pkg_v() {
     ansible)     ansible --version 2>/dev/null | head -1 | awk '{print $3}' | tr -d ']' ;;
     python3-pip) pip3 --version 2>/dev/null | awk '{print $2}' ;;
     pipx)        pipx --version 2>/dev/null ;;
+    golang-go)   go version 2>/dev/null | awk '{print $3}' | sed 's/^go//' ;;
   esac
+}
+
+go_install_tool() {
+  local pkg="$1" bin="$2" log="$3" gbin
+  command -v go >/dev/null 2>&1 || return 1
+  if go install "$pkg" >> "$log" 2>&1; then
+    gbin="$(go env GOPATH 2>/dev/null)/bin/$bin"
+    if [ -x "$gbin" ] && sudo install -o root -g root -m 755 "$gbin" /usr/local/bin/"$bin" >> "$log" 2>&1; then
+      return 0
+    fi
+  fi
+  return 1
 }
 
 log_tail() {
@@ -135,6 +148,8 @@ install_packages() {
     # Cargo deps
     "Cargo deps|pkg-config" "Cargo deps|libfontconfig1-dev" "Cargo deps|libfreetype-dev"
     "Cargo deps|libxcb-composite0-dev" "Cargo deps|libharfbuzz-dev" "Cargo deps|libexpat1-dev"
+    # Go
+    "Go|golang-go"
     # Cliamp deps
     "Cliamp deps|libasound2-plugins" "Cliamp deps|pulseaudio-utils" "Cliamp deps|ffmpeg"
     # Kew deps
@@ -272,15 +287,22 @@ install_tmuxai() {
     record "tools:tmuxai" skip "already installed"
     return 0
   fi
-  step "tmuxai -> installing"
-  if ! curl -fsSL https://get.tmuxai.dev 2>>"$log" | bash >> "$log" 2>&1; then
-    step "tmuxai -> install script failed, trying tarball"
-    if ! curl -fsL "https://github.com/alvinunreal/tmuxai/releases/latest/download/tmuxai_Linux_amd64.tar.gz" \
-        | sudo tar xz -C /usr/local/bin --strip-components=0 tmuxai >> "$log" 2>&1; then
-      log_tail tmuxai.log
-      record "tools:tmuxai" fail "failed"
-      return 1
-    fi
+  step "tmuxai -> installing via go install"
+  if go_install_tool github.com/alvinunreal/tmuxai@main tmuxai "$log"; then
+    record "tools:tmuxai" ok "installed"
+    return 0
+  fi
+  step "tmuxai -> go install failed, trying install script"
+  if curl -fsSL https://get.tmuxai.dev 2>>"$log" | bash >> "$log" 2>&1; then
+    record "tools:tmuxai" ok "installed"
+    return 0
+  fi
+  step "tmuxai -> install script failed, trying tarball"
+  if ! curl -fsL "https://github.com/alvinunreal/tmuxai/releases/latest/download/tmuxai_Linux_amd64.tar.gz" \
+      | sudo tar xz -C /usr/local/bin --strip-components=0 tmuxai >> "$log" 2>&1; then
+    log_tail tmuxai.log
+    record "tools:tmuxai" fail "failed"
+    return 1
   fi
   record "tools:tmuxai" ok "installed"
 }
@@ -422,7 +444,12 @@ install_golazo() {
     record "tools:golazo" skip "already installed"
     return 0
   fi
-  step "golazo -> installing"
+  step "golazo -> installing via go install"
+  if go_install_tool github.com/0xjuanma/golazo@latest golazo "$log"; then
+    record "tools:golazo" ok "installed"
+    return 0
+  fi
+  step "golazo -> go install failed, trying install script"
   if ! curl -fsSL https://raw.githubusercontent.com/0xjuanma/golazo/main/scripts/install.sh 2>>"$log" | bash >> "$log" 2>&1; then
     step "golazo -> install script failed, trying binary"
     if ! curl -fsL "https://github.com/0xjuanma/golazo/releases/latest/download/golazo-linux-amd64" \
@@ -508,7 +535,12 @@ install_gonzo() {
     record "tools:gonzo" skip "already installed"
     return 0
   fi
-  step "gonzo -> downloading latest release binary"
+  step "gonzo -> installing via go install"
+  if go_install_tool github.com/control-theory/gonzo/cmd/gonzo@latest gonzo "$log"; then
+    record "tools:gonzo" ok "installed"
+    return 0
+  fi
+  step "gonzo -> go install failed, trying release binary"
   local ver url tmp
   ver="$(curl -fsSL https://api.github.com/repos/control-theory/gonzo/releases/latest 2>>"$log" | grep -oP '"tag_name": "\K[^"]+')"
   if [ -n "$ver" ]; then
@@ -522,20 +554,6 @@ install_gonzo() {
       return 0
     fi
     rm -rf "$tmp"
-  fi
-  step "gonzo -> release binary failed, trying go install"
-  if command -v go >/dev/null 2>&1; then
-    if go install github.com/control-theory/gonzo/cmd/gonzo@latest >> "$log" 2>&1; then
-      local bin
-      bin="$(go env GOPATH 2>/dev/null)/bin/gonzo"
-      if [ -x "$bin" ]; then
-        sudo install -o root -g root -m 755 "$bin" /usr/local/bin/gonzo >> "$log" 2>&1
-      fi
-      record "tools:gonzo" ok "installed"
-      return 0
-    fi
-  else
-    record "tools:gonzo" fail "failed (go missing for fallback)"
   fi
   log_tail gonzo.log
   record "tools:gonzo" fail "failed"
@@ -638,6 +656,36 @@ install_tte() {
     return 1
   fi
   record "tools:tte" ok "installed"
+}
+
+install_drift() {
+  local log="$LOG_DIR/drift.log"
+  if command -v drift >/dev/null 2>&1; then
+    record "tools:drift" skip "already installed"
+    return 0
+  fi
+  step "drift -> installing via go install"
+  if go_install_tool github.com/phlx0/drift@latest drift "$log"; then
+    record "tools:drift" ok "installed"
+    return 0
+  fi
+  step "drift -> go install failed, trying release binary"
+  local ver url tmp
+  ver="$(curl -fsSL https://api.github.com/repos/phlx0/drift/releases/latest 2>>"$log" | grep -oP '"tag_name": "\K[^"]+')"
+  if [ -n "$ver" ]; then
+    url="https://github.com/phlx0/drift/releases/download/${ver}/drift_linux_amd64.tar.gz"
+    tmp="$(mktemp -d)"
+    if curl -fsSL "$url" -o "$tmp/drift.tar.gz" >> "$log" 2>&1 \
+      && tar xzf "$tmp/drift.tar.gz" -C "$tmp" >> "$log" 2>&1 \
+      && sudo install -o root -g root -m 755 "$tmp/drift" /usr/local/bin/drift >> "$log" 2>&1; then
+      rm -rf "$tmp"
+      record "tools:drift" ok "installed"
+      return 0
+    fi
+    rm -rf "$tmp"
+  fi
+  log_tail drift.log
+  record "tools:drift" fail "failed"
 }
 
 install_rust() {
@@ -874,7 +922,7 @@ install_dotfiles() {
     record "system:link dot files:$HOME/.config/fastfetch/logo.txt" skip "already rendered"
   else
     step "dotfiles -> rendering fastfetch logo"
-    if ! chafa -f symbols --symbols "block+border" --colors 256 -s 60x30 \
+    if ! chafa -f symbols --symbols "block+border" --colors full -s 60x30 \
           "$HOME/.config/fastfetch/logo.png" > "$HOME/.config/fastfetch/logo.txt" 2> "$LOG_DIR/dotfiles.log"; then
       log_tail dotfiles.log
       record "system:link dot files:$HOME/.config/fastfetch/logo.txt" fail "failed (logo render)"
@@ -1089,6 +1137,7 @@ report() {
     ["python"]="apt:Python pkg mgrs"
     ["nodejs"]="tools:nvm;tools:node"
     ["rust"]="tools:rust;apt:Cargo deps"
+    ["go"]="apt:Go"
     ["CPU"]="apt:CPU"
     ["disk"]="apt:Disk"
     ["networking"]="apt:Networking"
@@ -1103,16 +1152,16 @@ report() {
     ["agent"]="tools:agent"
     ["runtime"]="tools:ollama"
     ["models"]="models"
-    ["MISC"]="tools:golazo;tools:cliamp;tools:kew;tools:lavat;apt:Cliamp deps;apt:Kew deps;apt:Misc:cava;apt:Misc:nyancat"
+    ["MISC"]="tools:drift;tools:golazo;tools:cliamp;tools:kew;tools:lavat;apt:Cliamp deps;apt:Kew deps;apt:Misc:cava;apt:Misc:nyancat"
     ["multiplexer"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
     ["system-info"]="tools:fastfetch;apt:Cpufetch util"
     ["ASCII/ANSI"]="tools:tdfiglet;tools:tte;tools:cfonts;tools:drawbox;apt:ASCII"
     ["system"]="system"
   )
-  local sections=(provision configure automate CPU disk networking hardware "log analysis" python nodejs rust agent runtime models files parse render multiplexer system-info "ASCII/ANSI" MISC system)
+  local sections=(provision configure automate CPU disk networking hardware "log analysis" python nodejs rust go agent runtime models files parse render multiplexer system-info "ASCII/ANSI" MISC system)
 
   local -A SUB_MEMBER=(
-    [python]=dev [nodejs]=dev [rust]=dev
+    [python]=dev [nodejs]=dev [rust]=dev [go]=dev
     [CPU]=mon [disk]=mon [networking]=mon [hardware]=mon ["log analysis"]=mon
     [provision]=infra [configure]=infra [automate]=infra
     [agent]=ai [runtime]=ai [models]=ai
@@ -1432,6 +1481,7 @@ main() {
   run_step "tools:lavat" "Installing lavat" --quiet install_lavat
   run_step "tools:tdfiglet" "Installing tdfiglet" --quiet install_tdfiglet
   run_step "tools:tte" "Installing terminal effects" --quiet install_tte
+  run_step "tools:drift" "Installing drift" --quiet install_drift
   run_step "tools:rust" "Installing Rust" --quiet install_rust
   run_step "tools:silicon" "Installing silicon" --quiet install_silicon
   run_step "tools:watchexec" "Installing watchexec" --quiet install_watchexec
