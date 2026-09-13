@@ -30,7 +30,7 @@ declare -A STATUS NOTE IN_ORDER GROUP
 ORDER=()
 
 step() {
-  [ "$VERBOSE" = 1 ] && printf "    %s\n" "$@"
+  [ "$VERBOSE" -ge 1 ] && printf "    %s\n" "$@"
 }
 
 record() {
@@ -98,7 +98,7 @@ go_install_tool() {
 }
 
 log_tail() {
-  if [ "$VERBOSE" = 1 ]; then
+  if [ "$VERBOSE" -ge 1 ]; then
     local f="$LOG_DIR/$1"
     echo "    ! last 5 lines of $f:"
     tail -n 5 "$f" 2>/dev/null | sed 's/^/        /'
@@ -109,7 +109,7 @@ log_tail() {
 apt_live() {
   local line m
   while IFS= read -r line; do
-    [ "$VERBOSE" = 1 ] || continue
+    [ "$VERBOSE" -ge 3 ] && continue
     case "$line" in
       "Unpacking "*) m="${line%...}"; m="${m%%[[:space:]]}"; step "apt -> ${m,,}" ;;
       "Setting up "*) m="${line%...}"; m="${m%%[[:space:]]}"; step "apt -> ${m,,}" ;;
@@ -401,6 +401,10 @@ install_vagrant() {
         | sudo tee /etc/apt/sources.list.d/hashicorp.list >/dev/null
     fi
 
+    if ! apt_update; then
+      record "tools:vagrant" fail "failed (apt update)"
+      return 1
+    fi
     if ! sudo apt install -y vagrant >> "$log" 2>&1; then
       log_tail vagrant.log
       record "tools:vagrant" fail "failed"
@@ -1144,12 +1148,134 @@ step_status() {
   [ "$rc" -eq 0 ] && printf 'ok' || printf 'fail'
 }
 
+log_feed() {
+  local lf="$1" line t prev=""
+  while IFS= read -r line; do
+    line="${line%$'\r'}"
+    line="$(printf '%s\n' "$line" | sed -u $'s/\x1b\\[[0-9;]*m//g')"
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [ -n "$line" ] || continue
+    [ "$line" = "$prev" ] && continue
+    prev="$line"
+    case "$lf" in
+      opencode.log)
+        case "$line" in
+          "Installing opencode version: "*) step "$line" ;;
+          *"100.0%"*) step "opencode -> download complete" ;;
+          "Successfully added opencode "*) step "$line" ;;
+        esac ;;
+      watchexec.log)
+        case "$line" in
+          "Downloaded watchexec-cli v"*) step "watchexec -> downloading v${line#Downloaded watchexec-cli v}" ;;
+          "Installed package "*) step "watchexec -> $line" ;;
+        esac ;;
+      silicon.log)
+        case "$line" in
+          "Downloaded silicon v"*) step "silicon -> downloading v${line#Downloaded silicon v}" ;;
+          "Installed package "*) step "silicon -> $line" ;;
+        esac ;;
+      cliamp.log)
+        case "$line" in
+          "Downloading cliamp-linux-amd64"*) step "cliamp -> downloading binary" ;;
+        esac ;;
+      kew.log)
+        case "$line" in
+          "Cloning into '/tmp/kew'"*) step "kew -> downloading" ;;
+          "make: Entering directory '/tmp/kew'"*) step "kew -> building" ;;
+          "install kew"*) step "kew -> installed" ;;
+        esac ;;
+      tdfiglet.log)
+        case "$line" in
+          "Cloning into '/tmp/tdfiglet'"*) step "tdfiglet -> downloading" ;;
+          "make: Entering directory '/tmp/tdfiglet'"*) step "tdfiglet -> building" ;;
+          "cp tdfiglet /usr/local/bin"*) step "tdfiglet -> installed" ;;
+        esac ;;
+      lavat.log)
+        case "$line" in
+          "cc lavat.c -o lavat") step "lavat -> building" ;;
+          "install lavat /usr/local/bin"*) step "lavat -> installed" ;;
+        esac ;;
+      drawbox.log)
+        case "$line" in
+          "Downloading the latest version"*) step "drawbox -> downloading" ;;
+          "Compiling drawbox.cpp"*) step "drawbox -> building" ;;
+          "Compilation successful"*) step "drawbox -> installed" ;;
+        esac ;;
+      golazo.log)
+        case "$line" in
+          "go: downloading "*golazo" v"*) step "golazo -> downloading deps (v${line##*golazo v})" ;;
+        esac ;;
+      gonzo.log)
+        case "$line" in
+          "go: downloading "*gonzo" v"*) step "gonzo -> downloading deps (v${line##*gonzo v})" ;;
+        esac ;;
+      drift.log)
+        case "$line" in
+          "go: downloading "*drift" v"*) step "drift -> downloading deps (v${line##*drift v})" ;;
+        esac ;;
+      tmuxai.log)
+        case "$line" in
+          "go: downloading "*tmuxai" v"*) step "tmuxai -> downloading deps (v${line##*tmuxai v})" ;;
+        esac ;;
+      rust.log)
+        case "$line" in
+          "info: downloading installer"*) step "rust -> downloading installer" ;;
+          "stable-"*" installed - rustc "*) t="${line##*rustc }"; step "rust -> installed rustc ${t%% *}" ;;
+        esac ;;
+      node.log)
+        case "$line" in
+          "=> Downloading nvm from git"*) step "node -> downloading nvm" ;;
+          "Installing latest LTS version."*) step "node -> installing latest LTS" ;;
+        esac ;;
+      tte.log)
+        case "$line" in
+          "installed package terminaltexteffects "*) t="${line##*terminaltexteffects }"; step "tte -> installed ${t%%,*}" ;;
+        esac ;;
+      cfonts.log)
+        case "$line" in
+          "+ cfonts@"*) step "cfonts -> installed ${line##+ cfonts@}" ;;
+        esac ;;
+      tmux-plugins.log)
+        case "$line" in
+          'Installing "'*) t="${line#Installing \"}"; step "tmux plugins -> installing ${t%%\"*}" ;;
+        esac ;;
+      fastfetch.log|vagrant.log)
+        case "$line" in
+          "Unpacking "*) t="${line%...}"; t="${t%%[[:space:]]}"; step "apt -> ${t,,}" ;;
+          "Setting up "*) t="${line%...}"; t="${t%%[[:space:]]}"; step "apt -> ${t,,}" ;;
+        esac ;;
+    esac
+  done
+}
+
 run_step() {
   local key="$1" name="$2" logfile="" t0 dt rc st tag c
   shift 2
   [ "$1" = "--log" ] && { logfile="$2"; shift 2; }
 
-  [ "$VERBOSE" = 1 ] && printf "  %s\n" "$name"
+  [ "$VERBOSE" -ge 1 ] && printf "  %s\n" "$name"
+
+  local feed_pid=""
+  if [ "$VERBOSE" -ge 2 ] && [ -n "$logfile" ]; then
+    export -f log_feed step 2>/dev/null || true
+    export VERBOSE
+    if command -v setsid >/dev/null 2>&1; then
+      if [ "$VERBOSE" -ge 3 ]; then
+        setsid bash -c 'tail -n 0 -F "$1" >&2' _ "$LOG_DIR/$logfile" &
+      else
+        setsid bash -c 'tail -n 0 -F "$1" | log_feed "$2" >&2' _ "$LOG_DIR/$logfile" "$logfile" &
+      fi
+      feed_pid=$!
+    else
+      if [ "$VERBOSE" -ge 3 ]; then
+        tail -n 0 -F "$LOG_DIR/$logfile" >&2 &
+      else
+        tail -n 0 -F "$LOG_DIR/$logfile" | log_feed "$logfile" >&2 &
+      fi
+      feed_pid=$!
+    fi
+  fi
 
   t0="$(date +%s.%N)"
   set +e
@@ -1157,11 +1283,22 @@ run_step() {
   rc=$?
   set -e
 
+  [ -n "$feed_pid" ] && {
+    if command -v setsid >/dev/null 2>&1; then
+      kill -TERM -- "-$feed_pid" 2>/dev/null || true
+    else
+      pkill -f "tail -n 0 -F $LOG_DIR/$logfile" 2>/dev/null || true
+      kill "$feed_pid" 2>/dev/null || true
+    fi
+    wait "$feed_pid" 2>/dev/null || true
+    pkill -f "tail -n 0 -F $LOG_DIR/$logfile" 2>/dev/null || true
+  }
+
   if [ "$rc" -ne 0 ] && [ -z "${STATUS[$key]+x}" ]; then
     record "$key" fail "failed (exit $rc)"
   fi
 
-  [ "$VERBOSE" = 1 ] || return 0
+  [ "$VERBOSE" -ge 1 ] || return 0
 
   dt="$(awk -v a="$(date +%s.%N)" -v b="$t0" 'BEGIN{printf "%.1f", a-b}')"
   st="$(step_status "$key" "$rc")"
@@ -1489,7 +1626,9 @@ main() {
   local arg
   for arg in "$@"; do
     case "$arg" in
-      -v|--verbose) VERBOSE=1;;
+      -v|--verbose) VERBOSE=$(( VERBOSE > 1 ? VERBOSE : 1 ));;
+      -vv|--very-verbose) VERBOSE=$(( VERBOSE > 2 ? VERBOSE : 2 ));;
+      -vvv|--raw) VERBOSE=$(( VERBOSE > 3 ? VERBOSE : 3 ));;
     esac
   done
 
