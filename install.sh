@@ -569,12 +569,12 @@ install_kew() {
   local build_dir="/tmp/kew"
   rm -rf "$build_dir"
 
-  local ver tag
+  local ver tag_args=()
   ver="$(curl -fsSL https://api.github.com/repos/ravachol/kew/releases/latest 2>>"$log" | grep -oP '"tag_name": "\K[^"]+')"
-  tag="${ver:-v4.3.2}"
+  [ -n "$ver" ] && tag_args=(--branch "$ver")
 
-  step "kew -> cloning repo ($tag)"
-  if ! git clone --depth 1 --branch "$tag" https://github.com/ravachol/kew.git "$build_dir" >> "$log" 2>&1; then
+  step "kew -> cloning repo${ver:+ ($ver)}"
+  if ! git clone --depth 1 "${tag_args[@]}" https://github.com/ravachol/kew.git "$build_dir" >> "$log" 2>&1; then
     step "kew -> tag clone failed, trying default branch"
     rm -rf "$build_dir"
     if ! git clone --depth 1 https://github.com/ravachol/kew.git "$build_dir" >> "$log" 2>&1; then
@@ -775,10 +775,10 @@ install_node() {
     nvm_note="already installed ${C_SECT}($(nvm --version))${RESET}"
   else
     step "node -> installing nvm"
-    if ! curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh \
+    if ! curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh \
         | bash >> "$log" 2>&1; then
       step "nvm -> curl failed, trying git clone"
-      if ! git clone --branch v0.40.7 --depth 1 \
+      if ! git clone --depth 1 \
           https://github.com/nvm-sh/nvm.git "$HOME/.nvm" >> "$log" 2>&1; then
         log_tail node.log
         record "tools:nvm" fail "failed"
