@@ -115,7 +115,7 @@ install_packages() {
     # Disk
     "Disk|tree" "Disk|ncdu" "Disk|iotop" "Disk|sysstat"
     # Networking
-    "Networking|mtr" "Networking|nmap" "Networking|traceroute" "Networking|dnsutils"
+    "Networking|mtr" "Networking|nmap" "Networking|traceroute" "Networking|bind9-dnsutils"
     "Networking|whois" "Networking|telnet" "Networking|iftop" "Networking|net-tools"
     "Networking|snmp" "Networking|socat" "Networking|gping"
     # Hardware
@@ -440,7 +440,8 @@ install_golazo() {
 
 install_drawbox() {
   local log="$LOG_DIR/drawbox.log"
-  if command -v drawbox >/dev/null 2>&1; then
+  local bin=/usr/local/bin/drawbox
+  if command -v drawbox >/dev/null 2>&1 || [ -x "$bin" ]; then
     record "tools:drawbox" skip "already installed"
     return 0
   fi
@@ -454,13 +455,31 @@ install_drawbox() {
         || ! g++ -O2 -o /tmp/drawbox/drawbox /tmp/drawbox/drawbox.cpp \
             >> "$log" 2>&1 \
         || ! sudo install -o root -g root -m 755 /tmp/drawbox/drawbox \
-            /usr/local/bin/drawbox >> "$log" 2>&1; then
+            "$bin" >> "$log" 2>&1; then
       log_tail drawbox.log
       record "tools:drawbox" fail "failed"
       return 1
     fi
     rm -rf /tmp/drawbox
+  else
+    local src=""
+    for c in ./drawbox "$BASE/drawbox"; do
+      [ -x "$c" ] && src="$c" && break
+    done
+    if [ -z "$src" ] || ! sudo install -o root -g root -m 755 "$src" "$bin" \
+        >> "$log" 2>&1; then
+      step "drawbox -> binary not found or install failed"
+      log_tail drawbox.log
+      record "tools:drawbox" fail "failed"
+      return 1
+    fi
+    rm -f ./drawbox "$BASE/drawbox"
   fi
+  command -v drawbox >/dev/null 2>&1 || {
+    log_tail drawbox.log
+    record "tools:drawbox" fail "not on PATH after install"
+    return 1
+  }
   record "tools:drawbox" ok "installed"
 }
 
