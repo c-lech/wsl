@@ -356,6 +356,7 @@ install_ollama() {
     step "ollama -> pulling qwen3:8b"
     if ollama pull qwen3:8b >> "$log" 2>&1; then
       record "models:qwen3:8b" ok "pulled"
+      step "ollama -> qwen3:8b pulled"
     else
       record "models:qwen3:8b" fail "pull failed"
     fi
@@ -368,6 +369,7 @@ install_ollama() {
     printf 'FROM qwen3:8b\nPARAMETER num_ctx 16384\n' > /tmp/Modelfile-qwen3-16k
     if ollama create qwen3:8b-16k -f /tmp/Modelfile-qwen3-16k >> "$log" 2>&1; then
       record "models:qwen3:8b-16k" ok "created"
+      step "ollama -> qwen3:8b-16k created"
     else
       record "models:qwen3:8b-16k" fail "create failed"
     fi
