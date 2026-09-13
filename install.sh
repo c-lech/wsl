@@ -401,6 +401,7 @@ install_vagrant() {
         | sudo tee /etc/apt/sources.list.d/hashicorp.list >/dev/null
     fi
 
+    step "vagrant -> updating apt"
     if ! apt_update; then
       record "tools:vagrant" fail "failed (apt update)"
       return 1
@@ -1262,16 +1263,16 @@ run_step() {
     export VERBOSE
     if command -v setsid >/dev/null 2>&1; then
       if [ "$VERBOSE" -ge 3 ]; then
-        setsid bash -c 'tail -n 0 -F "$1" 2>/dev/null >&2' _ "$LOG_DIR/$logfile" &
+        setsid bash -c 'tail -n 0 -F "$1" 2>&1 | grep --line-buffered -v "^tail: " >&2' _ "$LOG_DIR/$logfile" &
       else
-        setsid bash -c 'tail -n 0 -F "$1" 2>/dev/null | log_feed "$2" >&2' _ "$LOG_DIR/$logfile" "$logfile" &
+        setsid bash -c 'tail -n 0 -F "$1" 2>&1 | log_feed "$2" >&2' _ "$LOG_DIR/$logfile" "$logfile" &
       fi
       feed_pid=$!
     else
       if [ "$VERBOSE" -ge 3 ]; then
-        tail -n 0 -F "$LOG_DIR/$logfile" 2>/dev/null >&2 &
+        tail -n 0 -F "$LOG_DIR/$logfile" 2>&1 | grep --line-buffered -v '^tail: ' >&2 &
       else
-        tail -n 0 -F "$LOG_DIR/$logfile" 2>/dev/null | log_feed "$logfile" >&2 &
+        tail -n 0 -F "$LOG_DIR/$logfile" 2>&1 | log_feed "$logfile" >&2 &
       fi
       feed_pid=$!
     fi
