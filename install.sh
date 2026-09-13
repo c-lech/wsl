@@ -119,7 +119,6 @@ apt_live() {
 
 
 apt_update() {
-  step "apt update"
   if ! sudo apt update >> "$LOG_DIR/apt-update.log" 2>&1; then
     return 1
   fi
@@ -402,11 +401,6 @@ install_vagrant() {
         | sudo tee /etc/apt/sources.list.d/hashicorp.list >/dev/null
     fi
 
-    if ! apt_update; then
-      record "tools:vagrant" fail "failed (apt update)"
-      return 1
-    fi
-    step "vagrant -> installing"
     if ! sudo apt install -y vagrant >> "$log" 2>&1; then
       log_tail vagrant.log
       record "tools:vagrant" fail "failed"
