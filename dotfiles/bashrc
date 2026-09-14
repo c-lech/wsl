@@ -94,6 +94,9 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
+# clipboard auto-detect -> image via saveimg / text via savecode (see save -h)
+alias save='$HOME/wsl/save.sh'
+
 # clipboard image -> ~/projects/saved/images/ (see saveimg -h)
 alias saveimg='$HOME/wsl/saveimg.sh'
 
