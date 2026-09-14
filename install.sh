@@ -174,6 +174,7 @@ install_packages() {
     "Cpufetch util|cpufetch"
     # ASCII art
     "ASCII|boxes" "ASCII|jp2a" "ASCII|chafa" "ASCII|caca-utils" "ASCII|figlet" "ASCII|cmatrix" "ASCII|lolcat" "ASCII|toilet"
+    "ASCII|imagemagick"
     # TMUX integration
     "TMUX integration|wl-clipboard"
     # Ollama deps
