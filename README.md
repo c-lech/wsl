@@ -77,6 +77,44 @@ cd ~/wsl
 ./install.sh
 ```
 
+## Ollama + Multiple WSL Distros — Case Study
+
+### The case
+
+A fresh `ubu2` was created (`wsl --install -d Ubuntu-26.04 --name ubu2`), then
+`./install.sh -vv` on it reported `[skip] already pulled` / `already created` for
+both models — but the distro was brand new. Impossible, or a bug?
+
+### The findings
+
+1. `ubu2`'s storage folder (`C:\Users\<user>\AppData\Local\wsl\{...}`) was
+   created the same day — genuinely fresh, not a clone or restored snapshot.
+2. The models showed `MODIFIED 14 hours ago` — *older than ubu2 itself*. They
+   could not be ubu2's.
+3. `wsl -d ubu2 -e ollama list` returned the **same models** as `wsl -d ubu -e ollama list`.
+4. `pgrep -af ollama` on each distro: **ubu** runs `ollama serve`; **ubu2** runs
+   **no server** — yet both list identical models (same IDs, same size).
+5. Root cause: WSL2 runs all distros inside **one shared VM**, so they share the
+   same `127.0.0.1` loopback. The script's `ollama list` on ubu2 was answered by
+   **ubu's** server over that shared loopback.
+
+### The conclusion
+
+- Not a bug — not in `install.sh`, not in the distro naming, and nothing leaked
+  from Windows.
+- `install.sh` reported the truth: the models *do* exist — just on another
+  distro. Its one wrong assumption was that `ollama list` reflects **this**
+  distro's store; on WSL2 it reflects whatever server owns port `11434`.
+- The skip notice states which case you're in:
+  `already pulled (local server)` vs `already pulled (on another distro, shared loopback)`.
+- **Deliberately kept shared:** one ~10 GB model store, usable from every distro,
+  nothing duplicated. Per-distro isolation was considered and rejected — it would
+  duplicate ~10 GB per distro and fight WSL2's shared-VM design.
+
+The two-word tell is in the skip line: `local server` = this distro owns it;
+`shared loopback` = another distro serves it. Recreate the mystery with:
+`wsl -d <distro> -e bash -lc 'pgrep -af ollama; ollama list'`.
+
 ## Data Mount
 
 Windows `C:\data\projects` is mounted at `$HOME/projects` (drvfs) and survives

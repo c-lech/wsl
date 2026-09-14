@@ -325,6 +325,14 @@ model_present() {
   ollama list 2>/dev/null | awk -v m="$1" '$1==m {found=1} END {exit !found}'
 }
 
+ollama_origin() {
+  if pgrep -f "ollama serve" >/dev/null 2>&1; then
+    echo "local server"
+  else
+    echo "on another distro, shared loopback"
+  fi
+}
+
 install_ollama() {
   local log="$LOG_DIR/ollama.log"
 
@@ -351,8 +359,11 @@ install_ollama() {
     record "tools:ollama:server" ok "installed ${C_SECT}($(get_version ollama))${RESET}"
   fi
 
+  local origin
+  origin="$(ollama_origin)"
+
   if model_present "qwen3:8b"; then
-    record "models:qwen3:8b" skip "already pulled"
+    record "models:qwen3:8b" skip "already pulled (${origin})"
   else
     step "ollama -> pulling qwen3:8b"
     if ollama pull qwen3:8b >> "$log" 2>&1; then
@@ -364,7 +375,7 @@ install_ollama() {
   fi
 
   if model_present "qwen3:8b-16k"; then
-    record "models:qwen3:8b-16k" skip "already created"
+    record "models:qwen3:8b-16k" skip "already created (${origin})"
   else
     step "ollama -> creating qwen3:8b-16k"
     printf 'FROM qwen3:8b\nPARAMETER num_ctx 16384\n' > /tmp/Modelfile-qwen3-16k
