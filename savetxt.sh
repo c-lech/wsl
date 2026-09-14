@@ -4,8 +4,15 @@
 #   savetxt           # -> ~/projects/saved/logs/txt_143022_260914.txt
 #
 # Reads clipboard text only. Images are ignored.
+#
+# File naming: txt_<HHMMSS>_<yymmdd>.txt
+# Exit codes: 0 = saved, 1 = clipboard is empty.
 
 set -uo pipefail
+
+usage() { awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 && !/^#/ {exit}' "$0"; exit 0; }
+
+if [ "${1:-}" = "-h" ]; then usage; fi
 
 text="$(powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetText()" 2>/dev/null | tr -d '\r')"
 

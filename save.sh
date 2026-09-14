@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # save - detect what's on the Windows clipboard and dispatch to the right saver
 #
 # If the clipboard holds an image it runs saveimg.sh (-> ~/projects/saved/images/),
@@ -18,10 +18,10 @@
 # Depends on: wl-clipboard (wl-paste) + same deps as saveimg.sh/savecode.sh.
 # Exit codes: 0 = saved, 1 = nothing on clipboard or save failed, 2 = bad usage (engine).
 
-set -euo pipefail
+set -uo pipefail
 
 if [ "${1:-}" = "-h" ]; then
-  sed -n '2,18p' "$0" | sed 's/^# *//'
+  awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 && !/^#/ {exit}' "$0"
   exit 0
 fi
 

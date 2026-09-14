@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # saveimg - save the Windows-clipboard image as JPG/PNG into the shared projects dir
 #
 # Reads whatever image is on the (WSLg) clipboard, prefers the most efficient
@@ -16,13 +16,13 @@
 # Depends on: wl-clipboard (wl-paste) + ImageMagick (magick) - both installed by install.sh.
 # Exit codes: 0 = saved, 1 = no image on clipboard or conversion failed, 2 = bad usage.
 
-set -euo pipefail
+set -uo pipefail
 
 q=100      # JPEG quality 0-100; 100 = near-lossless master, 92 = tiny but eye-identical
 png=0      # 1 = PNG output (lossless); 0 = JPEG
 out=""     # custom destination; empty = timestamped default name
 
-usage() { sed -n '2,14p' "$0" | sed 's/^# *//'; exit 0; }
+usage() { awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 && !/^#/ {exit}' "$0"; exit 0; }
 
 while getopts "q:po:h" o; do case "$o" in
   q) q=$OPTARG ;;
@@ -75,4 +75,4 @@ else                                                    # WSLg bridge: JPEG
 fi
 
 [ -s "$out" ] || { [ -n "$pull" ] && rm -f "$pull"; echo "saveimg: save failed (nothing written)" >&2; exit 1; }
-echo "saveimg: $out"
+echo "saved: $out"

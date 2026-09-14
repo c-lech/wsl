@@ -4,9 +4,15 @@
 #   savecmd systemctl status zabbix-agent
 #
 # stdout goes to the file, errors stay on your screen as usual.
+#
 # File naming: cmd_<HHMMSS>_<yymmdd>.txt
+# Exit codes: 0 = saved, 1 = no command given.
 
 set -uo pipefail
+
+usage() { awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 && !/^#/ {exit}' "$0"; exit 0; }
+
+if [ "${1:-}" = "-h" ]; then usage; fi
 
 if [ $# -eq 0 ]; then
     echo "savecmd: give me a command to run" >&2

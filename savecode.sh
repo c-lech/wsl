@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # savecode - render the Windows-clipboard code/text as a PNG with silicon into the shared projects dir
 #
 # Reads whatever text/code is on the (WSLg) clipboard as text/plain, strips
@@ -17,12 +17,12 @@
 # Depends on: wl-clipboard (wl-paste) + silicon - both installed by install.sh.
 # Exit codes: 0 = saved, 1 = no text on clipboard or render failed, 2 = bad usage.
 
-set -euo pipefail
+set -uo pipefail
 
 lang="markdown"   # default near-plain grammar; override with -l (python, bash, json, ...)
 out=""            # custom destination; empty = timestamped default name
 
-usage() { sed -n '2,15p' "$0" | sed 's/^# *//'; exit 0; }
+usage() { awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 && !/^#/ {exit}' "$0"; exit 0; }
 
 while getopts "l:o:h" o; do case "$o" in
   l) lang=$OPTARG ;;
@@ -60,4 +60,4 @@ if printf '%s\n' "$render_out" | grep -qi '\[error\]'; then
   exit 1
 fi
 [ -s "$out" ] || { echo "savecode: render failed (no output file)" >&2; exit 1; }
-echo "savecode: $out"
+echo "saved: $out"
