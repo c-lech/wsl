@@ -25,6 +25,14 @@ if [ "${1:-}" = "-h" ]; then
   exit 0
 fi
 
+# Windows-first detection (bypasses the flaky WSLg mirror)
+win="$(powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; if ([System.Windows.Forms.Clipboard]::ContainsImage()) {'image'} elseif ([System.Windows.Forms.Clipboard]::ContainsText()) {'text'} else {'none'}" 2>/dev/null | tr -d '\r' || true)"
+case "$win" in
+  image) exec "$HOME/wsl/saveimg.sh" "$@" ;;
+  text)  exec "$HOME/wsl/savecode.sh" "$@" ;;
+esac
+
+# WSLg bridge as last resort
 types="$(wl-paste --list-types 2>/dev/null || true)"   # what does the clipboard offer?
 
 chosen=""
@@ -32,9 +40,7 @@ for t in image/png image/bmp image/jpeg; do            # image beats text, png >
   grep -qx "$t" <<<"$types" && { chosen=$t; break; }
 done
 
-if [ -n "$chosen" ]; then
-  exec "$HOME/wsl/saveimg.sh" "$@"
-fi
+[ -n "$chosen" ] && exec "$HOME/wsl/saveimg.sh" "$@"
 
 grep -q "^text/" <<<"$types" && exec "$HOME/wsl/savecode.sh" "$@"
 

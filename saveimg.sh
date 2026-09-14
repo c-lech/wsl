@@ -32,12 +32,27 @@ while getopts "q:po:h" o; do case "$o" in
   *) usage ;;
 esac; done
 
-types="$(wl-paste --list-types 2>/dev/null || true)"    # what does the clipboard offer?
+pull=""                                                # Windows-direct pull file (PNG) - primary
+win_temp="$(wslpath "$(powershell.exe -NoProfile -Command '$env:TEMP' 2>/dev/null | tr -d '\r' || true)" 2>/dev/null || true)"
+if [ -n "$win_temp" ]; then
+  ps_win="$(wslpath -w "$win_temp" 2>/dev/null || true)"
+  if [ -n "$ps_win" ]; then
+    pull_file="$win_temp/saveimg_pull.png"
+    if powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; if ([System.Windows.Forms.Clipboard]::ContainsImage()) { [System.Windows.Forms.Clipboard]::GetImage().Save('$ps_win\\saveimg_pull.png',[System.Drawing.Imaging.ImageFormat]::Png) }" >/dev/null 2>&1 && [ -s "$pull_file" ]; then
+      pull="$pull_file"
+    fi
+  fi
+fi
+
+types="$(wl-paste --list-types 2>/dev/null || true)"    # what does the WSLg bridge offer?
 chosen=""
-for t in image/png image/bmp image/jpeg; do
-  grep -qx "$t" <<<"$types" && { chosen=$t; break; }
-done
-[ -n "$chosen" ] || { echo "saveimg: no image on clipboard (only text) - re-copy the image" >&2; exit 1; }
+if [ -z "$pull" ]; then                                 # Windows pull failed -> last-resort WSLg read
+  for t in image/png image/bmp image/jpeg; do
+    grep -qx "$t" <<<"$types" && { chosen=$t; break; }
+  done
+fi
+
+[ -n "$pull" ] || [ -n "$chosen" ] || { echo "saveimg: no image on clipboard (only text) - re-copy the image" >&2; exit 1; }
 
 if [ -z "$out" ]; then
   dir="$HOME/projects/saved/images"
@@ -46,9 +61,18 @@ if [ -z "$out" ]; then
 fi
 mkdir -p "$(dirname "$out")"
 
-if [ "$png" = 1 ]; then                                  # lossless: only strip metadata
+if [ -n "$pull" ]; then                                 # Windows-direct PNG (primary, reliable)
+  if [ "$png" = 1 ]; then                               # lossless: only strip metadata
+    magick "$pull" -strip "$out"
+  else                                                  # JPEG: quality + full 4:4:4 color
+    magick "$pull" -quality "$q" -sampling-factor 4:4:4 -strip "$out"
+  fi
+  rm -f "$pull"
+elif [ "$png" = 1 ]; then                               # WSLg bridge: lossless passthrough
   wl-paste -t "$chosen" | magick - -strip "$out"
-else                                                     # JPEG: quality + full 4:4:4 color
+else                                                    # WSLg bridge: JPEG
   wl-paste -t "$chosen" | magick - -quality "$q" -sampling-factor 4:4:4 -strip "$out"
 fi
+
+[ -s "$out" ] || { [ -n "$pull" ] && rm -f "$pull"; echo "saveimg: save failed (nothing written)" >&2; exit 1; }
 echo "saveimg: $out"

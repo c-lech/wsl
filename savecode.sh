@@ -32,6 +32,9 @@ while getopts "l:o:h" o; do case "$o" in
 esac; done
 
 text="$(wl-paste 2>/dev/null || true)"          # nothing full-text on the clipboard?
+if [ -z "$text" ]; then                          # WSLg bridge empty -> ask Windows directly
+  text="$(powershell.exe -NoProfile -Command 'Get-Clipboard -Raw' 2>/dev/null | tr -d '\r' || true)"
+fi
 [ -n "$text" ] || { echo "savecode: no text on clipboard - re-copy the code" >&2; exit 1; }
 
 if [ -z "$out" ]; then
