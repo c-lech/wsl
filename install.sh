@@ -744,6 +744,30 @@ install_silicon() {
   record "tools:silicon" ok "installed"
 }
 
+install_termshot() {
+  local log="$LOG_DIR/termshot.log"
+  if command -v termshot >/dev/null 2>&1; then
+    record "tools:termshot" skip "already installed"
+    return 0
+  fi
+  step "termshot -> detecting latest release"
+  local ver url
+  ver="$(curl -fsSL https://api.github.com/repos/homeport/termshot/releases/latest 2>>"$log" | grep -oP '"tag_name": "\K[^"]+')"
+  if [ -z "$ver" ]; then
+    log_tail termshot.log
+    record "tools:termshot" fail "failed (no release info)"
+    return 1
+  fi
+  url="https://github.com/homeport/termshot/releases/download/${ver}/termshot_${ver#v}_linux_amd64.tar.gz"
+  step "termshot -> downloading $ver"
+  if ! curl -fsSL "$url" 2>>"$log" | sudo tar xz -C /usr/local/bin --strip-components=0 termshot >> "$log" 2>&1; then
+    log_tail termshot.log
+    record "tools:termshot" fail "failed"
+    return 1
+  fi
+  record "tools:termshot" ok "installed ($ver)"
+}
+
 install_watchexec() {
   local log="$LOG_DIR/watchexec.log"
   [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
@@ -1337,7 +1361,7 @@ report() {
     ["automate"]="apt:Automation;tools:watchexec"
     ["files"]="apt:Files"
     ["parse"]="apt:Parse"
-    ["render"]="tools:silicon"
+    ["render"]="tools:silicon;tools:termshot"
     ["agent"]="tools:agent"
     ["runtime"]="tools:ollama"
     ["models"]="models"
@@ -1449,9 +1473,9 @@ report() {
       "system:copy ssh keys:id_ed25519.pub") col="$C_FAIL";;
     esac
     if [[ "$sec" =~ ^(agent|runtime|models)$ ]]; then
-case "$k" in
+      case "$k" in
       "tools:agent:opencode"|"tools:ollama:server") col="$C_SECT";;
-        *)                                        col="";;
+      *)                                             col="";;
       esac
     elif [ "$bucket" = 1 ] || [ "$sec" = "system" ]; then
       if [ "$bucket" = 1 ]; then
@@ -1674,6 +1698,7 @@ main() {
   run_step "tools:drift" "Installing drift" --log drift.log install_drift
   run_step "tools:rust" "Installing Rust" --log rust.log install_rust
   run_step "tools:silicon" "Installing silicon" --log silicon.log install_silicon
+  run_step "tools:termshot" "Installing termshot" --log termshot.log install_termshot
   run_step "tools:watchexec" "Installing watchexec" --log watchexec.log install_watchexec
   run_step "tools:node" "Installing Node.js" --log node.log install_node
   run_step "tools:cfonts" "Installing cfonts" --log cfonts.log install_cfonts
