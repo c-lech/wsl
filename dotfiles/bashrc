@@ -112,6 +112,9 @@ alias s='$HOME/wsl/enterssh.sh'
 # savepane -> save whole text of current tmux pane as txt in saved/logs/
 alias savepane='$HOME/wsl/savepane.sh'
 
+# savetmux -> save whole text of every tmux pane in the session as txt in saved/logs/
+alias savetmux='$HOME/wsl/savetmux.sh'
+
 # savecmd -> run command, save output to saved/logs/
 alias savecmd='$HOME/wsl/savecmd.sh'
 

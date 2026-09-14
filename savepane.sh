@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # savepane - save the full text of your current tmux pane to saved/logs/.
 #
-#   savepane         # -> ~/projects/saved/logs/pane_140526_260914.txt
+#   savepane         # -> ~/projects/saved/logs/pane_<session>_<pane>_140526_260914.txt
 #
-# Grabs the full scroll-back of the pane you're in.
+# Grabs the full scroll-back of the pane you're in. Same naming as savetmux,
+# but for one pane only.
 #
 # Requires: running inside tmux.
 # Exit codes: 0 = saved, 1 = not in tmux or save failed.
@@ -22,7 +23,11 @@ fi
 dir="$HOME/projects/saved/logs"
 mkdir -p "$dir" || exit 1
 
-out="$dir/pane_$(date +%H%M%S)_$(date +%y%m%d).txt"
+sid="$(tmux display-message -p '#{session_name}')"
+idx="$(tmux display-message -p '#{pane_index}')"
+sid="${sid// /_}"
+
+out="$dir/pane_${sid}_${idx}_$(date +%H%M%S)_$(date +%y%m%d).txt"
 
 tmux capture-pane -p -S - > "$out"
 
