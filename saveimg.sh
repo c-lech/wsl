@@ -1,17 +1,17 @@
 #!/bin/bash
-# clipimg - save the Windows-clipboard image as JPG/PNG into the shared projects dir
+# saveimg - save the Windows-clipboard image as JPG/PNG into the shared projects dir
 #
 # Reads whatever image is on the (WSLg) clipboard, prefers the most efficient
 # transport type offered (PNG > BMP > JPEG), and writes a high-quality JPEG
-# (default) or lossless PNG to ~/projects/clipboard/images/ with a WhatsApp-style
+# (default) or lossless PNG to ~/projects/saved/images/ with a WhatsApp-style
 # timestamped name.
 #
 # Examples:
-#   clipimg                # -> ~/projects/clipboard/images/image_203012_130926.jpg (Q100)
-#   clipimg -q 92          # JPEG at quality 92 (eye-identical, ~1/8 the size)
-#   clipimg -p             # save as lossless PNG (best for text/UI screenshots)
-#   clipimg -o /tmp/a.jpg  # custom destination (absolute or relative)
-#   clipimg -h             # this help
+#   saveimg                # -> ~/projects/saved/images/image_203012_130926.jpg (Q100)
+#   saveimg -q 92          # JPEG at quality 92 (eye-identical, ~1/8 the size)
+#   saveimg -p             # save as lossless PNG (best for text/UI screenshots)
+#   saveimg -o /tmp/a.jpg  # custom destination (absolute or relative)
+#   saveimg -h             # this help
 #
 # Depends on: wl-clipboard (wl-paste) + ImageMagick (magick) - both installed by install.sh.
 # Exit codes: 0 = saved, 1 = no image on clipboard or conversion failed, 2 = bad usage.
@@ -37,10 +37,10 @@ chosen=""
 for t in image/png image/bmp image/jpeg; do
   grep -qx "$t" <<<"$types" && { chosen=$t; break; }
 done
-[ -n "$chosen" ] || { echo "clipimg: no image on clipboard (only text) - re-copy the image" >&2; exit 1; }
+[ -n "$chosen" ] || { echo "saveimg: no image on clipboard (only text) - re-copy the image" >&2; exit 1; }
 
 if [ -z "$out" ]; then
-  dir="$HOME/projects/clipboard/images"
+  dir="$HOME/projects/saved/images"
   ext=jpg; [ "$png" = 1 ] && ext=png
   out="$dir/image_$(date +%H%M%S)_$(date +%y%m%d).$ext"
 fi
@@ -51,4 +51,4 @@ if [ "$png" = 1 ]; then                                  # lossless: only strip 
 else                                                     # JPEG: quality + full 4:4:4 color
   wl-paste -t "$chosen" | magick - -quality "$q" -sampling-factor 4:4:4 -strip "$out"
 fi
-echo "clipimg: $out"
+echo "saveimg: $out"

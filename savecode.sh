@@ -1,18 +1,18 @@
 #!/bin/bash
-# clipcode - render the Windows-clipboard code/text as a PNG with silicon into the shared projects dir
+# savecode - render the Windows-clipboard code/text as a PNG with silicon into the shared projects dir
 #
 # Reads whatever text/code is on the (WSLg) clipboard as text/plain, strips
 # Windows CR line endings, and renders it with silicon to a lossless PNG with
 # OneHalfDark theme, drop-shadow (no window bar), line numbers on, timestamped
-# into ~/projects/clipboard/code/.
+# into ~/projects/saved/code/.
 #
 # Examples:
-#   clipcode                # -> ~/projects/clipboard/code/code_203012_130926.png (markdown-ish plain)
-#   clipcode -l python      # Python syntax highlight
-#   clipcode -l bash        # shell snippet render
-#   clipcode -l json        # JSON render
-#   clipcode -o /tmp/x.png  # custom destination (absolute or relative)
-#   clipcode -h             # this help
+#   savecode                # -> ~/projects/saved/code/code_203012_130926.png (markdown-ish plain)
+#   savecode -l python      # Python syntax highlight
+#   savecode -l bash        # shell snippet render
+#   savecode -l json        # JSON render
+#   savecode -o /tmp/x.png  # custom destination (absolute or relative)
+#   savecode -h             # this help
 #
 # Depends on: wl-clipboard (wl-paste) + silicon - both installed by install.sh.
 # Exit codes: 0 = saved, 1 = no text on clipboard or render failed, 2 = bad usage.
@@ -32,11 +32,11 @@ while getopts "l:o:h" o; do case "$o" in
 esac; done
 
 text="$(wl-paste 2>/dev/null || true)"          # nothing full-text on the clipboard?
-[ -n "$text" ] || { echo "clipcode: no text on clipboard - re-copy the code" >&2; exit 1; }
+[ -n "$text" ] || { echo "savecode: no text on clipboard - re-copy the code" >&2; exit 1; }
 
 if [ -z "$out" ]; then
   auto=1            # auto-named output (removable on failure; never touch a custom -o)
-  dir="$HOME/projects/clipboard/code"
+  dir="$HOME/projects/saved/code"
   out="$dir/code_$(date +%H%M%S)_$(date +%y%m%d).png"   # WhatsApp-style timestamped PNG
 fi
 mkdir -p "$(dirname "$out")"
@@ -53,8 +53,8 @@ render_out="$(printf '%s\n' "$text" | tr -d '\r' | silicon \
 
 if printf '%s\n' "$render_out" | grep -qi '\[error\]'; then
   [ -z "${auto:-}" ] || rm -f "$out"                    # don't remove a pre-existing custom -o
-  echo "clipcode: render failed - $render_out" >&2
+  echo "savecode: render failed - $render_out" >&2
   exit 1
 fi
-[ -s "$out" ] || { echo "clipcode: render failed (no output file)" >&2; exit 1; }
-echo "clipcode: $out"
+[ -s "$out" ] || { echo "savecode: render failed (no output file)" >&2; exit 1; }
+echo "savecode: $out"

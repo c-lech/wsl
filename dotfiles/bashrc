@@ -94,11 +94,11 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
-# clipboard image -> ~/projects/clipboard/images/ (see clipimg -h)
-alias clipimg='$HOME/wsl/clipimg.sh'
+# clipboard image -> ~/projects/saved/images/ (see saveimg -h)
+alias saveimg='$HOME/wsl/saveimg.sh'
 
-# clipboard text/code -> ~/projects/clipboard/code/ as PNG with silicon (see clipcode -h)
-alias clipcode='$HOME/wsl/clipcode.sh'
+# clipboard text/code -> ~/projects/saved/code/ as PNG with silicon (see savecode -h)
+alias savecode='$HOME/wsl/savecode.sh'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
