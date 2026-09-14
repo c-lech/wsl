@@ -103,6 +103,9 @@ alias saveimg='$HOME/wsl/saveimg.sh'
 # clipboard text/code -> ~/projects/saved/code/ as PNG with silicon (see savecode -h)
 alias savecode='$HOME/wsl/savecode.sh'
 
+# tm -> tmux with N panes (tm = tmux = tm 1; see tm -h)
+alias tm='$HOME/wsl/tmux.sh'
+
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
