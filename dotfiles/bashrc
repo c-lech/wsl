@@ -115,6 +115,9 @@ alias savepane='$HOME/wsl/savepane.sh'
 # savecmd -> run command, save output to saved/logs/
 alias savecmd='$HOME/wsl/savecmd.sh'
 
+# savetxt -> save Windows clipboard text to saved/logs/
+alias savetxt='$HOME/wsl/savetxt.sh'
+
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
