@@ -1075,8 +1075,8 @@ mount_data_dir() {
     local uid gid
     uid="$(id -u)"
     gid="$(id -g)"
-    step "mount data -> C:\\data\\shared -> $HOME/shared (uid=$uid, gid=$gid)"
-    if ! sudo mount -t drvfs -o "defaults,metadata,uid=$uid,gid=$gid" \
+    step "mount data -> C:\\data\\shared -> $HOME/shared (uid=$uid, gid=$gid, umask=22)"
+    if ! sudo mount -t drvfs -o "defaults,metadata,uid=$uid,gid=$gid,umask=22,fmask=11" \
           'C:\data\shared' "$HOME/shared" >> "$LOG_DIR/mount.log" 2>&1; then
       log_tail mount.log
       record "system:mount shared data:live mount (drvfs)" fail "mount failed"
@@ -1094,7 +1094,7 @@ mount_data_dir() {
     uid="$(id -u)"
     gid="$(id -g)"
     step "mount data -> adding to /etc/fstab"
-    if echo "C:\\data\\shared $HOME/shared drvfs defaults,metadata,uid=$uid,gid=$gid 0 0" \
+    if echo "C:\\data\\shared $HOME/shared drvfs defaults,metadata,uid=$uid,gid=$gid,umask=22,fmask=11 0 0" \
         | sudo tee -a /etc/fstab >> "$LOG_DIR/mount.log" 2>&1; then
       record "system:mount shared data:fstab entry" ok "added"
     else
