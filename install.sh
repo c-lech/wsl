@@ -928,7 +928,6 @@ install_dotfiles() {
   local entries=(
     "$HOME/.tmux.conf|$BASE/dotfiles/tmux.conf|link"
     "$HOME/.bashrc|$BASE/dotfiles/bashrc|link"
-    "$HOME/.bash_aliases|$BASE/dotfiles/bash_aliases|link"
     "$HOME/.asoundrc|$BASE/dotfiles/asoundrc|link"
     "$HOME/.config/opencode/opencode.jsonc|$BASE/dotfiles/opencode.jsonc|link"
     "$HOME/.config/tmuxai/config.yaml|$BASE/dotfiles/tmuxai.yaml|link"
@@ -968,6 +967,21 @@ install_dotfiles() {
       fi
     fi
   done
+
+  # ssh aliases live outside the repo on shared storage (may not exist on a
+  # fresh machine, so link only when present and never fail)
+  local aliases_src="$HOME/projects/infra/bash_aliases/bash_aliases"
+  if [ -f "$aliases_src" ]; then
+    if [ "$(readlink "$HOME/.bash_aliases" 2>/dev/null)" = "$aliases_src" ]; then
+      record "system:link dot files:$HOME/.bash_aliases" skip "already linked"
+    else
+      step "dotfiles -> $HOME/.bash_aliases"
+      ln -sfn "$aliases_src" "$HOME/.bash_aliases"
+      record "system:link dot files:$HOME/.bash_aliases" ok "linked"
+    fi
+  else
+    record "system:link dot files:$HOME/.bash_aliases" skip "aliases file missing (machine-local)"
+  fi
 
   if [ -f "$HOME/.config/fastfetch/logo.txt" ]; then
     record "system:link dot files:$HOME/.config/fastfetch/logo.txt" skip "already rendered"

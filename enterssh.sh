@@ -23,7 +23,7 @@
 set -uo pipefail
 
 ALIASES="${HOME}/.bash_aliases"
-[ -f "$ALIASES" ] || ALIASES="${HOME}/wsl/dotfiles/bash_aliases"
+[ -f "$ALIASES" ] || ALIASES="${HOME}/projects/infra/bash_aliases/bash_aliases"
 
 command -v fzf >/dev/null 2>&1 || {
     echo "enterssh: fzf is not installed (apt install fzf)" >&2
@@ -300,7 +300,7 @@ if [ -n "$LAYOUT" ]; then
 fi
 
 if [ ! -f "$ALIASES" ]; then
-    echo "enterssh: no ssh aliases found (looked at ${HOME}/.bash_aliases)" >&2
+    echo "enterssh: no ssh aliases found (looked at ${HOME}/.bash_aliases or ~/projects/infra/bash_aliases/bash_aliases)" >&2
     exit 1
 fi
 
@@ -312,7 +312,7 @@ fi
 # -m so Tab can mark servers; Enter on a single line behaves exactly as before.
 mapfile -t SEL < <( { print_menu | sort; printf '%s\n' "$MANUAL"; } \
     | fzf -m --layout=reverse --height=40% --prompt='ssh> ' --info=inline \
-        --bind='tab:toggle' --bind='btab:toggle' \
+        --bind='tab:toggle' --bind='btab:toggle' --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
         --bind='ctrl-u:preview-half-page-up' --bind='ctrl-d:preview-half-page-down' \
         --header='enter=ssh · tab=mark (2+ -> tmux panes) · esc=quit · ctrl-u/d=scroll' \
         --preview-window='right:45%:follow' --preview="$0 --_preview {}" )

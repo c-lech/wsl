@@ -25,7 +25,6 @@ wsl/
 ├── dotfiles/
 │   ├── wslconfig
 │   ├── bashrc
-│   ├── bash_aliases
 │   ├── tmux.conf
 │   ├── asoundrc
 │   ├── opencode.jsonc
@@ -126,16 +125,20 @@ C:\data\projects $HOME/projects drvfs defaults,metadata 0 0
 
 Project work lives under `$HOME/projects` so it's accessible from both Windows and WSL.
 
+Machine-local infra lives under `$HOME/projects/infra/` (not versioned): `git_credentials/`,
+`wsl_ssh_key/`, `vagrant/`, and — since it's just SSH addresses — the aliases file at
+`$HOME/projects/infra/bash_aliases/bash_aliases`, symlinked as `~/.bash_aliases`.
+
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `bash_aliases`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
+`dotfiles/` contains `tmux.conf`, `bashrc`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
 Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
 ```text
 ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
 ~/.bashrc    -> ~/wsl/dotfiles/bashrc
-~/.bash_aliases -> ~/wsl/dotfiles/bash_aliases
+~/.bash_aliases -> ~/projects/infra/bash_aliases/bash_aliases   (machine-local, linked if present)
 ~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
 ~/.config/tmuxai/config.yaml      -> ~/wsl/dotfiles/tmuxai.yaml
 ~/.config/fastfetch/config.jsonc  -> ~/wsl/dotfiles/config.jsonc
@@ -145,6 +148,10 @@ user profile (`C:\Users\<user>\.wslconfig`):
 ~/.config/cliamp/config.toml      <- ~/wsl/dotfiles/cliamp.toml  (copied, not symlinked)
 C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)
 ```
+
+`~/.bash_aliases` links to `~/projects/infra/bash_aliases/bash_aliases` (shared storage,
+not the repo) — SSH addresses are machine-local. `install.sh` links it only when the
+file exists and skips it otherwise, so fresh machines don't fail.
 
 `cliamp/config.toml` is copied rather than symlinked since cliamp rewrites it on
 its own (atomic save replacing any symlink). The repo file is the seed for fresh
