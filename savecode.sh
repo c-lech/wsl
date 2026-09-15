@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# savecode - render the Windows-clipboard code/text as a PNG with silicon into the shared projects dir
+# savecode - render the Windows-clipboard code/text as a PNG with silicon into the shared data dir
 #
 # Reads whatever text/code is on the (WSLg) clipboard as text/plain, strips
 # Windows CR line endings, and renders it with silicon to a lossless PNG with
 # OneHalfDark theme, drop-shadow (no window bar), line numbers on, timestamped
-# into ~/projects/saved/code/.
+# into ~/shared/saved/code/.
 #
 # Examples:
-#   savecode                # -> ~/projects/saved/code/code_203012_130926.png (markdown-ish plain)
+#   savecode                # -> ~/shared/saved/code/code_203012_130926.png (markdown-ish plain)
 #   savecode -l python      # Python syntax highlight
 #   savecode -l bash        # shell snippet render
 #   savecode -l json        # JSON render
@@ -39,7 +39,7 @@ fi
 
 if [ -z "$out" ]; then
   auto=1            # auto-named output (removable on failure; never touch a custom -o)
-  dir="$HOME/projects/saved/code"
+  dir="$HOME/shared/saved/code"
   out="$dir/code_$(date +%H%M%S)_$(date +%y%m%d).png"   # WhatsApp-style timestamped PNG
 fi
 mkdir -p "$(dirname "$out")"

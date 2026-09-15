@@ -23,7 +23,7 @@
 set -uo pipefail
 
 ALIASES="${HOME}/.bash_aliases"
-[ -f "$ALIASES" ] || ALIASES="${HOME}/projects/infra/bash_aliases/bash_aliases"
+[ -f "$ALIASES" ] || ALIASES="${HOME}/shared/infra/bash_aliases/bash_aliases"
 
 command -v fzf >/dev/null 2>&1 || {
     echo "enterssh: fzf is not installed (apt install fzf)" >&2
@@ -300,7 +300,7 @@ if [ -n "$LAYOUT" ]; then
 fi
 
 if [ ! -f "$ALIASES" ]; then
-    echo "enterssh: no ssh aliases found (looked at ${HOME}/.bash_aliases or ~/projects/infra/bash_aliases/bash_aliases)" >&2
+    echo "enterssh: no ssh aliases found (looked at ${HOME}/.bash_aliases or ~/shared/infra/bash_aliases/bash_aliases)" >&2
     exit 1
 fi
 

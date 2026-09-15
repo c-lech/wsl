@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # save - detect what's on the Windows clipboard and dispatch to the right saver
 #
-# If the clipboard holds an image it runs saveimg.sh (-> ~/projects/saved/images/),
-# if it holds text/code it runs savecode.sh (-> ~/projects/saved/code/ as PNG).
+# If the clipboard holds an image it runs saveimg.sh (-> ~/shared/saved/images/),
+# if it holds text/code it runs savecode.sh (-> ~/shared/saved/code/ as PNG).
 # Flags are forwarded to whichever engine runs; exit codes are inherited from it.
 #
 # Examples:

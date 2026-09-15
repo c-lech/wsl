@@ -7,7 +7,7 @@
 
 [miscellaneous]
 
-path=/home/benito/projects/music
+path=%%MUSIC_PATH%%
 
 # Enable artist database, that provides clickable artists links in track view.
 useArtistsDb=1

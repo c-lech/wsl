@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VAGRANT_DIR="$HOME/projects/infra/vagrant"
+VAGRANT_DIR="$HOME/shared/infra/vagrant"
 
 environments=(
   zbxserver

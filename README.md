@@ -66,7 +66,7 @@ etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fai
 - symlinks dotfiles (incl. opencode and tmuxai config)
 - copies `dotfiles/wslconfig` as `.wslconfig` to the Windows user profile
 - copies `dotfiles/cliamp.toml` to `~/.config/cliamp/config.toml` (symlinks `cliamp-radios.toml`)
-- mounts Windows `C:\data\projects` at `$HOME/projects` (persistent via `/etc/fstab`, drvfs `metadata`)
+- mounts Windows `C:\data\shared` at `$HOME/shared` (persistent via `/etc/fstab`, drvfs `metadata`)
 - lets Git authenticate silently: copies `infra/git_credentials/git-credentials` to `~/.git-credentials` (chmod 600) and enables `credential.helper store`
 
 Run:
@@ -116,18 +116,18 @@ The two-word tell is in the skip line: `local server` = this distro owns it;
 
 ## Data Mount
 
-Windows `C:\data\projects` is mounted at `$HOME/projects` (drvfs) and survives
+Windows `C:\data\shared` is mounted at `$HOME/shared` (drvfs) and survives
 restarts via `/etc/fstab`:
 
 ```text
-C:\data\projects $HOME/projects drvfs defaults,metadata 0 0
+C:\data\shared $HOME/shared drvfs defaults,metadata 0 0
 ```
 
-Project work lives under `$HOME/projects` so it's accessible from both Windows and WSL.
+Work and data live under `$HOME/shared` so they're accessible from both Windows and WSL.
 
-Machine-local infra lives under `$HOME/projects/infra/` (not versioned): `git_credentials/`,
+Machine-local infra lives under `$HOME/shared/infra/` (not versioned): `git_credentials/`,
 `wsl_ssh_key/`, `vagrant/`, and — since it's just SSH addresses — the aliases file at
-`$HOME/projects/infra/bash_aliases/bash_aliases`, symlinked as `~/.bash_aliases`.
+`$HOME/shared/infra/bash_aliases/bash_aliases`, symlinked as `~/.bash_aliases`.
 
 ## Dotfiles
 
@@ -138,7 +138,7 @@ user profile (`C:\Users\<user>\.wslconfig`):
 ```text
 ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
 ~/.bashrc    -> ~/wsl/dotfiles/bashrc
-~/.bash_aliases -> ~/projects/infra/bash_aliases/bash_aliases   (machine-local, linked if present)
+~/.bash_aliases -> ~/shared/infra/bash_aliases/bash_aliases   (machine-local, linked if present)
 ~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
 ~/.config/tmuxai/config.yaml      -> ~/wsl/dotfiles/tmuxai.yaml
 ~/.config/fastfetch/config.jsonc  -> ~/wsl/dotfiles/config.jsonc
@@ -149,7 +149,7 @@ user profile (`C:\Users\<user>\.wslconfig`):
 C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)
 ```
 
-`~/.bash_aliases` links to `~/projects/infra/bash_aliases/bash_aliases` (shared storage,
+`~/.bash_aliases` links to `~/shared/infra/bash_aliases/bash_aliases` (shared storage,
 not the repo) — SSH addresses are machine-local. `install.sh` links it only when the
 file exists and skips it otherwise, so fresh machines don't fail.
 

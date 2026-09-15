@@ -968,9 +968,16 @@ install_dotfiles() {
     fi
   done
 
+  # kewrc music path lives on shared storage; render the real per-user path.
+  local kewrc="$HOME/.config/kew/kewrc"
+  if [ -f "$kewrc" ] && grep -qs '%%MUSIC_PATH%%' "$kewrc"; then
+    step "dotfiles -> rendering $HOME/.config/kew/kewrc"
+    sed -i "s|%%MUSIC_PATH%%|${HOME}/shared/music|" "$kewrc"
+  fi
+
   # ssh aliases live outside the repo on shared storage (may not exist on a
   # fresh machine, so link only when present and never fail)
-  local aliases_src="$HOME/projects/infra/bash_aliases/bash_aliases"
+  local aliases_src="$HOME/shared/infra/bash_aliases/bash_aliases"
   if [ -f "$aliases_src" ]; then
     if [ "$(readlink "$HOME/.bash_aliases" 2>/dev/null)" = "$aliases_src" ]; then
       record "system:link dot files:$HOME/.bash_aliases" skip "already linked"
@@ -1049,16 +1056,28 @@ install_wslconfig() {
 mount_data_dir() {
   record "system:mount shared data" skip "pending"
 
-  if ! mountpoint -q "$HOME/projects"; then
-    step "mount data -> creating $HOME/projects"
-    mkdir -p "$HOME/projects"
+  # One-time migration: drop a stale pre-rename fstab entry if present.
+  if grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
+    step "mount data -> removing old C:\\data\\projects entry from /etc/fstab"
+    if sudo sed -i '\#C:\data\projects#d' /etc/fstab >> "$LOG_DIR/mount.log" 2>&1; then
+      record "system:mount shared data:fstab cleanup" ok "old entry removed"
+    else
+      record "system:mount shared data:fstab cleanup" fail "failed to remove old entry"
+    fi
+  else
+    record "system:mount shared data:fstab cleanup" skip "no old entry"
+  fi
+
+  if ! mountpoint -q "$HOME/shared"; then
+    step "mount data -> creating $HOME/shared"
+    mkdir -p "$HOME/shared"
 
     local uid gid
     uid="$(id -u)"
     gid="$(id -g)"
-    step "mount data -> C:\\data\\projects -> $HOME/projects (uid=$uid, gid=$gid)"
+    step "mount data -> C:\\data\\shared -> $HOME/shared (uid=$uid, gid=$gid)"
     if ! sudo mount -t drvfs -o "defaults,metadata,uid=$uid,gid=$gid" \
-          'C:\data\projects' "$HOME/projects" >> "$LOG_DIR/mount.log" 2>&1; then
+          'C:\data\shared' "$HOME/shared" >> "$LOG_DIR/mount.log" 2>&1; then
       log_tail mount.log
       record "system:mount shared data:live mount (drvfs)" fail "mount failed"
       publish "system:mount shared data"
@@ -1070,12 +1089,12 @@ mount_data_dir() {
     record "system:mount shared data:live mount (drvfs)" skip "already mounted"
   fi
 
-  if ! grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
+  if ! grep -Fq 'C:\data\shared' /etc/fstab 2>/dev/null; then
     local uid gid
     uid="$(id -u)"
     gid="$(id -g)"
     step "mount data -> adding to /etc/fstab"
-    if echo "C:\\data\\projects $HOME/projects drvfs defaults,metadata,uid=$uid,gid=$gid 0 0" \
+    if echo "C:\\data\\shared $HOME/shared drvfs defaults,metadata,uid=$uid,gid=$gid 0 0" \
         | sudo tee -a /etc/fstab >> "$LOG_DIR/mount.log" 2>&1; then
       record "system:mount shared data:fstab entry" ok "added"
     else
@@ -1089,7 +1108,7 @@ mount_data_dir() {
 }
 
 install_ssh() {
-  local src="$HOME/projects/infra/wsl_ssh_key"
+  local src="$HOME/shared/infra/wsl_ssh_key"
   if [ ! -f "$src/id_ed25519" ]; then
     record "system:copy ssh keys" skip "no source key"
     return 0
@@ -1158,7 +1177,7 @@ configure_git() {
     record "system:config git:credential.helper store" skip "already enabled"
   fi
 
-  local src="$HOME/projects/infra/git_credentials/git-credentials"
+  local src="$HOME/shared/infra/git_credentials/git-credentials"
   if [ -f "$src" ]; then
     if [ -f "$HOME/.git-credentials" ]; then
       record "system:config git:git-credentials" skip "already copied"

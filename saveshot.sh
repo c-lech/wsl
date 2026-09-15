@@ -20,7 +20,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-dir="$HOME/projects/saved/images"
+dir="$HOME/shared/saved/images"
 mkdir -p "$dir" || exit 1
 
 out="$dir/shot_$(date +%H%M%S)_$(date +%y%m%d).png"

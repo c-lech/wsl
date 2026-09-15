@@ -19,7 +19,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-dir="$HOME/projects/saved/logs"
+dir="$HOME/shared/saved/logs"
 mkdir -p "$dir" || exit 1
 
 out="$dir/cmd_$(date +%H%M%S)_$(date +%y%m%d).txt"

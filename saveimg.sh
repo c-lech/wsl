@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# saveimg - save the Windows-clipboard image as JPG/PNG into the shared projects dir
+# saveimg - save the Windows-clipboard image as JPG/PNG into the shared data dir
 #
 # Reads whatever image is on the (WSLg) clipboard, prefers the most efficient
 # transport type offered (PNG > BMP > JPEG), and writes a high-quality JPEG
-# (default) or lossless PNG to ~/projects/saved/images/ with a WhatsApp-style
+# (default) or lossless PNG to ~/shared/saved/images/ with a WhatsApp-style
 # timestamped name.
 #
 # Examples:
-#   saveimg                # -> ~/projects/saved/images/image_203012_130926.jpg (Q100)
+#   saveimg                # -> ~/shared/saved/images/image_203012_130926.jpg (Q100)
 #   saveimg -q 92          # JPEG at quality 92 (eye-identical, ~1/8 the size)
 #   saveimg -p             # save as lossless PNG (best for text/UI screenshots)
 #   saveimg -o /tmp/a.jpg  # custom destination (absolute or relative)
@@ -55,7 +55,7 @@ fi
 [ -n "$pull" ] || [ -n "$chosen" ] || { echo "saveimg: no image on clipboard (only text) - re-copy the image" >&2; exit 1; }
 
 if [ -z "$out" ]; then
-  dir="$HOME/projects/saved/images"
+  dir="$HOME/shared/saved/images"
   ext=jpg; [ "$png" = 1 ] && ext=png
   out="$dir/image_$(date +%H%M%S)_$(date +%y%m%d).$ext"
 fi
