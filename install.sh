@@ -1056,18 +1056,6 @@ install_wslconfig() {
 mount_data_dir() {
   record "system:mount shared data" skip "pending"
 
-  # One-time migration: drop a stale pre-rename fstab entry if present.
-  if grep -Fq 'C:\data\projects' /etc/fstab 2>/dev/null; then
-    step "mount data -> removing old C:\\data\\projects entry from /etc/fstab"
-    if sudo sed -i '\#C:\data\projects#d' /etc/fstab >> "$LOG_DIR/mount.log" 2>&1; then
-      record "system:mount shared data:fstab cleanup" ok "old entry removed"
-    else
-      record "system:mount shared data:fstab cleanup" fail "failed to remove old entry"
-    fi
-  else
-    record "system:mount shared data:fstab cleanup" skip "no old entry"
-  fi
-
   if ! mountpoint -q "$HOME/shared"; then
     step "mount data -> creating $HOME/shared"
     mkdir -p "$HOME/shared"
@@ -1075,8 +1063,8 @@ mount_data_dir() {
     local uid gid
     uid="$(id -u)"
     gid="$(id -g)"
-    step "mount data -> C:\\data\\shared -> $HOME/shared (uid=$uid, gid=$gid, umask=22)"
-    if ! sudo mount -t drvfs -o "defaults,metadata,uid=$uid,gid=$gid,umask=22,fmask=11" \
+    step "mount data -> C:\\data\\shared -> $HOME/shared (uid=$uid, gid=$gid)"
+    if ! sudo mount -t drvfs -o "defaults,metadata,uid=$uid,gid=$gid" \
           'C:\data\shared' "$HOME/shared" >> "$LOG_DIR/mount.log" 2>&1; then
       log_tail mount.log
       record "system:mount shared data:live mount (drvfs)" fail "mount failed"
@@ -1094,7 +1082,7 @@ mount_data_dir() {
     uid="$(id -u)"
     gid="$(id -g)"
     step "mount data -> adding to /etc/fstab"
-    if echo "C:\\data\\shared $HOME/shared drvfs defaults,metadata,uid=$uid,gid=$gid,umask=22,fmask=11 0 0" \
+    if echo "C:\\data\\shared $HOME/shared drvfs defaults,metadata,uid=$uid,gid=$gid 0 0" \
         | sudo tee -a /etc/fstab >> "$LOG_DIR/mount.log" 2>&1; then
       record "system:mount shared data:fstab entry" ok "added"
     else
