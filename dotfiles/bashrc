@@ -94,40 +94,6 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
-# clipboard auto-detect -> image via saveimg / text via savecode (see save -h)
-alias save='$HOME/wsl/save.sh'
-
-# clipboard image -> ~/projects/saved/images/ (see saveimg -h)
-alias saveimg='$HOME/wsl/saveimg.sh'
-
-# clipboard text/code -> ~/projects/saved/code/ as PNG with silicon (see savecode -h)
-alias savecode='$HOME/wsl/savecode.sh'
-
-# tm -> tmux with N panes (tm = tmux = tm 1; see tm -h)
-alias tm='$HOME/wsl/tmux.sh'
-
-# s -> ssh to a saved server, fuzzy picker (enterssh: shows your ssh aliases; see enterssh --list)
-alias s='$HOME/wsl/enterssh.sh'
-
-# savepane -> save whole text of current tmux pane as txt in saved/logs/
-alias savepane='$HOME/wsl/savepane.sh'
-
-# savetmux -> save whole text of every tmux pane in the session as txt in saved/logs/
-alias savetmux='$HOME/wsl/savetmux.sh'
-
-# savecmd -> run command, save output to saved/logs/
-alias savecmd='$HOME/wsl/savecmd.sh'
-
-# savetxt -> save Windows clipboard text to saved/logs/
-alias savetxt='$HOME/wsl/savetxt.sh'
-
-# saveshot -> run command, save styled terminal screenshot to saved/images/
-alias saveshot='$HOME/wsl/saveshot.sh'
-
-# Add an "alert" alias for long running commands.  Use like so:
-#   sleep 10; alert
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
-
 # Alias definitions.
 # You may want to put all your additions into a separate file like
 # ~/.bash_aliases, instead of adding them here directly.

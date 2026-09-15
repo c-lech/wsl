@@ -48,9 +48,12 @@ while IFS= read -r line; do
 done < "$ALIASES"
 
 print_menu() {
-    local name
+    local name maxlen=0
     for name in "${!CMDS[@]}"; do
-        printf '%s  %s\n' "$name" "${DISP[$name]}"
+        ((${#name} > maxlen)) && maxlen=${#name}
+    done
+    for name in "${!CMDS[@]}"; do
+        printf "%-${maxlen}s  %s\n" "$name" "${DISP[$name]}"
     done
 }
 
@@ -67,7 +70,7 @@ target_of() {
 # Lines accumulate (scrollable, capped at 120) with severity colors and an
 # auto-scaled bar; last 20 samples render as a block sparkline.
 preview_line() {
-    local line=$1 t out rtt rtt_ms hms reset color faint bars sp bl stats
+    local line=$1 t out rtt rtt_ms hms RESET color C_DIM bars sp bl stats
     t=$(target_of "$line")
     if [ -z "$t" ]; then
         echo "Type an IP yourself"
@@ -80,14 +83,14 @@ preview_line() {
         return 0
     }
 
-    reset=$'\033[0m'
-    color_g=$'\033[32m'
-    color_y=$'\033[33m'
-    color_r=$'\033[31m'
-    faint=$'\033[90m'
+    RESET=$'\033[0m'
+    C_OK=$'\033[32m'
+    C_SKIP=$'\033[33m'
+    C_FAIL=$'\033[31m'
+    C_DIM=$'\033[2m'
 
     local -a hist=()
-    local max_rtt=1 sent=0 ok=0 bars ik
+    local max_rtt=1 sent=0 ok=0 bars
 
     while :; do
         sent=$((sent + 1))
@@ -98,22 +101,20 @@ preview_line() {
             rtt_ms="${rtt} ms"
             hist+=("$rtt")
             if awk -v r="$rtt" 'BEGIN{exit !(r>=10)}'; then
-                color=$color_r
+                color=$C_FAIL
             elif awk -v r="$rtt" 'BEGIN{exit !(r>=1)}'; then
-                color=$color_y
+                color=$C_SKIP
             else
-                color=$color_g
+                color=$C_OK
             fi
             bar_len=$(awk -v r="$rtt" -v m="$max_rtt" 'BEGIN{l=int(r/m*20); if(l<1)l=1; if(l>20)l=20; print l}')
             bars=$(printf '%*s' "$bar_len" '' | tr ' ' '█')
-            ik="✔"
         else
             rtt=""
             rtt_ms="no reply"
             hist+=("")
-            color=$color_r
+            color=$C_FAIL
             bars=""
-            ik="✖"
         fi
 
         if ((${#hist[@]} > 120)); then
@@ -130,9 +131,9 @@ preview_line() {
 
         hms=$(date +%T)
         loss=$(((sent - ok) * 100 / sent))
-        printf '%s%s%s  %s%s%s  %-9s %s%s%s  %s%d of %d · %d%% loss\n' \
-            "$faint" "$hms" "$reset" "$color" "$ik" "$reset" "$rtt_ms" \
-            "$color" "$bars" "$reset" "$faint" "$ok" "$sent" "$loss"
+        printf '%s%s%s  %s%-9s%s %s%s%s  %s%d of %d · %d%% loss\n' \
+            "$C_DIM" "$hms" "$RESET" "$color" "$rtt_ms" "$RESET" \
+            "$color" "$bars" "$RESET" "$C_DIM" "$ok" "$sent" "$loss"
 
         sp=""
         start=$(( ${#hist[@]} > 20 ? ${#hist[@]} - 20 : 0 ))
@@ -161,13 +162,13 @@ preview_line() {
                 awk 'NR==1{min=max=$1} {s+=$1; if($1<min)min=$1; if($1>max)max=$1; n++}
                      END{if(n) printf "%.2f · %.2f · %.2f ms  (min/avg/max)", min, s/n, max}'
         )
-        printf '%s%s%s\n' "$faint" "$sp" "$reset"
+        printf '%s%s%s\n' "$C_DIM" "$sp" "$RESET"
         if [ -n "$stats" ]; then
-            printf '%s%s%s\n' "$faint" "$stats" "$reset"
+            printf '%s%s%s\n' "$C_DIM" "$stats" "$RESET"
         else
-            printf '%sno samples yet%s\n' "$faint" "$reset"
+            printf '%sno samples yet%s\n' "$C_DIM" "$RESET"
         fi
-        printf '%s── live @ %s ──────────────────────────%s\n' "$faint" "$hms" "$reset"
+        printf '%s── live @ %s ──────────────────────────%s\n' "$C_DIM" "$hms" "$RESET"
 
         sleep 1
     done

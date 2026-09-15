@@ -1,12 +1,56 @@
+# --------------------------------------------------------------------------
+# SSH shortcuts
+# --------------------------------------------------------------------------
+
+# Bard config server
 alias bardis="ssh clech@172.27.76.122"
-alias zbxserver="ssh root@172.27.76.51"
-alias zbxproxy1="ssh root@172.27.76.53"
-alias zbxproxy2="ssh root@172.27.205.55"
-alias zbxfront="ssh root@172.27.76.52"
-alias zbxmaria="ssh root@172.27.76.160"
-alias zbx="explorer.exe 'http://172.27.76.52/zabbix/'"
-alias zbxcld="ssh root@172.27.205.67"
+
+# Zabbix stack
+alias zbxserver="ssh root@172.27.76.51"       # server
+alias zbxproxy1="ssh root@172.27.76.53"       # proxy 1
+alias zbxproxy2="ssh root@172.27.205.55"      # proxy 2
+alias zbxfront="ssh root@172.27.76.52"        # frontend
+alias zbxmaria="ssh root@172.27.76.160"       # MariaDB
+alias zbxcld="ssh root@172.27.205.67"         # cloud VM
+alias zbx="explorer.exe 'http://172.27.76.52/zabbix/'"  # Zabbix UI (Windows)
+
+# Production server
 alias vuelcos="ssh root@172.27.72.127"
+
+# Local Vagrant VMs
 alias vagran="ssh root@192.168.56.111"
 alias vagran2="ssh root@192.168.56.112"
+
+# --------------------------------------------------------------------------
+# WSL interop
+# --------------------------------------------------------------------------
+
+# Repair WSL bridge/interop when broken (auto-detects the Windows socket)
 alias checkbridge='bash ~/wsl/checkbridge.sh || { for s in $(ls -t /run/WSL/*_interop); do WSL_INTEROP="$s" timeout 5 cmd.exe /c ver >/dev/null 2>&1 && { export WSL_INTEROP="$s"; echo "bridge OK (repaired: $s)"; break; }; done; }'
+
+# --------------------------------------------------------------------------
+# wsl tools — clipboard, screenshots, tmux helpers (scripts in ~/wsl/)
+# --------------------------------------------------------------------------
+
+# Clipboard auto-detect: image -> saveimg, text -> savecode (see save -h)
+alias save='$HOME/wsl/save.sh'
+# Clipboard image -> ~/projects/saved/images/
+alias saveimg='$HOME/wsl/saveimg.sh'
+# Clipboard text/code -> ~/projects/saved/code/ as PNG (silicon)
+alias savecode='$HOME/wsl/savecode.sh'
+# tmux with N panes; tm == tmux == "tm 1"
+alias tm='$HOME/wsl/tmux.sh'
+# ssh to a saved server, fuzzy picker
+alias s='$HOME/wsl/enterssh.sh'
+# Save whole current tmux pane -> saved/logs/
+alias savepane='$HOME/wsl/savepane.sh'
+# Save every tmux pane in the session -> saved/logs/
+alias savetmux='$HOME/wsl/savetmux.sh'
+# Run a command, save its output -> saved/logs/
+alias savecmd='$HOME/wsl/savecmd.sh'
+# Save Windows clipboard text -> saved/logs/
+alias savetxt='$HOME/wsl/savetxt.sh'
+# Run a command, save a styled terminal screenshot -> saved/images/
+alias saveshot='$HOME/wsl/saveshot.sh'
+# Notify when a long command finishes. Use like:  sleep 10; alert
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
