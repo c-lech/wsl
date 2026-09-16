@@ -29,6 +29,10 @@ sid="${sid// /_}"
 
 out="$dir/pane_${sid}_${idx}_$(date +%H%M%S)_$(date +%y%m%d).txt"
 
-tmux capture-pane -p -S - > "$out"
+if ! tmux capture-pane -p -S - > "$out" || [ ! -s "$out" ]; then
+  rm -f "$out"
+  echo "savepane: capture failed" >&2
+  exit 1
+fi
 
 echo "saved: $out"

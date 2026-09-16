@@ -26,4 +26,11 @@ out="$dir/cmd_$(date +%H%M%S)_$(date +%y%m%d).txt"
 
 "$@" | tee "$out"
 
+rc=${PIPESTATUS[0]}
+if [ "$rc" -ne 0 ]; then
+  rm -f "$out"
+  echo "savecmd: command failed (exit $rc) - nothing saved" >&2
+  exit "$rc"
+fi
+
 echo "saved: $out"
