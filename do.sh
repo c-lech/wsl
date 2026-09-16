@@ -79,7 +79,7 @@ build() {
             fi
             [[ "$l" =~ ^alias[[:space:]]+([A-Za-z0-9_.-]+)= ]] || continue
             name=${BASH_REMATCH[1]}
-            [[ "$name" == "do" ]] && continue
+            [[ "$name" == "d" ]] && continue
             [[ "$sec" == "SSH shortcuts" ]] && continue
             v="${l#alias ${name}=}"
             if [[ "$v" == \'* ]]; then
