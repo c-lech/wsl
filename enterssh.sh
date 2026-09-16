@@ -100,13 +100,14 @@ preview_line() {
             rtt=$(printf '%s' "$out" | grep -o 'time=[0-9.]*' | grep -o '[0-9.]*$')
             rtt_ms="${rtt} ms"
             hist+=("$rtt")
-            if awk -v r="$rtt" 'BEGIN{exit !(r>=10)}'; then
-                color=$C_FAIL
-            elif awk -v r="$rtt" 'BEGIN{exit !(r>=1)}'; then
-                color=$C_SKIP
-            else
-                color=$C_OK
-            fi
+            #if awk -v r="$rtt" 'BEGIN{exit !(r>=10)}'; then
+            #    color=$C_FAIL
+            #elif awk -v r="$rtt" 'BEGIN{exit !(r>=1)}'; then
+            #    color=$C_SKIP
+            #else
+            #    color=$C_OK
+            #fi
+	    color=$C_OK
             bar_len=$(awk -v r="$rtt" -v m="$max_rtt" 'BEGIN{l=int(r/m*20); if(l<1)l=1; if(l>20)l=20; print l}')
             bars=$(printf '%*s' "$bar_len" '' | tr ' ' '█')
         else
