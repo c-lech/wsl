@@ -8,11 +8,12 @@
 #   - alias wins if it points at a script (no duplicate entries)
 #   - install.sh and do.sh are never listed
 # Usage:
-#   do                pick a command and run it (in your current shell)
+#   do.sh             pick a command and run it (in your current shell)
+#   do.sh --sel       same as bare - the mode the 'd' alias calls (explicit)
 #   do.sh --list      print all entries (name<TAB>command)
 #   do.sh --_preview  internal: fzf preview helper
 #
-# Runs via:   alias do='eval "$($HOME/wsl/do.sh --sel)"'
+# Runs via:   alias d='eval "$($HOME/wsl/do.sh --sel)"'
 # eval means env/history/functions survive - matching how enterssh runs ssh.
 set -uo pipefail
 shopt -s globstar nullglob
@@ -79,7 +80,9 @@ build() {
             fi
             [[ "$l" =~ ^alias[[:space:]]+([A-Za-z0-9_.-]+)= ]] || continue
             name=${BASH_REMATCH[1]}
-            [[ "$name" == "d" ]] && continue
+            case "$name" in
+                d|alert) continue ;;
+            esac
             [[ "$sec" == "SSH shortcuts" ]] && continue
             v="${l#alias ${name}=}"
             if [[ "$v" == \'* ]]; then
@@ -119,8 +122,9 @@ entry_index() {
 }
 
 preview() {
-    local name=$1 idx
-    idx=$(entry_index "$name") || { printf '? %s\n' "$name"; return 0; }
+    local name="" _rest idx
+    read -r name _rest <<< "$1"
+    idx=$(entry_index "$name") || { printf '? %s\n' "$1"; return 0; }
     if [[ "${E_TYPE[$idx]}" == "alias" ]]; then
         printf '%s%s%s\n' "$C_MAG" "alias ${E_NAME[$idx]}" "$C_RESET"
         printf '%sruns: %s\n' "$C_DIM" "${E_CMD[$idx]}"
@@ -136,37 +140,44 @@ preview() {
     fi
 }
 
-if [[ "${1:-}" == "--_preview" ]]; then
+pick() {
+    local -a SEL=()
+    local W=0 n
     build
-    preview "${2:-}"
-    exit 0
-fi
-
-if [[ "${1:-}" == "--list" ]]; then
-    build
-    for ((i = 0; i < ${#E_NAME[@]}; i++)); do
-        printf '%s\t%s\n' "${E_NAME[$i]}" "${E_CMD[$i]}"
+    if ((${#E_NAME[@]} == 0)); then
+        echo "do: no commands found (${ALIASES} + ~/wsl scripts)" >&2
+        exit 0
+    fi
+    for n in "${E_NAME[@]}"; do
+        ((${#n} > W)) && W=${#n}
     done
-    exit 0
-fi
 
-build
-if ((${#E_NAME[@]} == 0)); then
-    echo "do: no commands found (${ALIASES} + ~/wsl scripts)" >&2
-    exit 0
-fi
+    mapfile -t SEL < <({
+        for ((i = 0; i < ${#E_NAME[@]}; i++)); do
+            printf '%-*s  %s\n' "$W" "${E_NAME[$i]}" "${E_DESC[$i]}"
+        done
+    } | fzf --layout=reverse --height=40% --prompt='do> ' --info=inline \
+        --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
+        --preview-window='right:45%' \
+        --header='enter=run · esc=quit' \
+        --preview="$0 --_preview {}")
 
-mapfile -t SEL < <({
-    for ((i = 0; i < ${#E_NAME[@]}; i++)); do
-        printf '%s  %s\n' "${E_NAME[$i]}" "${E_DESC[$i]}"
-    done
-} | fzf --layout=reverse --height=40% --prompt='do> ' --info=inline \
-    --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
-    --preview-window='right:45%' \
-    --header='enter=run · esc=quit' \
-    --preview="$0 --_preview {}")
+    ((${#SEL[@]})) || exit 0
+    local name="" _rest idx
+    read -r name _rest <<< "${SEL[0]}"
+    idx=$(entry_index "$name") || exit 0
+    printf '%s\n' "${E_CMD[$idx]}"
+}
 
-((${#SEL[@]})) || exit 0
-name=${SEL[0]%%  *}
-idx=$(entry_index "$name") || exit 0
-printf '%s\n' "${E_CMD[$idx]}"
+case "${1:-}" in
+    --_preview) build; preview "${2:-}"; exit 0 ;;
+    --list)     build
+                for ((i = 0; i < ${#E_NAME[@]}; i++)); do
+                    printf '%s\t%s\n' "${E_NAME[$i]}" "${E_CMD[$i]}"
+                done
+                exit 0 ;;
+    --sel)      pick
+                exit 0 ;;
+    "")         pick ;;
+    *)          echo "do: unknown option: $1 (try --list or --sel)" >&2; exit 1 ;;
+esac
