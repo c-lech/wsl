@@ -4,7 +4,7 @@
 #   tmux2         plain tmux   (same as "tmux2 1")
 #   tmux2 1       plain tmux
 #   tmux2 N       new session, N panes. N = 2..16
-#                 even N -> tiled grid, odd N -> big left + stack on the right
+#                 N=3 -> big left + 2-stack; otherwise tiled grid
 #   tmux2 -h      this help
 #
 # Every run creates a brand-new session (named p<N>, p<N>-2, p<N>-3, ...).
@@ -67,13 +67,13 @@ for ((i = 2; i <= N; i++)); do
     }
 done
 
-# Layout: even -> tiled, odd -> main-vertical with 66% left pane.
-if ((N % 2 == 0)); then
-    tmux select-layout -t "$NAME" tiled
-else
+# Layout: tiled grid for all counts; N=3 -> big left + 2-stack.
+if ((N == 3)); then
     tmux select-layout -t "$NAME" main-vertical
     W=$(tmux display-message -p -t "$NAME" '#{window_width}')
     tmux resize-pane -t "$P0" -x "$((W * 66 / 100))"
+else
+    tmux select-layout -t "$NAME" tiled
 fi
 
 tmux select-pane -t "$P0"
