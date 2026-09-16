@@ -948,7 +948,10 @@ install_dotfiles() {
     src="${rest%%|*}"
     kind="${rest#*|}"
     if [ "$kind" = "copy" ]; then
-      if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+      if [ -f "$dest" ] && [ "$dest" = "$HOME/.config/kew/kewrc" ] && \
+           [ "$(sed "s|${HOME}/shared/music|%%MUSIC_PATH%%|" "$dest")" = "$(cat "$src")" ]; then
+        record "system:link dot files:$dest" skip "already copied"
+      elif [ -f "$dest" ] && cmp -s "$src" "$dest"; then
         record "system:link dot files:$dest" skip "already copied"
       else
         step "dotfiles -> $dest (copy)"
