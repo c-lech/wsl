@@ -1720,7 +1720,7 @@ main() {
   run_step "tools:fastfetch" "Installing Fastfetch" --log fastfetch.log install_fastfetch
   run_step "tools:agent" "Installing opencode" --log opencode.log install_opencode
   run_step "tools:tmuxai" "Installing tmuxai" --log tmuxai.log install_tmuxai
-  run_step "tools:ollama" "Installing Ollama" --log ollama.log install_ollama
+  #run_step "tools:ollama" "Installing Ollama" --log ollama.log install_ollama
   run_step "tools:vagrant" "Installing vagrant" --log vagrant.log install_vagrant
   run_step "tools:cliamp" "Installing cliamp" --log cliamp.log install_cliamp
   run_step "tools:kew" "Installing kew" --log kew.log install_kew
