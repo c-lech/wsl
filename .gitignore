@@ -25,3 +25,5 @@ id_ed25519*
 .zsh_history
 *~
 *.swp
+plan.txt
+plan.json
