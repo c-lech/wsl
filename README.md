@@ -27,6 +27,7 @@ wsl/
 │   ├── bashrc
 │   ├── tmux.conf
 │   ├── asoundrc
+│   ├── vimrc
 │   ├── opencode.jsonc
 │   ├── tmuxai.yaml
 │   ├── cliamp.toml
@@ -131,13 +132,14 @@ Machine-local infra lives under `$HOME/shared/infra/` (not versioned): `git_cred
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
+`dotfiles/` contains `tmux.conf`, `bashrc`, `vimrc`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
 Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
 ```text
 ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
 ~/.bashrc    -> ~/wsl/dotfiles/bashrc
+~/.vimrc     -> ~/wsl/dotfiles/vimrc
 ~/.bash_aliases -> ~/shared/infra/bash_aliases/bash_aliases   (machine-local, linked if present)
 ~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
 ~/.config/tmuxai/config.yaml      -> ~/wsl/dotfiles/tmuxai.yaml

@@ -929,6 +929,7 @@ install_dotfiles() {
     "$HOME/.tmux.conf|$BASE/dotfiles/tmux.conf|link"
     "$HOME/.bashrc|$BASE/dotfiles/bashrc|link"
     "$HOME/.asoundrc|$BASE/dotfiles/asoundrc|link"
+    "$HOME/.vimrc|$BASE/dotfiles/vimrc|link"
     "$HOME/.config/opencode/opencode.jsonc|$BASE/dotfiles/opencode.jsonc|link"
     "$HOME/.config/tmuxai/config.yaml|$BASE/dotfiles/tmuxai.yaml|link"
     "$HOME/.config/golazo/settings.yaml|$BASE/dotfiles/golazo-settings.yaml|link"
