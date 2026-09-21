@@ -1,28 +1,37 @@
 #!/usr/bin/env bash
-# savecode - render the Windows-clipboard code/text as a PNG with silicon into the shared data dir
-#
-# Reads whatever text/code is on the (WSLg) clipboard as text/plain, strips
-# Windows CR line endings, and renders it with silicon to a lossless PNG with
-# OneHalfDark theme, drop-shadow (no window bar), line numbers on, timestamped
-# into ~/shared/saved/code/.
-#
-# Examples:
-#   savecode                # -> ~/shared/saved/code/code_203012_130926.png (markdown-ish plain)
-#   savecode -l python      # Python syntax highlight
-#   savecode -l bash        # shell snippet render
-#   savecode -l json        # JSON render
-#   savecode -o /tmp/x.png  # custom destination (absolute or relative)
-#   savecode -h             # this help
-#
-# Depends on: wl-clipboard (wl-paste) + silicon - both installed by install.sh.
-# Exit codes: 0 = saved, 1 = no text on clipboard or render failed, 2 = bad usage.
 
 set -uo pipefail
 
 lang="markdown"   # default near-plain grammar; override with -l (python, bash, json, ...)
 out=""            # custom destination; empty = timestamped default name
 
-usage() { awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 && !/^#/ {exit}' "$0"; exit 0; }
+usage() {
+  cat <<'EOF'
+savetxt2img — Render Windows-clipboard text as a styled source-code image
+
+Usage:
+  savetxt2img [OPTIONS]
+
+Options:
+  -l LANG     Grammar for syntax highlighting (default: markdown)
+  -o FILE     Custom destination (absolute or relative)
+  -h          Show this help
+
+Examples:
+  savetxt2img            # -> ~/shared/saved/260921_143022_txt.png (markdown-ish plain)
+  savetxt2img -l python  # Python syntax highlight
+  savetxt2img -l bash    # shell snippet render
+  savetxt2img -l json    # JSON render
+  savetxt2img -o /tmp/x.png
+
+Notes:
+  Reads text/plain from the (WSLg) clipboard, strips Windows CR endings, renders
+  with silicon (OneHalfDark, drop-shadow, no window bar, line numbers on).
+  Depends on: wl-clipboard (wl-paste) + silicon - both installed by install.sh.
+  Exit codes: 0 = saved, 1 = no text on clipboard or render failed, 2 = bad usage.
+EOF
+  exit 0
+}
 
 while getopts "l:o:h" o; do case "$o" in
   l) lang=$OPTARG ;;
@@ -35,12 +44,13 @@ text="$(wl-paste 2>/dev/null || true)"          # nothing full-text on the clipb
 if [ -z "$text" ]; then                          # WSLg bridge empty -> ask Windows directly
   text="$(powershell.exe -NoProfile -Command 'Get-Clipboard -Raw' 2>/dev/null | tr -d '\r' || true)"
 fi
-[ -n "$text" ] || { echo "savecode: no text on clipboard - re-copy the code" >&2; exit 1; }
+[ -n "$text" ] || { echo "savetxt2img: no text on clipboard - re-copy the code" >&2; exit 1; }
 
 if [ -z "$out" ]; then
   auto=1            # auto-named output (removable on failure; never touch a custom -o)
-  dir="$HOME/shared/saved/code"
-  out="$dir/code_$(date +%H%M%S)_$(date +%y%m%d).png"   # WhatsApp-style timestamped PNG
+  dir="$HOME/shared/saved"
+  stamp="$(date +%y%m%d_%H%M%S)"
+  out="$dir/${stamp}_txt.png"    # WhatsApp-style timestamped PNG
 fi
 mkdir -p "$(dirname "$out")"
 [ -z "${auto:-}" ] || rm -f "$out"                      # drop stale auto name so -s can't false-pass
@@ -56,8 +66,8 @@ render_out="$(printf '%s\n' "$text" | tr -d '\r' | silicon \
 
 if printf '%s\n' "$render_out" | grep -qi '\[error\]'; then
   [ -z "${auto:-}" ] || rm -f "$out"                    # don't remove a pre-existing custom -o
-  echo "savecode: render failed - $render_out" >&2
+  echo "savetxt2img: render failed - $render_out" >&2
   exit 1
 fi
-[ -s "$out" ] || { echo "savecode: render failed (no output file)" >&2; exit 1; }
+[ -s "$out" ] || { echo "savetxt2img: render failed (no output file)" >&2; exit 1; }
 echo "saved: $out"

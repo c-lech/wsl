@@ -1,20 +1,4 @@
 #!/usr/bin/env bash
-# saveimg - save the Windows-clipboard image as JPG/PNG into the shared data dir
-#
-# Reads whatever image is on the (WSLg) clipboard, prefers the most efficient
-# transport type offered (PNG > BMP > JPEG), and writes a high-quality JPEG
-# (default) or lossless PNG to ~/shared/saved/images/ with a WhatsApp-style
-# timestamped name.
-#
-# Examples:
-#   saveimg                # -> ~/shared/saved/images/image_203012_130926.jpg (Q100)
-#   saveimg -q 92          # JPEG at quality 92 (eye-identical, ~1/8 the size)
-#   saveimg -p             # save as lossless PNG (best for text/UI screenshots)
-#   saveimg -o /tmp/a.jpg  # custom destination (absolute or relative)
-#   saveimg -h             # this help
-#
-# Depends on: wl-clipboard (wl-paste) + ImageMagick (magick) - both installed by install.sh.
-# Exit codes: 0 = saved, 1 = no image on clipboard or conversion failed, 2 = bad usage.
 
 set -uo pipefail
 
@@ -22,7 +6,32 @@ q=100      # JPEG quality 0-100; 100 = near-lossless master, 92 = tiny but eye-i
 png=0      # 1 = PNG output (lossless); 0 = JPEG
 out=""     # custom destination; empty = timestamped default name
 
-usage() { awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 && !/^#/ {exit}' "$0"; exit 0; }
+usage() {
+  cat <<'EOF'
+saveclip2img — Save Windows-clipboard image
+
+Usage:
+  saveclip2img [OPTIONS]
+
+Options:
+  -q NUM    JPEG quality 0-100 (default 100)
+  -p        Save as lossless PNG instead of JPEG
+  -o FILE   Custom destination (absolute or relative)
+  -h        Show this help
+
+Examples:
+  saveclip2img          # -> ~/shared/saved/260921_143022_image.jpg (Q100)
+  saveclip2img -q 92    # JPEG at quality 92
+  saveclip2img -p       # -> ~/shared/saved/260921_143022_image.png
+  saveclip2img -o /tmp/a.jpg
+
+Notes:
+  Reads the image on the (WSLg) clipboard, prefers PNG > BMP > JPEG transport.
+  Depends on: wl-clipboard (wl-paste) + ImageMagick (magick).
+  Exit codes: 0 = saved, 1 = no image on clipboard or conversion failed, 2 = bad usage.
+EOF
+  exit 0
+}
 
 while getopts "q:po:h" o; do case "$o" in
   q) q=$OPTARG ;;
@@ -52,12 +61,13 @@ if [ -z "$pull" ]; then                                 # Windows pull failed ->
   done
 fi
 
-[ -n "$pull" ] || [ -n "$chosen" ] || { echo "saveimg: no image on clipboard (only text) - re-copy the image" >&2; exit 1; }
+[ -n "$pull" ] || [ -n "$chosen" ] || { echo "saveclip2img: no image on clipboard (only text) - re-copy the image" >&2; exit 1; }
 
 if [ -z "$out" ]; then
-  dir="$HOME/shared/saved/images"
+  dir="$HOME/shared/saved"
   ext=jpg; [ "$png" = 1 ] && ext=png
-  out="$dir/image_$(date +%H%M%S)_$(date +%y%m%d).$ext"
+  stamp="$(date +%y%m%d_%H%M%S)"
+  out="$dir/${stamp}_image.$ext"
 fi
 mkdir -p "$(dirname "$out")"
 
@@ -74,5 +84,5 @@ else                                                    # WSLg bridge: JPEG
   wl-paste -t "$chosen" | magick - -quality "$q" -sampling-factor 4:4:4 -strip "$out"
 fi
 
-[ -s "$out" ] || { [ -n "$pull" ] && rm -f "$pull"; echo "saveimg: save failed (nothing written)" >&2; exit 1; }
+[ -s "$out" ] || { [ -n "$pull" ] && rm -f "$pull"; echo "saveclip2img: save failed (nothing written)" >&2; exit 1; }
 echo "saved: $out"
