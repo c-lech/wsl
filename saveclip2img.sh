@@ -33,6 +33,19 @@ EOF
   exit 0
 }
 
+say_saved() {                                # clickable 3-line 'saved:' block; plain when piped
+  if [ -t 1 ]; then
+    local uri dir_win
+    uri="file:///$(wslpath -m "$1")"          # Windows path -> Ctrl+click opens
+    dir_win="$(wslpath -m "$(dirname "$1")")"
+    printf '\e]8;;%s\e\\saved: %s\e]8;;\e\\\n'        "$uri" "$(basename "$1")"
+    printf '\e]8;;file:///%s/\e\\folder: %s\e]8;;\e\\\n' "$dir_win" "$dir_win"
+    printf '\e]8;;%s\e\\%s\e]8;;\e\\\n'              "$uri" "$1"
+  else
+    echo "saved: $1"
+  fi
+}
+
 while getopts "q:po:h" o; do case "$o" in
   q) q=$OPTARG ;;
   p) png=1 ;;
@@ -85,4 +98,4 @@ else                                                    # WSLg bridge: JPEG
 fi
 
 [ -s "$out" ] || { [ -n "$pull" ] && rm -f "$pull"; echo "saveclip2img: save failed (nothing written)" >&2; exit 1; }
-echo "saved: $out"
+say_saved "$out"

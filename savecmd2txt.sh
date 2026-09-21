@@ -24,6 +24,19 @@ EOF
   exit 0
 }
 
+say_saved() {                                # clickable 3-line 'saved:' block; plain when piped
+  if [ -t 1 ]; then
+    local uri dir_win
+    uri="file:///$(wslpath -m "$1")"          # Windows path -> Ctrl+click opens
+    dir_win="$(wslpath -m "$(dirname "$1")")"
+    printf '\e]8;;%s\e\\saved: %s\e]8;;\e\\\n'        "$uri" "$(basename "$1")"
+    printf '\e]8;;file:///%s/\e\\folder: %s\e]8;;\e\\\n' "$dir_win" "$dir_win"
+    printf '\e]8;;%s\e\\%s\e]8;;\e\\\n'              "$uri" "$1"
+  else
+    echo "saved: $1"
+  fi
+}
+
 if [ "${1:-}" = "-h" ]; then usage; fi
 
 if [ $# -eq 0 ]; then
@@ -53,4 +66,4 @@ if [ "$rc" -ne 0 ]; then
   exit "$rc"
 fi
 
-echo "saved: $out"
+say_saved "$out"
