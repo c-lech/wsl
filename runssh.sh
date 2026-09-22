@@ -5,6 +5,15 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+C_RESET=$'\033[0m'
+C_SECT=$'\033[1;95m'
+
+run_banner() {
+  clear 2>/dev/null || true
+  printf '%s\n' "${C_SECT}── $1 : $2 ──${C_RESET}" >&2
+  printf '\n' >&2
+}
+
 usage() {
   cat <<'EOF'
 runssh — Pick a server and ssh in, fuzzy style
@@ -33,6 +42,7 @@ Notes:
   Tab marks servers, Enter connects. Type an IP yourself for a manual
   connection (user: Enter = root). The fzf preview live-pings the
   highlighted host.
+  After a connection ends you return to the picker; esc quits.
   Requires: fzf; tmux for panes; ping for the preview.
   Exit codes: 0 = ok, 1 = missing dependency/aliases, 2 = bad usage (layout).
 EOF
@@ -200,7 +210,8 @@ manual_connect() {
     [ -n "$ip" ] || exit 1
     read -rp 'User (Enter=root): ' user
     user=${user:-root}
-    exec ssh "${user}@${ip}"
+    run_banner "$ip" "${user}@${ip}"
+    ssh "${user}@${ip}"
 }
 
 # Split the current biggest pane along its longest side (same as tmux.sh),
@@ -224,8 +235,7 @@ run_panes() {
 
     if [[ -n "${TMUX:-}" ]]; then
         # inside tmux: open a new window (detached), leave current work alone
-        win=$(tmux display-message -p '#{window_id}')
-        tmux new-window -d -n ssh -c "$PWD" "exec ${cmds[0]}"
+        win=$(tmux new-window -P -F '#{window_id}' -d -n ssh -c "$PWD" "exec ${cmds[0]}")
         P0=$(tmux display-message -p -t "$win" '#{pane_id}')
         target="$win"
     else
@@ -270,7 +280,9 @@ run_panes() {
     tmux select-pane -t "$P0"
     if [[ -n "${TMUX:-}" ]]; then
         tmux select-window -t "$target"
+        exit 0
     else
+        run_banner "panes" "$name (${#cmds[@]})"
         tmux attach-session -t "$name"
     fi
 }
@@ -330,24 +342,33 @@ fi
 }
 
 # -m so Tab can mark servers; Enter on a single line behaves exactly as before.
-mapfile -t SEL < <( { print_menu | sort; printf '%s\n' "$MANUAL"; } \
-    | fzf -m --layout=reverse --height=40% --prompt='ssh> ' --info=inline \
-        --bind='tab:toggle' --bind='btab:toggle' --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
-        --bind='ctrl-u:preview-half-page-up' --bind='ctrl-d:preview-half-page-down' \
-        --header='enter=ssh · tab=mark (2+ -> tmux panes) · esc=quit · ctrl-u/d=scroll' \
-        --preview-window='right:45%:follow' --preview="${SCRIPT_DIR}/runssh.sh --_preview {}" )
+while true; do
+    clear 2>/dev/null || true
+    mapfile -t SEL < <( { print_menu | sort; printf '%s\n' "$MANUAL"; } \
+        | fzf -m --layout=reverse --height=40% --prompt='ssh> ' --info=inline \
+            --bind='tab:toggle' --bind='btab:toggle' --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
+            --bind='ctrl-u:preview-half-page-up' --bind='ctrl-d:preview-half-page-down' \
+            --header='enter=ssh · tab=mark (2+ -> tmux panes) · esc=quit · ctrl-u/d=scroll' \
+            --preview-window='right:45%:follow' --preview="${SCRIPT_DIR}/runssh.sh --_preview {}" )
 
-((${#SEL[@]})) || exit 0
+    ((${#SEL[@]})) || exit 0
 
-if ((${#SEL[@]} == 1)) && [ "${SEL[0]}" = "$MANUAL" ]; then
-    manual_connect
-fi
+    if ((${#SEL[@]} == 1)) && [ "${SEL[0]}" = "$MANUAL" ]; then
+        manual_connect
+        [[ -t 2 ]] && { printf '%s\n' '' '[enter] continue' >&2; read -r _; }
+        continue
+    fi
 
-# A single pick -> plain ssh. Marked 2+ (or --pane) -> one tmux pane each.
-if [ "$MODE" = "pane" ] || ((${#SEL[@]} > 1)); then
-    run_panes "${SEL[@]}"
-    exit $?
-fi
+    # A single pick -> plain ssh. Marked 2+ (or --pane) -> one tmux pane each.
+    if [ "$MODE" = "pane" ] || ((${#SEL[@]} > 1)); then
+        run_panes "${SEL[@]}"
+        [[ -t 2 ]] && { printf '%s\n' '' '[enter] continue' >&2; read -r _; }
+        continue
+    fi
 
-name=${SEL[0]%%  *}
-exec ${CMDS[$name]:-ssh}
+    name=${SEL[0]%%  *}
+    read -r -a cargs <<< "${CMDS[$name]:-ssh}"
+    run_banner "$name" "${DISP[$name]:-${cargs[0]}}"
+    "${cargs[@]}"
+    [[ -t 2 ]] && { printf '%s\n' '' '[enter] continue' >&2; read -r _; }
+done
