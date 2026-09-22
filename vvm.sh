@@ -1,25 +1,4 @@
 #!/bin/bash
-# vvm - manage Vagrant environments (auto-detects folders in ~/shared/infra/vagrant)
-#
-#   vvm <action> [env ...]
-#     no env          -> all detected environments
-#     env names       -> only those (validated; unknown => error, nothing runs)
-#
-# Actions:
-#   status                       per-env state, one "env<TAB>state" per line
-#   up | halt | suspend | resume | reload | provision
-#   ssh                          requires exactly one env
-#   validate                     check the Vagrantfile (no VM touch)
-#   destroy                      confirmed, then vagrant destroy -f
-#   rebuild                      confirmed, then destroy -f + up
-#   snapshot save <env> <name> | ls [env] | restore <env> <name> | delete <env> <name>
-#
-# Data modes (stdout carries only data; all chatter goes to stderr):
-#   --list                       env names, one per line
-#   --preview <env>              right-panel info block for fzf
-#
-# Exit codes: 0 = all ok, 1 = one or more envs failed, 2 = usage error.
-# Examples:   vvm up zbxserver ; vvm status ; vvm rebuild zbxserver
 
 set -uo pipefail
 
@@ -41,7 +20,44 @@ fi
 VAGRANT_DIR="$HOME/shared/infra/vagrant"
 
 usage() {
-  sed -n '2,18p' "$0" | sed 's/^# *//'
+  cat <<'EOF'
+vvm — Manage Vagrant environments
+
+Usage:
+  vvm [OPTIONS] <action> [env ...]
+
+Options:
+  -h            Show this help
+  --dir <path>  Use <path> as the Vagrant folder (default ~/shared/infra/vagrant)
+  --list        Print detected env names, one per line
+  --preview <env>
+                Print an env's info block (for fzf)
+  --fzf         Open the environment picker instead
+
+Actions:
+  status        per-env state, one "env<TAB>state" per line
+  up | halt | suspend | resume | reload | provision
+  ssh           requires exactly one env
+  validate      check the Vagrantfile (no VM touch)
+  destroy       confirmed, then vagrant destroy -f
+  rebuild       confirmed, then destroy -f + up
+  snapshot      save <env> <name> | ls [env] | restore <env> <name> | delete <env> <name>
+
+Examples:
+  vvm                    # fzf picker (same as vvm --fzf)
+  vvm status             # all detected envs
+  vvm up zbxserver       # one env
+  vvm --dir /mnt/vagrant status   # a different Vagrant folder
+  vvm rebuild zbxserver  # destroy + up (asks)
+
+Notes:
+  Detects envs from the Vagrant folder (dirs with a Vagrantfile).
+  no env given -> all detected; given names are validated (unknown => error,
+  nothing runs). --list/--preview print data only to stdout; status chatter
+  goes to stderr.
+  Requires: Vagrant; fzf (for the picker).
+  Exit codes: 0 = all ok, 1 = one or more envs failed, 2 = usage error.
+EOF
   exit "${1:-0}"
 }
 
@@ -186,7 +202,7 @@ cmd_preview() {
   printf '%-10s %s\n' "BOX"      "${box:-unknown}"
   printf '%-10s %s\n' "PROVIDER" "${provider:-unknown}"
   printf '%-10s %s\n' "CPU"      "${cpus:-unknown}"
-  printf '%-10s %s\n' "MEM"      "${mem:-unknown}MB"
+  printf '%-10s %s\n' "MEM"      "$([[ -n "${mem:-}" ]] && echo "${mem}MB" || echo unknown)"
 }
 
 cmd_ssh() {
@@ -244,7 +260,7 @@ fzf_pick() {
         --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
         --header='enter = pick env · esc = quit' \
         --preview-window='right:45%' \
-        --preview="${SCRIPT_DIR}/vvm.sh --preview {}"
+        --preview="${SCRIPT_DIR}/vvm.sh --dir '$VAGRANT_DIR' --preview {}"
   )
   ((${#sel[@]})) || return 130
   read -r env _rest <<< "${sel[0]}"
@@ -303,7 +319,19 @@ picker() {
 }
 
 main() {
-  local action=${1:-}
+  local action args=()
+  while (($# > 0)); do
+    case "$1" in
+      --dir) [[ $# -ge 2 && -n "$2" ]] || usage_error "--dir requires a path"
+             VAGRANT_DIR="$2"; shift 2 ;;
+      --dir=*) [[ -n "${1#*=}" ]] || usage_error "--dir requires a path"
+                VAGRANT_DIR="${1#*=}"; shift ;;
+      *) args+=("$1"); shift ;;
+    esac
+  done
+  set -- "${args[@]}"
+
+  action=${1:-}
   shift || true
   case "$action" in
     "" | --fzf)  picker ;;
