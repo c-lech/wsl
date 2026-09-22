@@ -1,32 +1,51 @@
 #!/usr/bin/env bash
-# enterssh - pick a server and ssh in, fuzzy style. Uses your ssh aliases.
-#
-#   enterssh                    show menu, pick a server -> ssh
-#   enterssh --list             just print the menu (see what it found)
-#   enterssh --pane [--layout=X]
-#                               pick several servers -> each gets a tmux pane:
-#                               even count -> tiled, odd -> big left + stack.
-#                               --layout=X overrides: tiled | even-horizontal |
-#                               even-vertical | main-vertical
-#
-#   Tab marks servers; Enter with 2+ marked -> tmux panes automatically
-#   (same split rules as --pane). fzf preview pings the highlighted host.
-#
-# The menu is built from the ssh aliases in ~/.bash_aliases (the same file
-# bash reads at shell start). Any `alias name="ssh ..."` line shows up
-# automatically. The browser alias (zbx) is skipped, it's not ssh.
-#
-# Manual entry: "type an IP yourself" -> IP, then a user (Enter = root).
-#
-# Requires: fzf, tmux (--pane), ping (preview)
+# runssh - pick a server and ssh in, fuzzy style. Uses your ssh aliases.
 
 set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<'EOF'
+runssh — Pick a server and ssh in, fuzzy style
+
+Usage:
+  runssh [OPTIONS]
+
+Options:
+  -h            Show this help
+  --list        Print the menu without connecting (see what it found)
+  --pane        Force tmux even when you pick only 1 server
+  --layout=X    Pane-wall layout (tiled|even-horizontal|even-vertical|
+                main-vertical)
+
+Examples:
+  runssh              # 1 pick -> plain ssh; 2+ marked -> tmux panes
+  runssh --pane       # 1 pick -> tmux pane; 2+ marked -> tmux panes
+  runssh --layout=main-vertical
+
+Notes:
+  Menu is built from the ssh aliases in ~/.bash_aliases (any
+  `alias name="ssh ..."` line shows up automatically).
+  Picking servers:
+    1 server  -> plain ssh, unless --pane
+    2+ marked -> one tmux pane each, tiled (even) or big-left (odd)
+  Tab marks servers, Enter connects. Type an IP yourself for a manual
+  connection (user: Enter = root). The fzf preview live-pings the
+  highlighted host.
+  Requires: fzf; tmux for panes; ping for the preview.
+  Exit codes: 0 = ok, 1 = missing dependency/aliases, 2 = bad usage (layout).
+EOF
+  exit 0
+}
+
+[ "${1:-}" = "-h" ] && usage
 
 ALIASES="${HOME}/.bash_aliases"
 [ -f "$ALIASES" ] || ALIASES="${HOME}/shared/infra/bash_aliases/bash_aliases"
 
 command -v fzf >/dev/null 2>&1 || {
-    echo "enterssh: fzf is not installed (apt install fzf)" >&2
+    echo "runssh: fzf is not installed (apt install fzf)" >&2
     exit 1
 }
 
@@ -199,7 +218,7 @@ run_panes() {
     ((${#cmds[@]})) || return 0
 
     command -v tmux >/dev/null 2>&1 || {
-        echo "enterssh: --pane needs tmux (apt install tmux)" >&2
+        echo "runssh: --pane needs tmux (apt install tmux)" >&2
         return 1
     }
 
@@ -288,25 +307,25 @@ case "${1:-}" in
         shift
         ;;
     --layout)
-        [ $# -ge 2 ] || { echo "enterssh: --layout needs a value" >&2; exit 2; }
+        [ $# -ge 2 ] || { echo "runssh: --layout needs a value" >&2; exit 2; }
         LAYOUT=$2
         shift 2
         ;;
 esac
 if [ -n "$LAYOUT" ]; then
     [[ " tiled even-horizontal even-vertical main-vertical " == *" $LAYOUT "* ]] || {
-        echo "enterssh: bad layout '$LAYOUT' (tiled|even-horizontal|even-vertical|main-vertical)" >&2
+        echo "runssh: bad layout '$LAYOUT' (tiled|even-horizontal|even-vertical|main-vertical)" >&2
         exit 2
     }
 fi
 
 if [ ! -f "$ALIASES" ]; then
-    echo "enterssh: no ssh aliases found (looked at ${HOME}/.bash_aliases or ~/shared/infra/bash_aliases/bash_aliases)" >&2
+    echo "runssh: no ssh aliases found (looked at ${HOME}/.bash_aliases or ~/shared/infra/bash_aliases/bash_aliases)" >&2
     exit 1
 fi
 
 ((${#CMDS[@]})) || {
-    echo "enterssh: no ssh aliases found in $ALIASES" >&2
+    echo "runssh: no ssh aliases found in $ALIASES" >&2
     exit 1
 }
 
@@ -316,7 +335,7 @@ mapfile -t SEL < <( { print_menu | sort; printf '%s\n' "$MANUAL"; } \
         --bind='tab:toggle' --bind='btab:toggle' --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
         --bind='ctrl-u:preview-half-page-up' --bind='ctrl-d:preview-half-page-down' \
         --header='enter=ssh · tab=mark (2+ -> tmux panes) · esc=quit · ctrl-u/d=scroll' \
-        --preview-window='right:45%:follow' --preview="$0 --_preview {}" )
+        --preview-window='right:45%:follow' --preview="${SCRIPT_DIR}/runssh.sh --_preview {}" )
 
 ((${#SEL[@]})) || exit 0
 

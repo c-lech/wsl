@@ -23,6 +23,8 @@
 
 set -uo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 C_OK=''
 C_SKIP=''
 C_FAIL=''
@@ -242,7 +244,7 @@ fzf_pick() {
         --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
         --header='enter = pick env · esc = quit' \
         --preview-window='right:45%' \
-        --preview="$0 --preview {}"
+        --preview="${SCRIPT_DIR}/vvm.sh --preview {}"
   )
   ((${#sel[@]})) || return 130
   read -r env _rest <<< "${sel[0]}"

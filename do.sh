@@ -19,6 +19,7 @@ set -uo pipefail
 shopt -s globstar nullglob
 
 BASE="$HOME/wsl"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALIASES=""
 for c in "$HOME/shared/infra/bash_aliases/bash_aliases" \
          "/mnt/c/data/shared/infra/bash_aliases/bash_aliases"; do
@@ -160,7 +161,7 @@ pick() {
         --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
         --preview-window='right:45%' \
         --header='enter=run · esc=quit' \
-        --preview="$0 --_preview {}")
+        --preview="${SCRIPT_DIR}/do.sh --_preview {}")
 
     ((${#SEL[@]})) || exit 0
     local name="" _rest idx
