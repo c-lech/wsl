@@ -245,18 +245,24 @@ cmd_snapshot() {
       env=$2; name=$3
       is_env "$env" || usage_error "unknown env: $env"
       read -r -p "  delete snapshot '$name' from $env? [y/N] " ans
-      [[ "$ans" == "y" || "$ans" == "Y" ]] || { echo "  aborted" >&2; exit 0; }
+      [[ "$ans" == "y" || "$ans" == "Y" ]] || { echo "  aborted" >&2; return 0; }
       run_env "$env" snapshot delete "$name" ;;
     *)
       usage_error "snapshot: unknown verb '${verb:-}' (save|ls|restore|delete)" ;;
   esac
 }
 
+run_banner() {
+  clear 2>/dev/null || true
+  printf '%s\n' "${C_SECT}── $1 : $2 ──${RESET}" >&2
+  printf '\n' >&2
+}
+
 fzf_pick() {
   local sel env verb snap
   mapfile -t sel < <(
     printf '%s\n' "${ENVS[@]}" |
-    fzf --layout=reverse --height=40% --prompt='v> ' --info=inline \
+    fzf --layout=reverse --height=100% --prompt='v> ' --info=inline \
         --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
         --header='enter = pick env · esc = quit' \
         --preview-window='right:45%' \
@@ -280,9 +286,9 @@ fzf_pick() {
       'destroy       delete VM (asks)' \
       'rebuild       destroy + up (asks)' \
       'snapshot      save | ls | restore | delete' |
-    fzf --layout=reverse --height=40% --prompt='v> ' --info=inline \
+    fzf --layout=reverse --height=100% --prompt='v> ' --info=inline \
         --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
-        --header="$env :: select action · esc = back" \
+        --header="$env :: select action · esc = quit" \
         --delimiter=' ' --with-nth=1
   )
   ((${#sel[@]})) || return 130
@@ -292,22 +298,27 @@ fzf_pick() {
     snapshot)
       mapfile -t sel < <(
         printf '%s\n' 'save' 'ls' 'restore' 'delete' |
-        fzf --layout=reverse --height=20% --prompt='v> snapshot ' --info=inline \
+        fzf --layout=reverse --height=100% --prompt='v> snapshot ' --info=inline \
             --marker='┃' --pointer='▸' --color='marker:green,pointer:white'
       )
       ((${#sel[@]})) || return 130
       read -r verb _rest <<< "${sel[0]}"
       case "$verb" in
-        ls) cmd_snapshot ls "$env" ;;
+        ls)
+          run_banner "$env" "snapshot ls"
+          cmd_snapshot ls "$env" ;;
         save|restore|delete)
           read -r -p "  snapshot name: " snap
           [[ -n "$snap" ]] || { echo "vvm: no snapshot name" >&2; return 1; }
+          run_banner "$env" "snapshot $verb $snap"
           cmd_snapshot "$verb" "$env" "$snap" ;;
       esac
       ;;
     status)
+      run_banner "$env" "status"
       cmd_status "$env" ;;
     *)
+      run_banner "$env" "$verb"
       do_run "$verb" "$env" ;;
   esac
 }
@@ -315,7 +326,14 @@ fzf_pick() {
 picker() {
   command -v fzf >/dev/null 2>&1 || die "fzf is not installed (install.sh provides it)" 1
   detect_envs
-  fzf_pick
+  local st
+  while true; do
+    fzf_pick
+    st=$?
+    ((st == 130)) && return 130
+    printf '%s\n' '' "[enter] continue" >&2
+    read -r _
+  done
 }
 
 main() {
