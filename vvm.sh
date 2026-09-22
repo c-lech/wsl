@@ -260,9 +260,10 @@ run_banner() {
 
 fzf_pick() {
   local sel env verb snap
+  clear 2>/dev/null || true
   mapfile -t sel < <(
     printf '%s\n' "${ENVS[@]}" |
-    fzf --layout=reverse --height=100% --prompt='v> ' --info=inline \
+    fzf --layout=reverse --prompt='v> ' --info=inline \
         --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
         --header='enter = pick env · esc = quit' \
         --preview-window='right:45%' \
@@ -272,55 +273,62 @@ fzf_pick() {
   read -r env _rest <<< "${sel[0]}"
   is_env "$env" || die "internal: picked unknown env '$env'" 1
 
-  mapfile -t sel < <(
-    printf '%s\n' \
-      'status        per-env state' \
-      'up            create + boot' \
-      'halt          shutdown OS' \
-      'suspend       freeze' \
-      'resume        unfreeze' \
-      'reload        reboot' \
-      'provision     re-run provisioner' \
-      'validate      check Vagrantfile' \
-      'ssh           SSH in' \
-      'destroy       delete VM (asks)' \
-      'rebuild       destroy + up (asks)' \
-      'snapshot      save | ls | restore | delete' |
-    fzf --layout=reverse --height=100% --prompt='v> ' --info=inline \
-        --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
-        --header="$env :: select action · esc = quit" \
-        --delimiter=' ' --with-nth=1
-  )
-  ((${#sel[@]})) || return 130
-  read -r verb _rest <<< "${sel[0]}"
+  while true; do
+    mapfile -t sel < <(
+      printf '%s\n' \
+        'status        per-env state' \
+        'up            create + boot' \
+        'halt          shutdown OS' \
+        'suspend       freeze' \
+        'resume        unfreeze' \
+        'reload        reboot' \
+        'provision     re-run provisioner' \
+        'validate      check Vagrantfile' \
+        'ssh           SSH in' \
+        'destroy       delete VM (asks)' \
+        'rebuild       destroy + up (asks)' \
+        'snapshot      save | ls | restore | delete' |
+      fzf --layout=reverse --prompt='v> ' --info=inline \
+          --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
+          --header="$env :: select action · esc = back" \
+          --delimiter=' ' --with-nth=1
+    )
+    ((${#sel[@]})) || return 3
+    read -r verb _rest <<< "${sel[0]}"
 
-  case "$verb" in
-    snapshot)
+    if [[ "$verb" != "snapshot" ]]; then
+      run_banner "$env" "$verb"
+      if [[ "$verb" == "status" ]]; then
+        cmd_status "$env"
+      else
+        do_run "$verb" "$env"
+      fi
+      return $?
+    fi
+
+    while true; do
       mapfile -t sel < <(
         printf '%s\n' 'save' 'ls' 'restore' 'delete' |
-        fzf --layout=reverse --height=100% --prompt='v> snapshot ' --info=inline \
-            --marker='┃' --pointer='▸' --color='marker:green,pointer:white'
+        fzf --layout=reverse --prompt='v> snapshot ' --info=inline \
+            --marker='┃' --pointer='▸' --color='marker:green,pointer:white' \
+            --header="$env :: select action · esc = back"
       )
-      ((${#sel[@]})) || return 130
+      ((${#sel[@]})) || break
       read -r verb _rest <<< "${sel[0]}"
       case "$verb" in
         ls)
           run_banner "$env" "snapshot ls"
-          cmd_snapshot ls "$env" ;;
+          cmd_snapshot ls "$env"
+          return $? ;;
         save|restore|delete)
           read -r -p "  snapshot name: " snap
-          [[ -n "$snap" ]] || { echo "vvm: no snapshot name" >&2; return 1; }
+          [[ -n "$snap" ]] || { echo "vvm: no snapshot name" >&2; continue; }
           run_banner "$env" "snapshot $verb $snap"
-          cmd_snapshot "$verb" "$env" "$snap" ;;
+          cmd_snapshot "$verb" "$env" "$snap"
+          return $? ;;
       esac
-      ;;
-    status)
-      run_banner "$env" "status"
-      cmd_status "$env" ;;
-    *)
-      run_banner "$env" "$verb"
-      do_run "$verb" "$env" ;;
-  esac
+    done
+  done
 }
 
 picker() {
@@ -331,6 +339,7 @@ picker() {
     fzf_pick
     st=$?
     ((st == 130)) && return 130
+    ((st == 3)) && continue
     printf '%s\n' '' "[enter] continue" >&2
     read -r _
   done
