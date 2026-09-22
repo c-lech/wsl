@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
-# tmux2 - open a NEW tmux session with N panes. Never kills anything.
-#
-#   tmux2         plain tmux   (same as "tmux2 1")
-#   tmux2 1       plain tmux
-#   tmux2 N       new session, N panes. N = 2..16
-#                 N=3 -> big left + 2-stack; otherwise tiled grid
-#   tmux2 -h      this help
+# runtmux - open a NEW tmux session with N panes. Never kills anything.
 #
 # Every run creates a brand-new session (named p<N>, p<N>-2, p<N>-3, ...).
 # Existing sessions are never touched; close them yourself when finished.
@@ -14,20 +8,40 @@ set -euo pipefail
 
 SESSION_PREFIX="p"
 
-if [ "${1:-}" = "-h" ]; then
-    sed -n '2,11p' "$0" | sed 's/^# *//'
-    exit 0
-fi
+usage() {
+  cat <<'EOF'
+runtmux — Open a new tmux session with N panes
+
+Usage:
+  runtmux [OPTIONS] [N]
+
+Options:
+  -h    Show this help
+
+Examples:
+  runtmux          # plain tmux (same as "runtmux 1")
+  runtmux 5        # new session p5, tiled grid of 5 panes
+  runtmux 3        # big-left + 2-stack layout
+
+Notes:
+  Creates a brand-new session (p<N>, p<N>-2, ...) every run; existing
+  sessions are never touched. N = 1..16. Inside tmux it switches, else attaches.
+  Exit codes: 0 = ok, 2 = bad N.
+EOF
+  exit 0
+}
+
+if [ "${1:-}" = "-h" ]; then usage; fi
 
 N="${1:-1}"
 
 [[ "$N" =~ ^[0-9]+$ ]] || {
-    echo "tmux2: N must be a number between 1 and 16, got '${1:-}'" >&2
+    echo "runtmux: N must be a number between 1 and 16, got '${1:-}'" >&2
     exit 2
 }
 
 ((N >= 1 && N <= 16)) || {
-    echo "tmux2: N must be between 1 and 16, got $N" >&2
+    echo "runtmux: N must be between 1 and 16, got $N" >&2
     exit 2
 }
 
@@ -62,7 +76,7 @@ for ((i = 2; i <= N; i++)); do
     opt=-h
     ((best_h >= best_w)) && opt=-v
     tmux split-window "$opt" -t "$best_p" -c "$PWD" || {
-        echo "tmux2: can't fit $N panes in this terminal" >&2
+        echo "runtmux: can't fit $N panes in this terminal" >&2
         break
     }
 done
