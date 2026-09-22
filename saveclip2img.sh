@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# saveclip2img — Save Windows-clipboard image
 
 set -uo pipefail
 

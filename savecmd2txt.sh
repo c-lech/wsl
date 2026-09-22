@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# savecmd2txt — Run a command and save its output as plain text
 
 set -uo pipefail
 

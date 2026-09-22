@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# savecmd2img — Run a command and save its output as a styled terminal image
 
 set -uo pipefail
 

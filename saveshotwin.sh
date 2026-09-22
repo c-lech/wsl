@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# saveshotwin — Save the active Windows window as image
 
 set -uo pipefail
 

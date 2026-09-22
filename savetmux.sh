@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# savetmux — Save every pane of the current tmux session
 
 set -uo pipefail
 

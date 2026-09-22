@@ -1,4 +1,5 @@
 #!/bin/bash
+# vvm — Manage Vagrant environments
 
 set -uo pipefail
 

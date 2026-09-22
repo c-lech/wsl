@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# saveclip2txt — Save Windows-clipboard text
 
 set -uo pipefail
 

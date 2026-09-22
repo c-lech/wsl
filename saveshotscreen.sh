@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# saveshotscreen — Save the Windows screen as image
 
 set -uo pipefail
 

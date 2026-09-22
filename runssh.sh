@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# runssh - pick a server and ssh in, fuzzy style. Uses your ssh aliases.
+# runssh — Pick a server and ssh in, fuzzy style
 
 set -uo pipefail
 

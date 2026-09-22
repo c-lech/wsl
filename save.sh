@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# save — Save Windows-clipboard image or text
 
 set -uo pipefail
 

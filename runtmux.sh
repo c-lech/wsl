@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# runtmux - open a NEW tmux session with N panes. Never kills anything.
+# runtmux — Open a new tmux session with N panes
 #
 # Every run creates a brand-new session (named p<N>, p<N>-2, p<N>-3, ...).
 # Existing sessions are never touched; close them yourself when finished.

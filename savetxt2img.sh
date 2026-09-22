@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# savetxt2img — Render Windows-clipboard text as a styled source-code image
 
 set -uo pipefail
 
