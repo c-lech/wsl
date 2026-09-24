@@ -8,22 +8,30 @@ if [ "${1:-}" = "-h" ]; then
 saveshotwin — Save the active Windows window as image
 
 Usage:
-  saveshotwin [OPTIONS]
+  saveshotwin [DELAY]
 
 Options:
-  -h    Show this help
+  -h       Show this help
+  DELAY    optional seconds to wait before the capture (default 0)
 
 Examples:
-  saveshotwin    # -> ~/shared/saved/260921_143022_image.png
+  saveshotwin      # instant
+  saveshotwin 5    # wait 5s (time to focus the target), then capture
 
 Notes:
-  Powershell Alt+PrtSc copies the active window to the Windows clipboard,
-  then saveclip2img saves it to ~/shared/saved/.
+  Copies the active window to the Windows clipboard, then saveclip2img
+  saves it to ~/shared/saved/.
   Requires: Windows + WSLg clipboard bridge.
-  Exit codes: inherited from saveclip2img (0 = saved, 1 = failed).
+  Exit codes: 0 = saved, 1 = nothing on clipboard or save failed.
 EOF
   exit 0
 fi
 
+delay=0
+if (($#)); then
+  [[ "$1" =~ ^[0-9]+$ ]] || { echo "saveshotwin: bad delay '$1' (a number of seconds, 0 = instant)" >&2; exit 2; }
+  delay=$1
+fi
+
 cd "$HOME/shared/infra/bat"
-cmd.exe /c saveshotwin.bat
+cmd.exe /c saveshot.bat win "$delay"
