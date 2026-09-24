@@ -31,7 +31,7 @@ Notes:
   Depends on: wl-clipboard (wl-paste) + ImageMagick (magick).
   Exit codes: 0 = saved, 1 = no image on clipboard or conversion failed, 2 = bad usage.
 EOF
-  exit 0
+  exit "${1:-0}"
 }
 
 say_saved() {                                # clickable 3-line 'saved:' block; plain when piped
@@ -51,8 +51,8 @@ while getopts "q:po:h" o; do case "$o" in
   q) q=$OPTARG ;;
   p) png=1 ;;
   o) out=$OPTARG ;;
-  h) usage ;;
-  *) usage ;;
+  h) usage 0 ;;
+  *) usage 2 ;;
 esac; done
 
 pull=""                                                # Windows-direct pull file (PNG) - primary

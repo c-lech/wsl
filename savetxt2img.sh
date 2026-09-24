@@ -31,7 +31,7 @@ Notes:
   Depends on: wl-clipboard (wl-paste) + silicon - both installed by install.sh.
   Exit codes: 0 = saved, 1 = no text on clipboard or render failed, 2 = bad usage.
 EOF
-  exit 0
+  exit "${1:-0}"
 }
 
 say_saved() {                                # clickable 3-line 'saved:' block; plain when piped
@@ -50,8 +50,8 @@ say_saved() {                                # clickable 3-line 'saved:' block; 
 while getopts "l:o:h" o; do case "$o" in
   l) lang=$OPTARG ;;
   o) out=$OPTARG ;;
-  h) usage ;;
-  *) usage ;;
+  h) usage 0 ;;
+  *) usage 2 ;;
 esac; done
 
 text="$(wl-paste 2>/dev/null || true)"          # nothing full-text on the clipboard?

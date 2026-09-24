@@ -39,15 +39,14 @@ say_saved() {                                # clickable 3-line 'saved:' block; 
 
 if [ "${1:-}" = "-h" ]; then usage; fi
 
-text="$(powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetText()" 2>/dev/null | tr -d '\r')"
-
-[ -z "$text" ] && { echo "saveclip2txt: clipboard is empty" >&2; exit 1; }
-
 dir="$HOME/shared/saved"
 mkdir -p "$dir" || exit 1
 
 stamp="$(date +%y%m%d_%H%M%S)"
 out="$dir/${stamp}_txt.txt"
-printf '%s\n' "$text" > "$out"
+
+powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetText()" 2>/dev/null | tr -d '\r' > "$out"
+
+[ -s "$out" ] || { rm -f "$out"; echo "saveclip2txt: clipboard is empty" >&2; exit 1; }
 
 say_saved "$out"
