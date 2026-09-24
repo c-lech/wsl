@@ -117,7 +117,6 @@ mapfile -t files < <(build_lines)
 
 n=${#files[@]}
 idx=0
-rows=$(tput lines 2>/dev/null || echo 40)
 
 stty -icanon -echo -isig
 trap 'stty sane; exit 0' EXIT TERM
@@ -128,6 +127,7 @@ while true; do
   line=${files[idx]}
   path=$(printf '%s\n' "$line" | cut -f4)
   name=${path##*/}
+  rows=$(tput lines 2>/dev/null || echo 40)
   clear 2>/dev/null || true
 
   case "$path" in
