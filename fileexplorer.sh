@@ -27,6 +27,7 @@ Examples:
 Notes:
   Enter opens only whitelisted list types; exe/com/bat/cmd/ps1/msi refused.
   Ctrl+C copies the file to the Windows clipboard (text or image).
+  Ctrl+X deletes the file (Windows Recycle Bin, needs a Windows path).
   Exit codes: 0 = ok, 1 = dir not found / no files, 2 = bad usage.
 EOF
   exit 0
@@ -58,6 +59,14 @@ done
 
 [ -d "$DIR" ] || die "dir not found: $DIR" 1
 
+status() {
+  printf '\033[%d;1H\033[2K\033[2m%s\033[0m' "$rows" "${1:0:56}"
+}
+
+render_footer() {
+  status "$((idx+1))/$n  ${name:0:32}  ←→ browse · enter=open · ^c=copy · ^x=del · q/esc=quit"
+}
+
 build_lines() {
   local f size date
   while IFS= read -r f; do
@@ -79,11 +88,8 @@ open_in_windows() {
   for e in $SAFE_EXT; do
     [ "$ext" = "$e" ] && { found=1; break; }
   done
-  if [ "$found" != 1 ]; then
-    echo "fileexplorer: not opened: .$ext (blocked)" >&2
-    return 1
-  fi
-  wpath=$(wslpath -w "$real" 2>/dev/null) || { echo "fileexplorer: wslpath failed" >&2; return 1; }
+  [ "$found" = 1 ] || return 1
+  wpath=$(wslpath -w "$real" 2>/dev/null) || return 1
   ( cd /mnt/c 2>/dev/null; cmd.exe /c start '' "$wpath" )
 }
 
@@ -93,16 +99,26 @@ copy_to_clipboard() {
   ext=$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')
   case "$ext" in
     txt|md|json|csv|log|sh|py)
-      clip.exe < "$f" 2>/dev/null || echo "fileexplorer: clipboard failed (text)" >&2
+      clip.exe < "$f" 2>/dev/null
       ;;
     png|jpg|jpeg|gif|bmp|webp|svg)
-      wpath=$(wslpath -w "$f" 2>/dev/null) || { echo "fileexplorer: wslpath failed" >&2; return 1; }
+      wpath=$(wslpath -w "$f" 2>/dev/null) || return 1
       powershell.exe -Sta -NoProfile -Command \
         "Add-Type -AssemblyName System.Windows.Forms; \$b = [System.Drawing.Image]::FromFile('$wpath'); [System.Windows.Forms.Clipboard]::SetImage(\$b); \$b.Dispose()" \
-        >/dev/null 2>&1 || echo "fileexplorer: clipboard failed (image)" >&2
+        >/dev/null 2>&1
       ;;
-    *) echo "fileexplorer: not copied: .$ext (blocked)" >&2 ;;
+    *) return 1 ;;
   esac
+}
+
+delete_to_recyclebin() {
+  local f=$1 wp
+  [ -f "$f" ] || return 1
+  wp=$(wslpath -w "$f" 2>/dev/null) || return 1
+  [[ "$wp" == \\\\* ]] && return 1
+  powershell.exe -NoProfile -Command \
+    "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('$wp','OnlyErrorDialogs','SendToRecycleBin')" \
+    >/dev/null 2>&1
 }
 
 if [ -n "${LIST:-}" ]; then
@@ -120,7 +136,7 @@ idx=0
 
 stty -icanon -echo -isig
 trap 'stty sane; exit 0' EXIT TERM
-on_int() { copy_to_clipboard "$path"; }
+on_int() { copy_to_clipboard "$path" && status "copied: ${name:0:32}" || status "not copied: ${name:0:32}"; }
 trap on_int INT
 
 while true; do
@@ -144,8 +160,7 @@ while true; do
       ;;
   esac
 
-  printf '\033[%d;1H\033[2K\033[2m%d/%d  %s  ←→ browse · enter=open · ^c=copy · q/esc=quit\033[0m' \
-    "$rows" "$((idx+1))" "$n" "$name"
+  render_footer
 
   while true; do
     IFS= read -rsN1 key || { printf '\n'; exit 0; }
@@ -162,10 +177,39 @@ while true; do
         fi
         ;;
       $'\r'|$'\n')
-        open_in_windows "$path"
+        if open_in_windows "$path"; then
+          status "opened: ${name:0:32}"
+        else
+          status "not opened: ${name:0:32}"
+        fi
         ;;
       $'\x03')
-        copy_to_clipboard "$path"
+        if copy_to_clipboard "$path"; then
+          status "copied: ${name:0:32}"
+        else
+          status "not copied: ${name:0:32}"
+        fi
+        ;;
+      $'\x18')
+        status "delete \"${name:0:28}\"? x=confirm · any other key=cancel"
+        IFS= read -rsN1 k2 || { printf '\n'; exit 0; }
+        if [ "$k2" = 'x' ] || [ "$k2" = 'X' ]; then
+          if delete_to_recyclebin "$path"; then
+            new=(); l=
+            for l in "${files[@]}"; do
+              [ "$l" != "$line" ] && new+=("$l")
+            done
+            files=("${new[@]}")
+            n=${#files[@]}
+            ((n > 0)) || { printf '\n'; exit 0; }
+            idx=$(( idx >= n ? n - 1 : idx ))
+            break
+          else
+            status "recycle bin unavailable: ${name:0:32}"
+          fi
+        else
+          render_footer
+        fi
         ;;
       q|Q)
         printf '\n'
