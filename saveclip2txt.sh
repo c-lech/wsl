@@ -45,7 +45,7 @@ mkdir -p "$dir" || exit 1
 stamp="$(date +%y%m%d_%H%M%S)"
 out="$dir/${stamp}_txt.txt"
 
-powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetText()" 2>/dev/null | tr -d '\r' > "$out"
+powershell.exe -NoProfile -STA -Command "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetText()" 2>/dev/null | tr -d '\r' > "$out"
 
 [ -s "$out" ] || { rm -f "$out"; echo "saveclip2txt: clipboard is empty" >&2; exit 1; }
 
