@@ -33,7 +33,7 @@ wsl/
 │   ├── cliamp.toml
 │   ├── cliamp-radios.toml
 │   ├── config.jsonc
-│   ├── logo.png
+│   ├── fastfetchlogo.png
 │   └── golazo-settings.yaml
 ├── createenv.sh
 ├── install.sh
@@ -132,7 +132,7 @@ Machine-local infra lives under `$HOME/shared/infra/` (not versioned): `git_cred
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `vimrc`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `logo.png`, `golazo-settings.yaml`, and `wslconfig`.
+`dotfiles/` contains `tmux.conf`, `bashrc`, `vimrc`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `fastfetchlogo.png`, `golazo-settings.yaml`, and `wslconfig`.
 Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
 user profile (`C:\Users\<user>\.wslconfig`):
 
@@ -144,7 +144,7 @@ user profile (`C:\Users\<user>\.wslconfig`):
 ~/.config/opencode/opencode.jsonc -> ~/wsl/dotfiles/opencode.jsonc
 ~/.config/tmuxai/config.yaml      -> ~/wsl/dotfiles/tmuxai.yaml
 ~/.config/fastfetch/config.jsonc  -> ~/wsl/dotfiles/config.jsonc
-~/.config/fastfetch/logo.png      -> ~/wsl/dotfiles/logo.png
+~/.config/fastfetch/fastfetchlogo.png -> ~/wsl/dotfiles/fastfetchlogo.png
 ~/.config/golazo/settings.yaml    -> ~/wsl/dotfiles/golazo-settings.yaml
 ~/.config/cliamp/radios.toml      -> ~/wsl/dotfiles/cliamp-radios.toml
 ~/.config/cliamp/config.toml      <- ~/wsl/dotfiles/cliamp.toml  (copied, not symlinked)

@@ -937,7 +937,7 @@ install_dotfiles() {
     "$HOME/.config/cliamp/config.toml|$BASE/dotfiles/cliamp.toml|copy"
     "$HOME/.config/kew/kewrc|$BASE/dotfiles/kewrc|copy"
     "$HOME/.config/fastfetch/config.jsonc|$BASE/dotfiles/config.jsonc|link"
-    "$HOME/.config/fastfetch/logo.png|$BASE/dotfiles/logo.png|link"
+    "$HOME/.config/fastfetch/fastfetchlogo.png|$BASE/dotfiles/fastfetchlogo.png|link"
   )
 
   record "system:link dot files" skip "pending"
@@ -994,18 +994,18 @@ install_dotfiles() {
     record "system:link dot files:$HOME/.bash_aliases" skip "aliases file missing (machine-local)"
   fi
 
-  if [ -f "$HOME/.config/fastfetch/logo.txt" ]; then
-    record "system:link dot files:$HOME/.config/fastfetch/logo.txt" skip "already rendered"
+  if [ -f "$HOME/.config/fastfetch/fastfetchlogo.txt" ]; then
+    record "system:link dot files:$HOME/.config/fastfetch/fastfetchlogo.txt" skip "already rendered"
   else
     step "dotfiles -> rendering fastfetch logo"
     if ! chafa -f symbols --symbols "block+border" --colors full -s 60x30 \
-          "$HOME/.config/fastfetch/logo.png" > "$HOME/.config/fastfetch/logo.txt" 2> "$LOG_DIR/dotfiles.log"; then
+          "$HOME/.config/fastfetch/fastfetchlogo.png" > "$HOME/.config/fastfetch/fastfetchlogo.txt" 2> "$LOG_DIR/dotfiles.log"; then
       log_tail dotfiles.log
-      record "system:link dot files:$HOME/.config/fastfetch/logo.txt" fail "failed (logo render)"
+      record "system:link dot files:$HOME/.config/fastfetch/fastfetchlogo.txt" fail "failed (logo render)"
       publish "system:link dot files"
       return 1
     fi
-    record "system:link dot files:$HOME/.config/fastfetch/logo.txt" ok "rendered"
+    record "system:link dot files:$HOME/.config/fastfetch/fastfetchlogo.txt" ok "rendered"
   fi
 
   publish "system:link dot files"
