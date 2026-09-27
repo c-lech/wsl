@@ -54,8 +54,8 @@ notify_toast() {                         # $1 message, $2 info|error
     icon_expr='[System.Drawing.SystemIcons]::Information'
   fi
   reg_line=""
-  if [ -f "$HOME/shared/infra/notifywin/logo.ico" ]; then   # registry icon -> small, left of the name
-    logo_win="$(wslpath -w "$HOME/shared/infra/notifywin/logo.ico")"
+  if [ -f "$HOME/shared/infra/notifywin_ico/notifywin.ico" ]; then   # registry icon -> small, left of the name
+    logo_win="$(wslpath -w "$HOME/shared/infra/notifywin_ico/notifywin.ico")"
     reg_line="New-ItemProperty \$key -Name 'IconUri' -Value '$logo_win' -Force | Out-Null"
   fi
   [ "$show" -gt 3 ] && dur=long || dur=short

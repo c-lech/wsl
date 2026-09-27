@@ -18,7 +18,7 @@ if [ -t 2 ]; then
   RESET=$'\033[0m'
 fi
 
-VAGRANT_DIR="$HOME/shared/infra/vagrant"
+VAGRANT_DIR="$HOME/shared/infra/vagrant_envs"
 
 usage() {
   cat <<'EOF'
@@ -29,7 +29,7 @@ Usage:
 
 Options:
   -h            Show this help
-  --dir <path>  Use <path> as the Vagrant folder (default ~/shared/infra/vagrant)
+  --dir <path>  Use <path> as the Vagrant folder (default ~/shared/infra/vagrant_envs)
   --list        Print detected env names, one per line
   --preview <env>
                 Print an env's info block (for fzf)

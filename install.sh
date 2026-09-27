@@ -1100,7 +1100,7 @@ mount_data_dir() {
 }
 
 install_ssh() {
-  local src="$HOME/shared/infra/wsl_ssh_key"
+  local src="$HOME/shared/infra/ssh_keys"
   if [ ! -f "$src/id_ed25519" ]; then
     record "system:copy ssh keys" skip "no source key"
     return 0

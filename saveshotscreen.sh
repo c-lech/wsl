@@ -33,5 +33,5 @@ if (($#)); then
   delay=$1
 fi
 
-cd "$HOME/shared/infra/bat"
+cd "$HOME/shared/infra/windows_scripts"
 cmd.exe /c saveshot.bat full "$delay"
