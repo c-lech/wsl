@@ -60,6 +60,7 @@ notify_toast() {                         # $1 message, $2 info|error
   fi
   [ "$show" -gt 3 ] && dur=long || dur=short
   tmp="${TMPDIR:-/tmp}/notifywin_$$.ps1"
+  tmp_win="$(wslpath -w "$tmp" 2>/dev/null || printf '%s' "$tmp")"
   {
     printf '\xEF\xBB\xBF'                 # UTF-8 BOM so powershell.exe reads the file as UTF-8, not ANSI
     printf '%s\n' "\$ErrorActionPreference = 'Stop'"
@@ -111,8 +112,12 @@ try {
 PS1
   } > "$tmp"
   perl -pi -e "s/__DUR__/$dur/g; s/__ICON__/${icon_expr}/g" "$tmp"
-  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$tmp" >"$tmp.log" 2>&1 &
-  ( sleep 30; rm -f "$tmp" "$tmp.log" ) >/dev/null 2>&1 &
+  res="$(timeout 20 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$tmp_win" </dev/null 2>&1)"
+  case "$res" in
+    *TRY_OK*|*CATCH_FB*) rm -f "$tmp" ;;
+    *) echo "notifywin: toast failed -> ${res:-<no output>}" >&2
+       echo "notifywin: kept $tmp for inspection" >&2 ;;
+  esac
 }
 
 while [ $# -gt 0 ]; do
