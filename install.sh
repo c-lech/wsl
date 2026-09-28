@@ -450,6 +450,54 @@ install_vagrant() {
   fi
 }
 
+install_ansible() {
+  local log="$LOG_DIR/ansible.log"
+  local dir="/etc/ansible"
+  local repo="https://github.com/c-lech/ansible-scripts"
+
+  if ! command -v ansible >/dev/null 2>&1; then
+    record "tools:ansible" skip "not installed (ansible missing)"
+    return 0
+  fi
+
+  if [ ! -d "$dir/.git" ]; then
+    step "ansible -> creating $dir"
+    if ! sudo mkdir -p "$dir" >> "$log" 2>&1; then
+      log_tail ansible.log
+      record "tools:ansible" fail "failed (mkdir $dir)"
+      return 1
+    fi
+    step "ansible -> cloning $repo"
+    if ! sudo git clone -q "$repo" "$dir" >> "$log" 2>&1; then
+      log_tail ansible.log
+      record "tools:ansible" fail "failed (git clone)"
+      return 1
+    fi
+  fi
+
+  # init chowns $dir recursively, so it must run after the clone
+  if [ ! -x "$dir/ansible_users.sh" ]; then
+    record "tools:ansible" fail "ansible_users.sh missing in $dir"
+    return 1
+  fi
+  step "ansible -> ansible_users.sh init"
+  if ! sudo "$dir/ansible_users.sh" init >> "$log" 2>&1; then
+    log_tail ansible.log
+    record "tools:ansible" fail "failed (ansible_users.sh init)"
+    return 1
+  fi
+
+  local me
+  me="$(id -un)"
+  step "ansible -> ansible_users.sh add-user $me"
+  if ! sudo "$dir/ansible_users.sh" add-user "$me" >> "$log" 2>&1; then
+    log_tail ansible.log
+    record "tools:ansible" fail "failed (add-user $me)"
+    return 1
+  fi
+  record "tools:ansible" ok "installed at $dir ${C_SECT}(user $me added to ansible group)${RESET}"
+}
+
 install_cliamp() {
   local log="$LOG_DIR/cliamp.log"
   if command -v cliamp >/dev/null 2>&1; then
@@ -1723,6 +1771,7 @@ main() {
   run_step "tools:tmuxai" "Installing tmuxai" --log tmuxai.log install_tmuxai
   #run_step "tools:ollama" "Installing Ollama" --log ollama.log install_ollama
   run_step "tools:vagrant" "Installing vagrant" --log vagrant.log install_vagrant
+  run_step "tools:ansible" "Setting up /etc/ansible" --log ansible.log install_ansible
   run_step "tools:cliamp" "Installing cliamp" --log cliamp.log install_cliamp
   run_step "tools:kew" "Installing kew" --log kew.log install_kew
   run_step "tools:golazo" "Installing golazo" --log golazo.log install_golazo
