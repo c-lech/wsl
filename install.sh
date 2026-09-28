@@ -460,6 +460,7 @@ install_ansible() {
     return 0
   fi
 
+  local cloned=0
   if [ ! -d "$dir/.git" ]; then
     local tmp
     tmp="$(mktemp -d)"
@@ -479,6 +480,7 @@ install_ansible() {
       return 1
     fi
     rm -rf "$tmp"
+    cloned=1
   fi
 
   # init chowns $dir recursively, so it must run after the clone
@@ -501,7 +503,11 @@ install_ansible() {
     record "tools:ansible" fail "failed (add-user $me)"
     return 1
   fi
-  record "tools:ansible" ok "installed at $dir ${C_SECT}(user $me added to ansible group)${RESET}"
+  if [ "$cloned" -eq 1 ]; then
+    record "tools:ansible" ok "installed at $dir ${C_SECT}(user $me added to ansible group)${RESET}"
+  else
+    record "tools:ansible" skip "already present at $dir ${C_SECT}(user $me in ansible group)${RESET}"
+  fi
 }
 
 install_cliamp() {
