@@ -461,18 +461,24 @@ install_ansible() {
   fi
 
   if [ ! -d "$dir/.git" ]; then
-    step "ansible -> creating $dir"
-    if ! sudo mkdir -p "$dir" >> "$log" 2>&1; then
-      log_tail ansible.log
-      record "tools:ansible" fail "failed (mkdir $dir)"
-      return 1
-    fi
+    local tmp
+    tmp="$(mktemp -d)"
     step "ansible -> cloning $repo"
-    if ! sudo git clone -q "$repo" "$dir" >> "$log" 2>&1; then
+    if ! GIT_TERMINAL_PROMPT=0 git clone -q "$repo" "$tmp" >> "$log" 2>&1; then
+      rm -rf "$tmp"
       log_tail ansible.log
-      record "tools:ansible" fail "failed (git clone)"
+      record "tools:ansible" fail "failed (git clone $repo)"
       return 1
     fi
+    step "ansible -> populating $dir"
+    if ! sudo mkdir -p "$dir" >> "$log" 2>&1 \
+       || ! sudo cp -a "$tmp/." "$dir/" >> "$log" 2>&1; then
+      rm -rf "$tmp"
+      log_tail ansible.log
+      record "tools:ansible" fail "failed (populate $dir)"
+      return 1
+    fi
+    rm -rf "$tmp"
   fi
 
   # init chowns $dir recursively, so it must run after the clone
@@ -1771,7 +1777,6 @@ main() {
   run_step "tools:tmuxai" "Installing tmuxai" --log tmuxai.log install_tmuxai
   #run_step "tools:ollama" "Installing Ollama" --log ollama.log install_ollama
   run_step "tools:vagrant" "Installing vagrant" --log vagrant.log install_vagrant
-  run_step "tools:ansible" "Setting up /etc/ansible" --log ansible.log install_ansible
   run_step "tools:cliamp" "Installing cliamp" --log cliamp.log install_cliamp
   run_step "tools:kew" "Installing kew" --log kew.log install_kew
   run_step "tools:golazo" "Installing golazo" --log golazo.log install_golazo
@@ -1792,6 +1797,7 @@ main() {
   run_step "tools:tmux-plugins" "Installing tmux plugins" --log tmux-plugins.log install_tmux_plugins
   run_step "system:config git" "Configuring git" configure_git
   run_step "system:copy ssh keys" "Copying SSH keys" install_ssh
+  run_step "tools:ansible" "Setting up /etc/ansible" --log ansible.log install_ansible
   run_step "system:wsl config (on host)" "Configuring WSL" install_wslconfig
 
   report
