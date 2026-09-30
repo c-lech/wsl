@@ -75,3 +75,27 @@ for p in "${panes[@]}"; do
     fi
 done
 say_folder "$run"
+
+notify_saved() {                             # toast: live tmux-window shot + folder Open; never fails the save
+  local shot shot_win folder_win rows win_temp
+  folder_win="$(wslpath -w "$run" 2>/dev/null || true)"
+  rows="Saved tmux|${#panes[@]} panes|$(basename "$run")"
+  shot=""
+  win_temp="$(wslpath "$(powershell.exe -NoProfile -Command '$env:TEMP' 2>/dev/null | tr -d '\r' || true)" 2>/dev/null || true)"
+  if [ -n "$win_temp" ]; then
+    shot="$win_temp/tmx_view_$$.png"
+    rm -f "$shot"
+    shot_win="$(wslpath -w "$shot" 2>/dev/null || true)"
+    if [ -n "$shot_win" ]; then
+      ( cd "$HOME/shared/infra/windows_scripts" && cmd.exe /c "saveshot.bat winpng $shot_win" ) >/dev/null 2>&1
+      [ -s "$shot" ] || { echo "savetmux: window preview not captured - foreground window unavailable" >&2; shot=""; }
+    fi
+  fi
+  if [ -n "$shot" ] && [ -n "$folder_win" ]; then
+    shot_win="$(wslpath -w "$shot" 2>/dev/null || true)"
+    [ -n "$shot_win" ] && "$HOME/wsl/notifywin.sh" --image "$shot_win" --open "$folder_win" --rows "$rows" >/dev/null 2>&1 || true
+  elif [ -n "$folder_win" ]; then
+    "$HOME/wsl/notifywin.sh" --open "$folder_win" --rows "$rows" >/dev/null 2>&1 || true
+  fi
+}
+notify_saved

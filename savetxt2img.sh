@@ -84,3 +84,18 @@ if printf '%s\n' "$render_out" | grep -qi '\[error\]'; then
 fi
 [ -s "$out" ] || { echo "savetxt2img: render failed (no output file)" >&2; exit 1; }
 say_saved "$out"
+
+notify_saved() {                             # toast: thumbnail chip + rows; never fails the save
+  local win dims size info rows
+  win="$(wslpath -w "$out" 2>/dev/null || true)"
+  [ -n "$win" ] || return 0
+  dims="$(magick identify -format "%wx%h" "$out" 2>/dev/null || true)"
+  size="$(du -h "$out" 2>/dev/null | cut -f1 || true)"
+  info="${dims:+$dims}"
+  [ -n "$info" ] && [ -n "$size" ] && info="$info · $size"
+  [ -z "$info" ] && info="$size"
+  rows="Saved render|$(basename "$out")"
+  [ -n "$info" ] && rows="$rows|$info"
+  "$HOME/wsl/notifywin.sh" --image "$win" --open "$win" --rows "$rows" >/dev/null 2>&1 || true
+}
+notify_saved

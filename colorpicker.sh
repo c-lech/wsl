@@ -1,5 +1,30 @@
 #!/usr/bin/env bash
 
+usage() {
+  cat <<'EOF'
+colorpicker — Pick a Windows screen color, toast the result
+
+Usage:
+  colorpicker [OPTIONS]
+
+Options:
+  -h, --help      Show this help
+
+Examples:
+  colorpicker      # point & click -> toast: name · #hex · rgb(r,g,b) + swatch
+  colorpicker -h   # this help
+
+Notes:
+  Signals PowerToys Color Picker; waits for the picked color on the clipboard.
+  Toast duration: short (~5s).
+  Requires: PowerToys running.
+  Exit codes: 0 = picked, 1 = cancelled or PowerToys not running.
+EOF
+  exit 0
+}
+
+case "${1:-}" in -h|--help) usage ;; esac
+
 res="$(/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \
   -NoProfile -STA -ExecutionPolicy Bypass \
   -File 'C:\data\shared\infra\windows_scripts\colorpicker.ps1' 2>&1)"

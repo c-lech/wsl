@@ -67,3 +67,29 @@ if [ "$rc" -ne 0 ]; then
 fi
 
 say_saved "$out"
+
+notify_saved() {                             # toast: rendered-card preview + Open; never fails the save
+  local win_txt rows win_temp card card_win
+  win_txt="$(wslpath -w "$out" 2>/dev/null || true)"
+  [ -n "$win_txt" ] || return 0
+  rows="Saved text|$(basename "$out")"
+  card=""
+  win_temp="$(wslpath "$(powershell.exe -NoProfile -Command '$env:TEMP' 2>/dev/null | tr -d '\r' || true)" 2>/dev/null || true)"
+  if [ -n "$win_temp" ] && command -v silicon >/dev/null 2>&1; then
+    card="$win_temp/savetxt_card_$$.png"
+    rm -f "$card"
+    head -c 600 "$out" 2>/dev/null | tr -d '\r' | silicon \
+      -l markdown --theme OneHalfDark -b '#282c34' \
+      --no-window-controls \
+      --shadow-blur-radius 24 --shadow-color '#000000' --shadow-offset-y 8 \
+      --pad-horiz 40 --pad-vert 60 -o "$card" >/dev/null 2>&1 || true
+    [ -s "$card" ] || card=""
+  fi
+  if [ -n "$card" ]; then
+    card_win="$(wslpath -w "$card" 2>/dev/null || true)"
+    [ -n "$card_win" ] && "$HOME/wsl/notifywin.sh" --image "$card_win" --open "$win_txt" --rows "$rows" >/dev/null 2>&1 || true
+  else
+    "$HOME/wsl/notifywin.sh" --open "$win_txt" --rows "$rows" >/dev/null 2>&1 || true
+  fi
+}
+notify_saved
