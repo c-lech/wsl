@@ -18,6 +18,7 @@ Examples:
   savecmd2txt systemctl status zabbix-agent
 
 Notes:
+  On save, a Windows toast previews the result (short ~5s).
   stdout stays on screen with colors; ANSI escapes are stripped from the file.
   File naming: yymmdd_HHMMSS_cmd.txt.
   Exit codes: 0 = saved, 1 = no command given, else the command's exit code.
@@ -87,7 +88,8 @@ notify_saved() {                             # toast: rendered-card preview + Op
   fi
   if [ -n "$card" ]; then
     card_win="$(wslpath -w "$card" 2>/dev/null || true)"
-    [ -n "$card_win" ] && "$HOME/wsl/notifywin.sh" --image "$card_win" --open "$win_txt" --rows "$rows" >/dev/null 2>&1 || true
+    [ -n "$card_win" ] && "$HOME/wsl/notifywin.sh" --hero "$card_win" --image "$card_win" --open "$win_txt" --rows "$rows" >/dev/null 2>&1 || true
+    rm -f "$card"
   else
     "$HOME/wsl/notifywin.sh" --open "$win_txt" --rows "$rows" >/dev/null 2>&1 || true
   fi

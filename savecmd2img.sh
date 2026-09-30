@@ -18,6 +18,7 @@ Examples:
   savecmd2img systemctl status zabbix-agent
 
 Notes:
+  On save, a Windows toast previews the result (short ~5s).
   Uses termshot to render the output as a clean image.
   File naming: yymmdd_HHMMSS_cmd.png.
   Exit codes: 0 = saved, 1 = no command given or render failed.
@@ -71,6 +72,6 @@ notify_saved() {                             # toast: thumbnail chip + rows; nev
   [ -z "$info" ] && info="$size"
   rows="Saved render|$(basename "$out")"
   [ -n "$info" ] && rows="$rows|$info"
-  "$HOME/wsl/notifywin.sh" --image "$win" --open "$win" --rows "$rows" >/dev/null 2>&1 || true
+  "$HOME/wsl/notifywin.sh" --hero "$win" --image "$win" --open "$win" --rows "$rows" >/dev/null 2>&1 || true
 }
 notify_saved

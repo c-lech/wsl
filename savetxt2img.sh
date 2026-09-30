@@ -26,6 +26,7 @@ Examples:
   savetxt2img -o /tmp/x.png
 
 Notes:
+  On save, a Windows toast previews the result (short ~5s).
   Reads text/plain from the (WSLg) clipboard, strips Windows CR endings, renders
   with silicon (OneHalfDark, drop-shadow, no window bar, line numbers on).
   Depends on: wl-clipboard (wl-paste) + silicon - both installed by install.sh.
@@ -96,6 +97,6 @@ notify_saved() {                             # toast: thumbnail chip + rows; nev
   [ -z "$info" ] && info="$size"
   rows="Saved render|$(basename "$out")"
   [ -n "$info" ] && rows="$rows|$info"
-  "$HOME/wsl/notifywin.sh" --image "$win" --open "$win" --rows "$rows" >/dev/null 2>&1 || true
+  "$HOME/wsl/notifywin.sh" --hero "$win" --image "$win" --open "$win" --rows "$rows" >/dev/null 2>&1 || true
 }
 notify_saved

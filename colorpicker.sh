@@ -55,6 +55,9 @@ if [ "$rc" -eq 0 ] && [ -n "$hex" ]; then
   else
     "$HOME/wsl/notifywin.sh" --rows "$rows"
   fi
+  if [ -n "$swatch" ]; then
+    rm -f "$(wslpath -u "$swatch" 2>/dev/null || true)"
+  fi
   exit 0
 fi
 

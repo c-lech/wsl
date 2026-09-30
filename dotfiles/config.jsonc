@@ -53,9 +53,9 @@
       ],
       "ndigits": 0,
       "color": {
-        "green": "#F24386",
-        "yellow": "#F24386",
-        "red": "#F24386"
+        "green": "#d670d6",
+        "yellow": "#d670d6",
+        "red": "#d670d6"
       },
       "spaceBeforeUnit": "default",
       "width": 0

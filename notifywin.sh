@@ -5,8 +5,8 @@ rc0=$?                                  # exit code of whatever ran just before 
 set -uo pipefail
 
 delay=0                                 # -d, --delay: wait before the toast
-show=3                                  # -s, --show: balloon visible seconds
 image=""                                # --image FILE: square chip shown top-left
+hero=""                                 # --hero FILE: large image shown above the rows
 open=""                                 # --open FILE: 'Open' action button
 rows=""                                 # --rows "A|B|C": one toast line per row, first bold
 
@@ -20,10 +20,9 @@ Usage:
 
 Options:
   -d, --delay SECS    Wait SECS before the toast appears (default 0)
-  -s, --show SECS     Visibility: 1-3 = short (~5s) · 4+ = long (~25s).
-                      Default 3 (short).
   -i, --image FILE    Show FILE as a small square image in the toast
                       (any Windows path; e.g. a color swatch PNG)
+  --hero FILE         Large image shown above the rows (coexists with --image)
   -o, --open FILE     Add an 'Open' action button that opens FILE
                       with its default Windows app when clicked
   -r, --rows "A|B|C"  One toast line per pipe-separated row: first line bold,
@@ -34,12 +33,11 @@ Examples:
   notifywin ./install.sh       # -> ./install.sh · done · 2m 14s
   notifywin tea is ready
   notifywin -d 3600 fix the box
-  notifywin -s 5 tea is ready  # -> long toast (~25s)
   notifywin --rows "Black|#1E1E1E|30, 30, 30" --image C:\\tmp\\swatch.png
 
 Notes:
   Background toast · needs Windows.
-  Toast duration: short ~5s · long ~25s on Windows 11.
+  Toast duration: short (~5s) by default.
   Exit codes: 0 shown · 1 no powershell · 2 bad usage (timed command returns its own rc).
 EOF
   exit 0
@@ -90,11 +88,14 @@ notify_toast() {                         # $1 message, $2 info|error
   if [ -n "$image" ]; then
     img_xml="<image placement='appLogoOverride' id='1' src='$(to_uri "$image")'/>"
   fi
+  hero_xml=""                                 # optional large image above the rows
+  if [ -n "$hero" ]; then
+    hero_xml="<image placement='hero' src='$(to_uri "$hero")'/>"
+  fi
   act_xml=""                                  # optional 'Open' action button
   if [ -n "$open" ]; then
     act_xml="<actions><action content='Open' activationType='protocol' arguments='$(to_uri "$open")'/></actions>"
   fi
-  [ "$show" -gt 3 ] && dur=long || dur=short
   tmp="${TMPDIR:-/tmp}/notifywin_$$.ps1"
   tmp_win="$(wslpath -w "$tmp" 2>/dev/null || printf '%s' "$tmp")"
   {
@@ -147,10 +148,10 @@ try {
       $e = $r.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;')
       $texts += "<text>$e</text>"
     }
-    $xml.LoadXml("<toast duration='__DUR__'><visual><binding template='ToastGeneric'>__IMG____ROWS__</binding></visual>__ACT__</toast>".Replace('__ROWS__', ($texts -join '')))
+    $xml.LoadXml("<toast><visual><binding template='ToastGeneric'>__HERO____IMG____ROWS__</binding></visual>__ACT__</toast>".Replace('__ROWS__', ($texts -join '')))
   } else {
     $esc = $msg.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;')
-    $xml.LoadXml("<toast duration='__DUR__'><visual><binding template='ToastGeneric'><text>$esc</text>__IMG__</binding></visual>__ACT__</toast>")
+    $xml.LoadXml("<toast><visual><binding template='ToastGeneric'><text>$esc</text>__HERO____IMG__</binding></visual>__ACT__</toast>")
   }
   $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
   [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('notifywin3').Show($toast)
@@ -175,7 +176,7 @@ try {
 }
 PS1
   } > "$tmp"
-  perl -pi -e "s/__DUR__/$dur/g; s/__ICON__/${icon_expr}/g; s~__IMG__~${img_xml}~g; s~__ACT__~${act_xml}~g" "$tmp"
+  perl -pi -e "s/__ICON__/${icon_expr}/g; s~__HERO__~${hero_xml}~g; s~__IMG__~${img_xml}~g; s~__ACT__~${act_xml}~g" "$tmp"
   res="$(timeout 20 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$tmp_win" </dev/null 2>&1)"
   case "$res" in
     *TRY_OK*|*CATCH_FB*) rm -f "$tmp" ;;
@@ -194,14 +195,6 @@ while [ $# -gt 0 ]; do
       delay=${1#*=}
       [[ "$delay" =~ ^[0-9]+$ ]] || { echo "notifywin: --delay needs a number of seconds" >&2; exit 2; }
       shift ;;
-    -s|--show)
-      shift
-      [ $# -gt 0 ] && [[ "$1" =~ ^[0-9]+$ ]] || { echo "notifywin: --show needs a number of seconds" >&2; exit 2; }
-      show=$1; shift ;;
-    --show=*)
-      show=${1#*=}
-      [[ "$show" =~ ^[0-9]+$ ]] || { echo "notifywin: --show needs a number of seconds" >&2; exit 2; }
-      shift ;;
     -i|--image)
       shift
       [ $# -gt 0 ] && [ -n "$1" ] || { echo "notifywin: --image needs a FILE path" >&2; exit 2; }
@@ -209,6 +202,14 @@ while [ $# -gt 0 ]; do
     --image=*)
       image=${1#*=}
       [ -n "$image" ] || { echo "notifywin: --image needs a FILE path" >&2; exit 2; }
+      shift ;;
+    --hero)
+      shift
+      [ $# -gt 0 ] && [ -n "$1" ] || { echo "notifywin: --hero needs a FILE path" >&2; exit 2; }
+      hero="$1"; shift ;;
+    --hero=*)
+      hero=${1#*=}
+      [ -n "$hero" ] || { echo "notifywin: --hero needs a FILE path" >&2; exit 2; }
       shift ;;
     -o|--open)
       shift

@@ -17,6 +17,7 @@ Examples:
   savetmux      # -> ~/shared/saved/260921_143022_tmux/{1_1.txt,1_2.txt,2_1.txt}
 
 Notes:
+  On save, a Windows toast previews the result (short ~5s).
   Grabs the full scroll-back of every pane; 1 pane = 1 file, N panes = N files,
   all inside one timestamped folder. Naming is time-ordered, so ls is chronological.
   Requires: running inside tmux.
@@ -93,7 +94,8 @@ notify_saved() {                             # toast: live tmux-window shot + fo
   fi
   if [ -n "$shot" ] && [ -n "$folder_win" ]; then
     shot_win="$(wslpath -w "$shot" 2>/dev/null || true)"
-    [ -n "$shot_win" ] && "$HOME/wsl/notifywin.sh" --image "$shot_win" --open "$folder_win" --rows "$rows" >/dev/null 2>&1 || true
+    [ -n "$shot_win" ] && "$HOME/wsl/notifywin.sh" --hero "$shot_win" --image "$shot_win" --open "$folder_win" --rows "$rows" >/dev/null 2>&1 || true
+    rm -f "$shot"
   elif [ -n "$folder_win" ]; then
     "$HOME/wsl/notifywin.sh" --open "$folder_win" --rows "$rows" >/dev/null 2>&1 || true
   fi

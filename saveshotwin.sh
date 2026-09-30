@@ -19,6 +19,7 @@ Examples:
   saveshotwin 5    # wait 5s (time to focus the target), then capture
 
 Notes:
+  On save, a Windows toast previews the result (short ~5s).
   Copies the active window to the Windows clipboard, then saveclip2img
   saves it to ~/shared/saved/.
   Requires: Windows + WSLg clipboard bridge.

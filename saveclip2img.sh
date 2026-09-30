@@ -27,6 +27,7 @@ Examples:
   saveclip2img -o /tmp/a.jpg
 
 Notes:
+  On save, a Windows toast previews the result (short ~5s).
   Reads the image on the (WSLg) clipboard, prefers PNG > BMP > JPEG transport.
   Depends on: wl-clipboard (wl-paste) + ImageMagick (magick).
   Exit codes: 0 = saved, 1 = no image on clipboard or conversion failed, 2 = bad usage.
@@ -111,6 +112,6 @@ notify_saved() {                             # toast: thumbnail chip + rows; nev
   [ -z "$info" ] && info="$size"
   rows="Saved image|$(basename "$out")"
   [ -n "$info" ] && rows="$rows|$info"
-  "$HOME/wsl/notifywin.sh" --image "$win" --open "$win" --rows "$rows" >/dev/null 2>&1 || true
+  "$HOME/wsl/notifywin.sh" --hero "$win" --image "$win" --open "$win" --rows "$rows" >/dev/null 2>&1 || true
 }
 notify_saved
