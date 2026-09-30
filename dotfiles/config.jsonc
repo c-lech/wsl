@@ -20,8 +20,8 @@
     "hideCursor": false,
     "separator": ": ",
     "color": {
-      "keys": "",
-      "title": "",
+      "keys": "#0dbc79",
+      "title": "#0dbc79",
       "output": "",
       "separator": ""
     },
@@ -53,9 +53,9 @@
       ],
       "ndigits": 0,
       "color": {
-        "green": "32",
-        "yellow": "93",
-        "red": "91"
+        "green": "#F24386",
+        "yellow": "#F24386",
+        "red": "#F24386"
       },
       "spaceBeforeUnit": "default",
       "width": 0
