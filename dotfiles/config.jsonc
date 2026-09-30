@@ -179,7 +179,7 @@
       "showReadOnly": true,
       "showUnknown": false,
       "folders": "",
-      "hideFolders": "/efi:/boot:/boot/*",
+      "hideFolders": "/efi:/boot:/boot/*:/mnt/c",
       "hideFS": "",
       "useAvailable": false,
       "percent": {
