@@ -6,6 +6,8 @@ set -uo pipefail
 
 delay=0                                 # -d, --delay: wait before the toast
 show=3                                  # -s, --show: balloon visible seconds
+image=""                                # --image FILE: square chip shown top-left
+rows=""                                 # --rows "A|B|C": one toast line per row, first bold
 
 usage() {
   cat <<'EOF'
@@ -18,12 +20,17 @@ Usage:
 Options:
   -d, --delay SECS    Wait SECS before the toast appears (default 0)
   -s, --show SECS     Seconds the balloon stays visible (default 3)
+  -i, --image FILE    Show FILE as a small square image in the toast
+                      (any Windows path; e.g. a color swatch PNG)
+  -r, --rows "A|B|C"  One toast line per pipe-separated row: first line bold,
+                      rest plain. Default: the message is a single line.
   -h, --help          Show this help
 
 Examples:
   notifywin ./install.sh       # -> ./install.sh · done · 2m 14s
   notifywin tea is ready
   notifywin -d 3600 fix the box
+  notifywin --rows "Black|#1E1E1E|30, 30, 30" --image C:\\tmp\\swatch.png
 
 Notes:
   Background toast · needs Windows.
@@ -58,6 +65,20 @@ notify_toast() {                         # $1 message, $2 info|error
     logo_win="$(wslpath -w "$HOME/shared/infra/notifywin_ico/notifywin.ico")"
     reg_line="New-ItemProperty \$key -Name 'IconUri' -Value '$logo_win' -Force | Out-Null"
   fi
+  img_xml=""                                  # optional square image chip (top-left)
+  if [ -n "$image" ]; then
+    img_uri="${image//\\//}"
+    case "$img_uri" in
+      file://*|http://*|https://*) ;;
+      [A-Za-z]:/*) img_uri="file:///$img_uri" ;;
+      /*) img_uri="file://$img_uri" ;;
+    esac
+    img_uri="${img_uri// /%20}"
+    img_uri="${img_uri//&/&amp;}"
+    img_uri="${img_uri//</&lt;}"
+    img_uri="${img_uri//>/&gt;}"
+    img_xml="<image placement='appLogoOverride' id='1' src='$img_uri'/>"
+  fi
   [ "$show" -gt 3 ] && dur=long || dur=short
   tmp="${TMPDIR:-/tmp}/notifywin_$$.ps1"
   tmp_win="$(wslpath -w "$tmp" 2>/dev/null || printf '%s' "$tmp")"
@@ -65,6 +86,23 @@ notify_toast() {                         # $1 message, $2 info|error
     printf '\xEF\xBB\xBF'                 # UTF-8 BOM so powershell.exe reads the file as UTF-8, not ANSI
     printf '%s\n' "\$ErrorActionPreference = 'Stop'"
     printf '%s\n' "\$msg = '$esc'"
+    if [ -n "$rows" ]; then
+      printf '%s\n' "\$rows = @("
+      IFS='|' read -r -a _rowparts <<< "$rows"
+      _n=${#_rowparts[@]}
+      _i=0
+      for _p in "${_rowparts[@]}"; do
+        _p="${_p//$'\n'/ }"
+        _pesc="${_p//\'/\'\'}"
+        _i=$((_i + 1))
+        if [ "$_i" -lt "$_n" ]; then
+          printf '%s\n' "  '$_pesc',"
+        else
+          printf '%s\n' "  '$_pesc'"
+        fi
+      done
+      printf '%s\n' ")"
+    fi
     printf '%s\n' "\$key = 'HKCU:\\Software\\Classes\\AppUserModelId\\notifywin3'"
     printf '%s\n' "if (-not (Test-Path \$key)) { New-Item \$key -Force | Out-Null }"
     printf '%s\n' "New-ItemProperty \$key -Name DisplayName -Value 'notifywin' -Force | Out-Null"
@@ -84,10 +122,21 @@ $null = [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType=Win
 $null = [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime]
 $null = [Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType=WindowsRuntime]
 
+if ($rows) { $msg = ($rows -join ' | ') }   # balloon fallback text
+
 try {
-  $esc = $msg.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;')
   $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-  $xml.LoadXml("<toast duration='__DUR__'><visual><binding template='ToastGeneric'><text>$esc</text></binding></visual></toast>")
+  if ($rows) {
+    $texts = @()
+    foreach ($r in $rows) {
+      $e = $r.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;')
+      $texts += "<text>$e</text>"
+    }
+    $xml.LoadXml("<toast duration='__DUR__'><visual><binding template='ToastGeneric'>__IMG____ROWS__</binding></visual></toast>".Replace('__ROWS__', ($texts -join '')))
+  } else {
+    $esc = $msg.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;')
+    $xml.LoadXml("<toast duration='__DUR__'><visual><binding template='ToastGeneric'><text>$esc</text>__IMG__</binding></visual></toast>")
+  }
   $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
   [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('notifywin3').Show($toast)
   Write-Output 'TRY_OK'
@@ -111,7 +160,7 @@ try {
 }
 PS1
   } > "$tmp"
-  perl -pi -e "s/__DUR__/$dur/g; s/__ICON__/${icon_expr}/g" "$tmp"
+  perl -pi -e "s/__DUR__/$dur/g; s/__ICON__/${icon_expr}/g; s~__IMG__~${img_xml}~g" "$tmp"
   res="$(timeout 20 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$tmp_win" </dev/null 2>&1)"
   case "$res" in
     *TRY_OK*|*CATCH_FB*) rm -f "$tmp" ;;
@@ -137,6 +186,22 @@ while [ $# -gt 0 ]; do
     --show=*)
       show=${1#*=}
       [[ "$show" =~ ^[0-9]+$ ]] || { echo "notifywin: --show needs a number of seconds" >&2; exit 2; }
+      shift ;;
+    -i|--image)
+      shift
+      [ $# -gt 0 ] && [ -n "$1" ] || { echo "notifywin: --image needs a FILE path" >&2; exit 2; }
+      image="$1"; shift ;;
+    --image=*)
+      image=${1#*=}
+      [ -n "$image" ] || { echo "notifywin: --image needs a FILE path" >&2; exit 2; }
+      shift ;;
+    -r|--rows)
+      shift
+      [ $# -gt 0 ] && [ -n "$1" ] || { echo "notifywin: --rows needs ROW1|ROW2|..." >&2; exit 2; }
+      rows="$1"; shift ;;
+    --rows=*)
+      rows=${1#*=}
+      [ -n "$rows" ] || { echo "notifywin: --rows needs ROW1|ROW2|..." >&2; exit 2; }
       shift ;;
     -h|--help) usage ;;
     --) shift; break ;;
