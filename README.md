@@ -34,7 +34,13 @@ wsl/
 │   ├── cliamp-radios.toml
 │   ├── config.jsonc
 │   ├── fastfetchlogo.png
-│   └── golazo-settings.yaml
+│   ├── golazo-settings.yaml
+│   └── windows/
+│       ├── wt-settings.json
+│       ├── yasb-config.yaml
+│       ├── yasb-styles.css
+│       ├── glazewm-config.yaml
+│       └── vscode-settings.json
 ├── createenv.sh
 ├── install.sh
 ├── tmux5.sh
@@ -66,6 +72,7 @@ etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fai
 - installs `gonzo` (log analysis TUI, GitHub release binary with go install fallback)
 - symlinks dotfiles (incl. opencode and tmuxai config)
 - copies `dotfiles/wslconfig` as `.wslconfig` to the Windows user profile
+- copies `dotfiles/windows/` (Windows Terminal, YASB, GlazeWM, VS Code) to their config locations, skipping any app that isn't installed
 - copies `dotfiles/cliamp.toml` to `~/.config/cliamp/config.toml` (symlinks `cliamp-radios.toml`)
 - mounts Windows `C:\data\shared` at `$HOME/shared` (persistent via `/etc/fstab`, drvfs `metadata`)
 - lets Git authenticate silently: copies `infra/git_credentials/git-credentials` to `~/.git-credentials` (chmod 600) and enables `credential.helper store`
@@ -132,9 +139,10 @@ Machine-local infra lives under `$HOME/shared/infra/` (not versioned): `git_cred
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `vimrc`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `fastfetchlogo.png`, `golazo-settings.yaml`, and `wslconfig`.
-Installation symlinks the Linux dotfiles and copies `wslconfig` as `.wslconfig` to the Windows
-user profile (`C:\Users\<user>\.wslconfig`):
+`dotfiles/` contains `tmux.conf`, `bashrc`, `vimrc`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `fastfetchlogo.png`, `golazo-settings.yaml`, `wslconfig`, and `windows/`.
+Installation symlinks the Linux dotfiles, copies `wslconfig` as `.wslconfig` to the Windows
+user profile (`C:\Users\<user>\.wslconfig`), and copies `windows/` to each app's own
+config location:
 
 ```text
 ~/.tmux.conf -> ~/wsl/dotfiles/tmux.conf
@@ -174,6 +182,42 @@ stale `[user]` section locally, then `wsl --shutdown`.
 Note: on WSLg, audio travels through the RDP bridge — if cliamp audio stutters or
 "corks" after a while, update WSL itself (`wsl.exe --update`, then `wsl.exe
 --shutdown`) rather than touching cliamp's buffer settings.
+
+## Windows App Configs
+
+`dotfiles/windows/` holds one config file per Windows app. `install.sh` copies each
+to its native location, then reports `[ok]` (copied), `[skip] already copied`
+(identical, nothing to do), or `[skip] <app> not installed`:
+
+| Repo file | Windows location |
+| --- | --- |
+| `wt-settings.json` | `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal*\LocalState\settings.json` |
+| `yasb-config.yaml` | `%USERPROFILE%\.config\yasb\config.yaml` |
+| `yasb-styles.css` | `%USERPROFILE%\.config\yasb\styles.css` |
+| `glazewm-config.yaml` | `%USERPROFILE%\.glzr\glazewm\config.yaml` |
+| `vscode-settings.json` | `%APPDATA%\Code\User\settings.json` |
+
+All five are copied, never symlinked, for the same reason `.wslconfig` is: they live
+on the Windows side, where a link would not resolve.
+
+Windows Terminal is looked up by glob because its package folder name carries the
+release channel, so one copy covers Stable, Preview, and Canary. Unpackaged builds
+(GitHub, Scoop, Chocolatey) keep `settings.json` in
+`%LOCALAPPDATA%\Microsoft\Windows Terminal\` instead, and that path is checked too —
+whichever the machine has wins.
+
+An app whose config directory doesn't exist is skipped, never created. An empty
+directory isn't a valid config location, so writing into one would only leave stray
+files for an app that isn't installed.
+
+Copying runs one way, WSL to Windows. If you change a setting inside an app's own
+UI, the repo copy goes stale and re-running `./install.sh` overwrites your change;
+edit `dotfiles/windows/` and `./push.sh` instead. This matters more for these files
+than for `.wslconfig` — VS Code and GlazeWM settings change far more often.
+
+`yasb-config.yaml` hardcodes `C:\Users\benito\` in its `bitcoin` and `dolar` widget
+definitions, so those two widgets need that exact account name to resolve. The rest
+of the file is username-independent, as is the `C:\data` menu entry at the end of it.
 
 ## Vagrant / Development VMs
 

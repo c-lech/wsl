@@ -1117,6 +1117,103 @@ install_wslconfig() {
   publish "system:wsl config (on host)"
 }
 
+install_windows_dotfiles() {
+  if ! command -v cmd.exe >/dev/null 2>&1 || ! command -v wslpath >/dev/null 2>&1; then
+    record "system:copy windows dotfiles" skip "not on WSL"
+    return 0
+  fi
+
+  local win_home
+  win_home="$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')"
+  if [ -z "$win_home" ]; then
+    record "system:copy windows dotfiles" skip "no Windows profile"
+    return 0
+  fi
+
+  win_home="$(wslpath -u "$win_home")"
+
+  record "system:copy windows dotfiles" skip "pending"
+
+  # Windows-side configs are copied, never symlinked: the repo lives on ext4
+  # and the target on drvfs, so a link would reach Windows as a text stub
+  # instead of the file. An app whose config dir is absent is skipped rather
+  # than created - an empty dir confuses the app, not the copy.
+  #
+  # Windows Terminal is the odd one: as a Store/winget (MSIX) build it keeps
+  # its config inside a per-package sandbox whose folder name carries the
+  # release channel, so glob it (Stable/Preview/Canary). Unpackaged builds
+  # (GitHub, Scoop, Chocolatey) keep it in a plain folder instead.
+  local wt_target=""
+  local wt_dir
+  for wt_dir in "$win_home"/AppData/Local/Packages/Microsoft.WindowsTerminal*/LocalState; do
+    if [ -f "$wt_dir/settings.json" ]; then
+      wt_target="$wt_dir/settings.json"
+      break
+    fi
+  done
+  if [ -z "$wt_target" ] && \
+     [ -f "$win_home/AppData/Local/Microsoft/Windows Terminal/settings.json" ]; then
+    wt_target="$win_home/AppData/Local/Microsoft/Windows Terminal/settings.json"
+  fi
+
+  # name|windows dir (relative to %USERPROFILE%, empty = resolved above)|
+  # windows config file|missing-app note|repo file
+  local specs=(
+    "wt-settings||settings.json|Windows Terminal not found|wt-settings.json"
+    "yasb-config|.config/yasb|config.yaml|YASB not installed|yasb-config.yaml"
+    "yasb-styles|.config/yasb|styles.css|YASB not installed|yasb-styles.css"
+    "glazewm-config|.glzr/glazewm|config.yaml|GlazeWM not installed|glazewm-config.yaml"
+    "vscode-settings|AppData/Roaming/Code/User|settings.json|VS Code not installed|vscode-settings.json"
+  )
+
+  local spec name rel rest file note repo dest src
+  for spec in "${specs[@]}"; do
+    name="${spec%%|*}"
+    rel="${spec#*|}"
+    rest="${rel#*|}"
+    file="${rest%%|*}"
+    rest="${rest#*|}"
+    note="${rest%%|*}"
+    repo="${rest#*|}"
+    rel="${rel%%|*}"
+
+    # Windows Terminal resolves to an absolute path found above.
+    if [ "$rel" = "" ]; then
+      if [ -z "$wt_target" ]; then
+        record "system:copy windows dotfiles:$name" skip "$note"
+        continue
+      fi
+      dest="$wt_target"
+    else
+      if [ ! -d "$win_home/$rel" ]; then
+        record "system:copy windows dotfiles:$name" skip "$note"
+        continue
+      fi
+      dest="$win_home/$rel/$file"
+    fi
+
+    src="$BASE/dotfiles/windows/$repo"
+
+    if [ ! -f "$src" ]; then
+      record "system:copy windows dotfiles:$name" skip "missing in repo"
+      continue
+    fi
+    if cmp -s "$src" "$dest"; then
+      record "system:copy windows dotfiles:$name" skip "already copied"
+      continue
+    fi
+    if [ -f "$dest" ]; then
+      step "windows dotfiles -> $name ($file) updating"
+    else
+      step "windows dotfiles -> $name ($file) installing"
+    fi
+    cp "$src" "$dest"
+    record "system:copy windows dotfiles:$name" ok "copied"
+  done
+
+  publish "system:copy windows dotfiles"
+}
+
 mount_data_dir() {
   record "system:mount shared data" skip "pending"
 
@@ -1805,6 +1902,7 @@ main() {
   run_step "system:copy ssh keys" "Copying SSH keys" install_ssh
   run_step "tools:ansible" "Setting up /etc/ansible" --log ansible.log install_ansible
   run_step "system:wsl config (on host)" "Configuring WSL" install_wslconfig
+  run_step "system:copy windows dotfiles" "Copying Windows dotfiles" install_windows_dotfiles
 
   report
 }
