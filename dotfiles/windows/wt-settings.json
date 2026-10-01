@@ -1,0 +1,166 @@
+{
+    "$help": "https://aka.ms/terminal-documentation",
+    "$schema": "https://aka.ms/terminal-profiles-schema",
+    "actions": [],
+    "alwaysOnTop": false,
+    "alwaysShowNotificationIcon": true,
+    "copyFormatting": "none",
+    "copyOnSelect": true,
+    "defaultProfile": "{fbba1a3e-2fbc-55a0-ba44-16beb3d1022f}",
+    "keybindings": 
+    [
+        {
+            "id": "Terminal.CopyToClipboard",
+            "keys": "ctrl+c"
+        },
+        {
+            "id": "Terminal.FindText",
+            "keys": "ctrl+shift+f"
+        },
+        {
+            "id": "Terminal.PasteFromClipboard",
+            "keys": "ctrl+v"
+        },
+        {
+            "id": "Terminal.DuplicatePaneAuto",
+            "keys": "alt+shift+d"
+        }
+    ],
+    "launchMode": "default",
+    "newTabMenu": 
+    [
+        {
+            "type": "remainingProfiles"
+        }
+    ],
+    "profiles": 
+    {
+        "defaults": 
+        {
+            "cursorShape": "vintage",
+            "elevate": false,
+            "experimental.retroTerminalEffect": false,
+            "font": 
+            {
+                "face": "Cascadia Code NF"
+            },
+            "historySize": 50000,
+            "opacity": 100,
+            "padding": "8",
+            "pathTranslationStyle": "wsl",
+            "scrollbarState": "visible",
+            "startingDirectory": "~",
+            "useAcrylic": false
+        },
+        "list": 
+        [
+            {
+                "backgroundImage": null,
+                "backgroundImageOpacity": 1,
+                "colorScheme": "Dark+",
+                "commandline": "C:\\Windows\\system32\\wsl.exe --distribution-id {fb3bf7c4-7971-49b6-a3be-69e190a0fc11} --cd ~",
+                "cursorColor": "#0DBC79",
+                "cursorShape": "filledBox",
+                "experimental.repositionCursorWithMouse": false,
+                "experimental.retroTerminalEffect": false,
+                "font": 
+                {
+                    "face": "Cascadia Code NF",
+                    "features": {},
+                    "size": 14
+                },
+                "guid": "{fbba1a3e-2fbc-55a0-ba44-16beb3d1022f}",
+                "hidden": false,
+                "icon": "C:\\data\\shared\\infra\\ubuntu_icos\\ubuntu-alpha-grn.ico",
+                "name": "ubu",
+                "opacity": 85,
+                "padding": "8",
+                "pathTranslationStyle": "wsl",
+                "source": "Microsoft.WSL",
+                "startingDirectory": "~",
+                "suppressApplicationTitle": true,
+                "useAcrylic": true
+            },
+            {
+                "guid": "{455cf534-7552-5b82-956f-3d3c0c3f1a5f}",
+                "hidden": true,
+                "name": "ubu",
+                "source": "Microsoft.WSL",
+                "startingDirectory": "~"
+            },
+            {
+                "colorScheme": "Dark+",
+                "commandline": "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+                "hidden": true,
+                "name": "Windows PowerShell"
+            },
+            {
+                "commandline": "%SystemRoot%\\System32\\cmd.exe",
+                "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
+                "hidden": true,
+                "name": "Command Prompt"
+            },
+            {
+                "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
+                "hidden": true,
+                "name": "Azure Cloud Shell",
+                "source": "Windows.Terminal.Azure"
+            },
+            {
+                "guid": "{2ece5bfe-50ed-5f3a-ab87-5cd4baafed2b}",
+                "hidden": true,
+                "name": "Git Bash",
+                "source": "Git"
+            },
+            {
+                "guid": "{36ed3010-b81f-5c7a-9fea-2937db341db8}",
+                "hidden": true,
+                "name": "Developer Command Prompt for VS 2022",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{7e769dc7-ee40-57d6-8513-620c1a4c8f9d}",
+                "hidden": true,
+                "name": "Developer PowerShell for VS 2022",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+                "hidden": false,
+                "name": "PowerShell",
+                "source": "Windows.Terminal.PowershellCore"
+            }
+        ]
+    },
+    "schemes": 
+    [
+        {
+            "background": "#1E1E1E",
+            "black": "#000000",
+            "blue": "#2472C8",
+            "brightBlack": "#666666",
+            "brightBlue": "#3B8EEA",
+            "brightCyan": "#29B8DB",
+            "brightGreen": "#0FE493",
+            "brightPurple": "#D670D6",
+            "brightRed": "#F14C4C",
+            "brightWhite": "#E5E5E5",
+            "brightYellow": "#F5F543",
+            "cursorColor": "#0DBC79",
+            "cyan": "#11A8CD",
+            "foreground": "#CCCCCC",
+            "green": "#0DBC79",
+            "name": "Conductor",
+            "purple": "#BC3FBC",
+            "red": "#CD3131",
+            "selectionBackground": "#0D3B2A",
+            "white": "#E5E5E5",
+            "yellow": "#E5E510"
+        }
+    ],
+    "showTabsInTitlebar": true,
+    "themes": [],
+    "useAcrylicInTabRow": true,
+    "wordDelimiters": " /\\()\"'-,:;<>~!@#$%^&*|+=[]{}~?\u2502"
+}
