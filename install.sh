@@ -986,48 +986,86 @@ install_tmux_plugins() {
 install_dotfiles() {
   step "dotfiles -> checking"
   local entries=(
-    "$HOME/.tmux.conf|$BASE/dotfiles/tmux.conf|link"
     "$HOME/.bashrc|$BASE/dotfiles/bashrc|link"
-    "$HOME/.asoundrc|$BASE/dotfiles/asoundrc|link"
+    "$HOME/.bash_aliases||aliases"
+    "$HOME/.tmux.conf|$BASE/dotfiles/tmux.conf|link"
     "$HOME/.vimrc|$BASE/dotfiles/vimrc|link"
+    "$HOME/.asoundrc|$BASE/dotfiles/asoundrc|link"
+    "$HOME/.config/fastfetch/fastfetchlogo.png|$BASE/dotfiles/fastfetchlogo.png|link"
+    "$HOME/.config/fastfetch/fastfetchlogo.txt||logo_txt"
+    "$HOME/.config/fastfetch/config.jsonc|$BASE/dotfiles/config.jsonc|link"
     "$HOME/.config/opencode/opencode.jsonc|$BASE/dotfiles/opencode.jsonc|link"
-    "$HOME/.config/tmuxai/config.yaml|$BASE/dotfiles/tmuxai.yaml|link"
     "$HOME/.config/golazo/settings.yaml|$BASE/dotfiles/golazo-settings.yaml|link"
+    "$HOME/.config/tmuxai/config.yaml|$BASE/dotfiles/tmuxai.yaml|link"
     "$HOME/.config/cliamp/radios.toml|$BASE/dotfiles/cliamp-radios.toml|link"
     "$HOME/.config/cliamp/config.toml|$BASE/dotfiles/cliamp.toml|copy"
     "$HOME/.config/kew/kewrc|$BASE/dotfiles/kewrc|copy"
-    "$HOME/.config/fastfetch/config.jsonc|$BASE/dotfiles/config.jsonc|link"
-    "$HOME/.config/fastfetch/fastfetchlogo.png|$BASE/dotfiles/fastfetchlogo.png|link"
   )
 
   record "system:link dot files" skip "pending"
 
-  local entry dest rest src kind
+  # Order here is the report's display order, not the dependency order.
+  # .bash_aliases lives on shared storage and may not exist on a fresh
+  # machine, so it is linked only when present and never fails; the fastfetch
+  # logo .txt is rendered from the .png, which the preceding entry links.
+  local aliases_src="$HOME/shared/infra/bash_aliases/bash_aliases"
+  local entry dest rest src kind dest_rel
   for entry in "${entries[@]}"; do
     dest="${entry%%|*}"
     rest="${entry#*|}"
     src="${rest%%|*}"
     kind="${rest#*|}"
+    dest_rel="${dest#"$HOME"/}"
+    case "$kind" in
+      aliases)
+        if [ ! -f "$aliases_src" ]; then
+          record "system:link dot files:$dest_rel" skip "aliases file missing (machine-local)"
+        elif [ "$(readlink "$dest" 2>/dev/null)" = "$aliases_src" ]; then
+          record "system:link dot files:$dest_rel" skip "already linked"
+        else
+          step "dotfiles -> $dest"
+          ln -sfn "$aliases_src" "$dest"
+          record "system:link dot files:$dest_rel" ok "linked"
+        fi
+        continue
+        ;;
+      logo_txt)
+        if [ -f "$dest" ]; then
+          record "system:link dot files:$dest_rel" skip "already rendered"
+        else
+          step "dotfiles -> rendering fastfetch logo"
+          if ! chafa -f symbols --symbols "block+border" --colors full -s 60x30 \
+                "$HOME/.config/fastfetch/fastfetchlogo.png" > "$dest" 2> "$LOG_DIR/dotfiles.log"; then
+            log_tail dotfiles.log
+            record "system:link dot files:$dest_rel" fail "failed (logo render)"
+            publish "system:link dot files"
+            return 1
+          fi
+          record "system:link dot files:$dest_rel" ok "rendered"
+        fi
+        continue
+        ;;
+    esac
     if [ "$kind" = "copy" ]; then
       if [ -f "$dest" ] && [ "$dest" = "$HOME/.config/kew/kewrc" ] && \
            [ "$(sed "s|${HOME}/shared/music|%%MUSIC_PATH%%|" "$dest")" = "$(cat "$src")" ]; then
-        record "system:link dot files:$dest" skip "already copied"
+        record "system:link dot files:$dest_rel" skip "already copied"
       elif [ -f "$dest" ] && cmp -s "$src" "$dest"; then
-        record "system:link dot files:$dest" skip "already copied"
+        record "system:link dot files:$dest_rel" skip "already copied"
       else
         step "dotfiles -> $dest (copy)"
         mkdir -p "$(dirname "$dest")"
         cp "$src" "$dest"
-        record "system:link dot files:$dest" ok "copied"
+        record "system:link dot files:$dest_rel" ok "copied"
       fi
     else
       if [ "$(readlink "$dest" 2>/dev/null)" = "$src" ]; then
-        record "system:link dot files:$dest" skip "already linked"
+        record "system:link dot files:$dest_rel" skip "already linked"
       else
         step "dotfiles -> $dest"
         mkdir -p "$(dirname "$dest")"
         ln -sfn "$src" "$dest"
-        record "system:link dot files:$dest" ok "linked"
+        record "system:link dot files:$dest_rel" ok "linked"
       fi
     fi
   done
@@ -1037,35 +1075,6 @@ install_dotfiles() {
   if [ -f "$kewrc" ] && grep -qs '%%MUSIC_PATH%%' "$kewrc"; then
     step "dotfiles -> rendering $HOME/.config/kew/kewrc"
     sed -i "s|%%MUSIC_PATH%%|${HOME}/shared/music|" "$kewrc"
-  fi
-
-  # ssh aliases live outside the repo on shared storage (may not exist on a
-  # fresh machine, so link only when present and never fail)
-  local aliases_src="$HOME/shared/infra/bash_aliases/bash_aliases"
-  if [ -f "$aliases_src" ]; then
-    if [ "$(readlink "$HOME/.bash_aliases" 2>/dev/null)" = "$aliases_src" ]; then
-      record "system:link dot files:$HOME/.bash_aliases" skip "already linked"
-    else
-      step "dotfiles -> $HOME/.bash_aliases"
-      ln -sfn "$aliases_src" "$HOME/.bash_aliases"
-      record "system:link dot files:$HOME/.bash_aliases" ok "linked"
-    fi
-  else
-    record "system:link dot files:$HOME/.bash_aliases" skip "aliases file missing (machine-local)"
-  fi
-
-  if [ -f "$HOME/.config/fastfetch/fastfetchlogo.txt" ]; then
-    record "system:link dot files:$HOME/.config/fastfetch/fastfetchlogo.txt" skip "already rendered"
-  else
-    step "dotfiles -> rendering fastfetch logo"
-    if ! chafa -f symbols --symbols "block+border" --colors full -s 60x30 \
-          "$HOME/.config/fastfetch/fastfetchlogo.png" > "$HOME/.config/fastfetch/fastfetchlogo.txt" 2> "$LOG_DIR/dotfiles.log"; then
-      log_tail dotfiles.log
-      record "system:link dot files:$HOME/.config/fastfetch/fastfetchlogo.txt" fail "failed (logo render)"
-      publish "system:link dot files"
-      return 1
-    fi
-    record "system:link dot files:$HOME/.config/fastfetch/fastfetchlogo.txt" ok "rendered"
   fi
 
   publish "system:link dot files"
@@ -1156,8 +1165,8 @@ install_windows_dotfiles() {
     "glazewm-config|.glzr/glazewm|config.yaml|GlazeWM not installed|glazewm-config.yaml"
     "yasb-config|.config/yasb|config.yaml|YASB not installed|yasb-config.yaml"
     "yasb-styles|.config/yasb|styles.css|YASB not installed|yasb-styles.css"
-    "wt-settings||settings.json|Windows Terminal not found|wt-settings.json"
     "vscode-settings|AppData/Roaming/Code/User|settings.json|VS Code not installed|vscode-settings.json"
+    "wt-settings||settings.json|Windows Terminal not found|wt-settings.json"
   )
 
   local spec name rel rest file note repo dest dest_win dest_rel src
@@ -1645,10 +1654,11 @@ report() {
       fi
     fi
     case "$k" in
-      "system:config git")           name="configure git";;
-      "system:wsl config (on host)") name="configure wsl";;
+      "system:link dot files")        name="link dot files in $HOME";;
+      "system:config git")            name="configure git";;
+      "system:wsl config (on host)")  name="configure wsl";;
       "system:copy windows dotfiles") name="copy windows files to ${WIN_HOME_WIN:-%USERPROFILE%}\\";;
-      "tools:ollama:server")         name="ollama server";;
+      "tools:ollama:server")          name="ollama server";;
     esac
     [[ "$pref" == tools:* ]] && bucket=1
     if [ "$sec" = "system" ]; then
