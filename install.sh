@@ -1077,19 +1077,6 @@ install_wslconfig() {
     return 0
   fi
 
-  local win_home win_config
-  win_home="$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')"
-  if [ -z "$win_home" ]; then
-    record "system:wsl config (on host)" skip "no Windows profile"
-    return 0
-  fi
-
-  win_config="$(wslpath -u "$win_home")/.wslconfig"
-  if [ ! -d "$(dirname "$win_config")" ]; then
-    record "system:wsl config (on host)" skip "Windows profile unreachable"
-    return 0
-  fi
-
   record "system:wsl config (on host)" skip "pending"
 
   if [ "$(readlink /etc/wsl.conf 2>/dev/null)" = "$BASE/dotfiles/wsl.conf" ]; then
@@ -1098,20 +1085,6 @@ install_wslconfig() {
     step "wsl.conf -> linking"
     sudo ln -sfn "$BASE/dotfiles/wsl.conf" /etc/wsl.conf
     record "system:wsl config (on host):/etc/wsl.conf" ok "linked"
-  fi
-
-  if [ -f "$win_config" ]; then
-    if cmp -s "$BASE/dotfiles/wslconfig" "$win_config"; then
-      record "system:wsl config (on host):$win_config" skip "already copied"
-    else
-      step "wslconfig -> updating"
-      cp "$BASE/dotfiles/wslconfig" "$win_config"
-      record "system:wsl config (on host):$win_config" ok "copied"
-    fi
-  else
-    step "wslconfig -> installing"
-    cp "$BASE/dotfiles/wslconfig" "$win_config"
-    record "system:wsl config (on host):$win_config" ok "copied"
   fi
 
   publish "system:wsl config (on host)"
@@ -1157,14 +1130,34 @@ install_windows_dotfiles() {
     wt_target="$win_home/AppData/Local/Microsoft/Windows Terminal/settings.json"
   fi
 
+  # .wslconfig lives on the Windows side but configures WSL, so it is copied
+  # here with the other Windows-profile files instead of being handled by
+  # install_wslconfig (which only links the Linux-side /etc/wsl.conf).
+  local wslcfg_src="$BASE/dotfiles/wslconfig" wslcfg_dest="$win_home/.wslconfig"
+  if [ ! -d "$win_home" ]; then
+    record "system:copy windows dotfiles:.wslconfig" skip "Windows profile unreachable"
+  elif [ ! -f "$wslcfg_src" ]; then
+    record "system:copy windows dotfiles:.wslconfig" skip "missing in repo"
+  elif cmp -s "$wslcfg_src" "$wslcfg_dest"; then
+    record "system:copy windows dotfiles:.wslconfig" skip "already copied"
+  else
+    if [ -f "$wslcfg_dest" ]; then
+      step "windows dotfiles -> .wslconfig updating"
+    else
+      step "windows dotfiles -> .wslconfig installing"
+    fi
+    cp "$wslcfg_src" "$wslcfg_dest"
+    record "system:copy windows dotfiles:.wslconfig" ok "copied"
+  fi
+
   # name|windows dir (relative to %USERPROFILE%, empty = resolved above)|
   # windows config file|missing-app note|repo file
   local specs=(
-    "wt-settings||settings.json|Windows Terminal not found|wt-settings.json"
-    "vscode-settings|AppData/Roaming/Code/User|settings.json|VS Code not installed|vscode-settings.json"
+    "glazewm-config|.glzr/glazewm|config.yaml|GlazeWM not installed|glazewm-config.yaml"
     "yasb-config|.config/yasb|config.yaml|YASB not installed|yasb-config.yaml"
     "yasb-styles|.config/yasb|styles.css|YASB not installed|yasb-styles.css"
-    "glazewm-config|.glzr/glazewm|config.yaml|GlazeWM not installed|glazewm-config.yaml"
+    "wt-settings||settings.json|Windows Terminal not found|wt-settings.json"
+    "vscode-settings|AppData/Roaming/Code/User|settings.json|VS Code not installed|vscode-settings.json"
   )
 
   local spec name rel rest file note repo dest dest_win dest_rel src
