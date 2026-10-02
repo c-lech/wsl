@@ -1654,10 +1654,10 @@ report() {
       fi
     fi
     case "$k" in
-      "system:link dot files")        name="link dot files in $HOME";;
+      "system:link dot files")        name="set files in $HOME";;
       "system:config git")            name="configure git";;
       "system:wsl config (on host)")  name="configure wsl";;
-      "system:copy windows dotfiles") name="copy windows files to ${WIN_HOME_WIN:-%USERPROFILE%}\\";;
+      "system:copy windows dotfiles") name="set files in ${WIN_HOME_WIN:-%USERPROFILE%}";;
       "tools:ollama:server")          name="ollama server";;
     esac
     [[ "$pref" == tools:* ]] && bucket=1
