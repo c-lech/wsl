@@ -456,19 +456,19 @@ install_ansible() {
   local repo="https://github.com/c-lech/ansible-scripts"
 
   if ! command -v ansible >/dev/null 2>&1; then
-    record "tools:ansible" skip "not installed (ansible missing)"
+    record "apt:Remote:ansible:ansible_scripts" skip "not installed (ansible missing)"
     return 0
   fi
 
   local cloned=0
-  if [ ! -d "$dir/.git" ]; then
+  if ! sudo test -d "$dir/.git"; then
     local tmp
     tmp="$(mktemp -d)"
     step "ansible -> cloning $repo"
     if ! GIT_TERMINAL_PROMPT=0 git clone -q "$repo" "$tmp" >> "$log" 2>&1; then
       rm -rf "$tmp"
       log_tail ansible.log
-      record "tools:ansible" fail "failed (git clone $repo)"
+      record "apt:Remote:ansible:ansible_scripts" fail "failed (git clone $repo)"
       return 1
     fi
     step "ansible -> populating $dir"
@@ -476,7 +476,7 @@ install_ansible() {
        || ! sudo cp -a "$tmp/." "$dir/" >> "$log" 2>&1; then
       rm -rf "$tmp"
       log_tail ansible.log
-      record "tools:ansible" fail "failed (populate $dir)"
+      record "apt:Remote:ansible:ansible_scripts" fail "failed (populate $dir)"
       return 1
     fi
     rm -rf "$tmp"
@@ -484,14 +484,14 @@ install_ansible() {
   fi
 
   # init chowns $dir recursively, so it must run after the clone
-  if [ ! -x "$dir/ansible_users.sh" ]; then
-    record "tools:ansible" fail "ansible_users.sh missing in $dir"
+  if ! sudo test -x "$dir/ansible_users.sh"; then
+    record "apt:Remote:ansible:ansible_scripts" fail "ansible_users.sh missing in $dir"
     return 1
   fi
   step "ansible -> ansible_users.sh init"
   if ! sudo "$dir/ansible_users.sh" init >> "$log" 2>&1; then
     log_tail ansible.log
-    record "tools:ansible" fail "failed (ansible_users.sh init)"
+    record "apt:Remote:ansible:ansible_scripts" fail "failed (ansible_users.sh init)"
     return 1
   fi
 
@@ -500,13 +500,13 @@ install_ansible() {
   step "ansible -> ansible_users.sh add-user $me"
   if ! sudo "$dir/ansible_users.sh" add-user "$me" >> "$log" 2>&1; then
     log_tail ansible.log
-    record "tools:ansible" fail "failed (add-user $me)"
+    record "apt:Remote:ansible:ansible_scripts" fail "failed (add-user $me)"
     return 1
   fi
   if [ "$cloned" -eq 1 ]; then
-    record "tools:ansible" ok "installed at $dir ${C_SECT}(user $me added to ansible group)${RESET}"
+    record "apt:Remote:ansible:ansible_scripts" ok "installed"
   else
-    record "tools:ansible" skip "already present at $dir ${C_SECT}(user $me in ansible group)${RESET}"
+    record "apt:Remote:ansible:ansible_scripts" skip "already present"
   fi
 }
 
@@ -1900,7 +1900,7 @@ main() {
   run_step "tools:tmux-plugins" "Installing tmux plugins" --log tmux-plugins.log install_tmux_plugins
   run_step "system:config git" "Configuring git" configure_git
   run_step "system:copy ssh keys" "Copying SSH keys" install_ssh
-  run_step "tools:ansible" "Setting up /etc/ansible" --log ansible.log install_ansible
+  run_step "apt:Remote:ansible:ansible_scripts" "Setting up /etc/ansible" --log ansible.log install_ansible
   run_step "system:wsl config (on host)" "Configuring WSL" install_wslconfig
   run_step "system:copy windows dotfiles" "Copying Windows dotfiles" install_windows_dotfiles
 
