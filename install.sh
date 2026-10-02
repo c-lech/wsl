@@ -1131,6 +1131,7 @@ install_windows_dotfiles() {
   fi
 
   win_home="$(wslpath -u "$win_home")"
+  WIN_HOME_WIN="$(wslpath -w "$win_home")"
 
   record "system:copy windows dotfiles" skip "pending"
 
@@ -1160,13 +1161,13 @@ install_windows_dotfiles() {
   # windows config file|missing-app note|repo file
   local specs=(
     "wt-settings||settings.json|Windows Terminal not found|wt-settings.json"
+    "vscode-settings|AppData/Roaming/Code/User|settings.json|VS Code not installed|vscode-settings.json"
     "yasb-config|.config/yasb|config.yaml|YASB not installed|yasb-config.yaml"
     "yasb-styles|.config/yasb|styles.css|YASB not installed|yasb-styles.css"
     "glazewm-config|.glzr/glazewm|config.yaml|GlazeWM not installed|glazewm-config.yaml"
-    "vscode-settings|AppData/Roaming/Code/User|settings.json|VS Code not installed|vscode-settings.json"
   )
 
-  local spec name rel rest file note repo dest src
+  local spec name rel rest file note repo dest dest_win dest_rel src
   for spec in "${specs[@]}"; do
     name="${spec%%|*}"
     rel="${spec#*|}"
@@ -1184,22 +1185,27 @@ install_windows_dotfiles() {
         continue
       fi
       dest="$wt_target"
+      dest_win="$(wslpath -w "$dest")"
+      dest_rel="${dest_win#"$WIN_HOME_WIN"\\}"
+      [[ "$dest_rel" == *"Microsoft.WindowsTerminal"* ]] && \
+        dest_rel='AppData\Local\...\LocalState\settings.json'
     else
+      dest="$win_home/$rel/$file"
+      dest_rel="${rel//\//\\}\\$file"
       if [ ! -d "$win_home/$rel" ]; then
-        record "system:copy windows dotfiles:$name" skip "$note"
+        record "system:copy windows dotfiles:$dest_rel" skip "$note"
         continue
       fi
-      dest="$win_home/$rel/$file"
     fi
 
     src="$BASE/dotfiles/windows/$repo"
 
     if [ ! -f "$src" ]; then
-      record "system:copy windows dotfiles:$name" skip "missing in repo"
+      record "system:copy windows dotfiles:$dest_rel" skip "missing in repo"
       continue
     fi
     if cmp -s "$src" "$dest"; then
-      record "system:copy windows dotfiles:$name" skip "already copied"
+      record "system:copy windows dotfiles:$dest_rel" skip "already copied"
       continue
     fi
     if [ -f "$dest" ]; then
@@ -1208,7 +1214,7 @@ install_windows_dotfiles() {
       step "windows dotfiles -> $name ($file) installing"
     fi
     cp "$src" "$dest"
-    record "system:copy windows dotfiles:$name" ok "copied"
+    record "system:copy windows dotfiles:$dest_rel" ok "copied"
   done
 
   publish "system:copy windows dotfiles"
@@ -1648,6 +1654,7 @@ report() {
     case "$k" in
       "system:config git")           name="configure git";;
       "system:wsl config (on host)") name="configure wsl";;
+      "system:copy windows dotfiles") name="copy windows files to ${WIN_HOME_WIN:-%USERPROFILE%}\\";;
       "tools:ollama:server")         name="ollama server";;
     esac
     [[ "$pref" == tools:* ]] && bucket=1
