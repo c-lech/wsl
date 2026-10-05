@@ -135,7 +135,7 @@
             },
             {
                 "guid": "{f9943381-52aa-5160-b766-a2781aa12b94}",
-                "hidden": false,
+                "hidden": true,
                 "name": "ubu2",
                 "source": "Microsoft.WSL"
             }
