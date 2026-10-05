@@ -1139,29 +1139,13 @@ install_windows_dotfiles() {
     wt_target="$win_home/AppData/Local/Microsoft/Windows Terminal/settings.json"
   fi
 
-  # .wslconfig lives on the Windows side but configures WSL, so it is copied
-  # here with the other Windows-profile files instead of being handled by
-  # install_wslconfig (which only links the Linux-side /etc/wsl.conf).
-  local wslcfg_src="$BASE/dotfiles/wslconfig" wslcfg_dest="$win_home/.wslconfig"
-  if [ ! -d "$win_home" ]; then
-    record "system:copy windows dotfiles:.wslconfig" skip "Windows profile unreachable"
-  elif [ ! -f "$wslcfg_src" ]; then
-    record "system:copy windows dotfiles:.wslconfig" skip "missing in repo"
-  elif cmp -s "$wslcfg_src" "$wslcfg_dest"; then
-    record "system:copy windows dotfiles:.wslconfig" skip "already copied"
-  else
-    if [ -f "$wslcfg_dest" ]; then
-      step "windows dotfiles -> .wslconfig updating"
-    else
-      step "windows dotfiles -> .wslconfig installing"
-    fi
-    cp "$wslcfg_src" "$wslcfg_dest"
-    record "system:copy windows dotfiles:.wslconfig" ok "copied"
-  fi
-
-  # name|windows dir (relative to %USERPROFILE%, empty = resolved above)|
-  # windows config file|missing-app note|repo file
+  # name|windows dir (relative to %USERPROFILE%, "." = profile root, empty =
+  # resolved above)|windows config file|missing-app note|repo file
+  # .wslconfig is listed here instead of being handled by install_wslconfig
+  # because it configures WSL from the Windows side; that one only links the
+  # Linux-side /etc/wsl.conf.
   local specs=(
+    "wslconfig|.|.wslconfig|Windows profile unreachable|wslconfig"
     "glazewm-config|.glzr/glazewm|config.yaml|GlazeWM not installed|glazewm-config.yaml"
     "yasb-config|.config/yasb|config.yaml|YASB not installed|yasb-config.yaml"
     "yasb-styles|.config/yasb|styles.css|YASB not installed|yasb-styles.css"
@@ -1192,11 +1176,20 @@ install_windows_dotfiles() {
       [[ "$dest_rel" == *"Microsoft.WindowsTerminal"* ]] && \
         dest_rel='AppData\Local\...\LocalState\settings.json'
     else
-      dest="$win_home/$rel/$file"
-      dest_rel="${rel//\//\\}\\$file"
-      if [ ! -d "$win_home/$rel" ]; then
-        record "system:copy windows dotfiles:$dest_rel" skip "$note"
-        continue
+      if [ "$rel" = "." ]; then
+        if [ ! -d "$win_home" ]; then
+          record "system:copy windows dotfiles:$file" skip "$note"
+          continue
+        fi
+        dest="$win_home/$file"
+        dest_rel="$file"
+      else
+        dest="$win_home/$rel/$file"
+        dest_rel="${rel//\//\\}\\$file"
+        if [ ! -d "$win_home/$rel" ]; then
+          record "system:copy windows dotfiles:$dest_rel" skip "$note"
+          continue
+        fi
       fi
     fi
 

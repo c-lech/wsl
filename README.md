@@ -23,7 +23,6 @@ cd ~/wsl
 ```text
 wsl/
 ├── dotfiles/
-│   ├── wslconfig
 │   ├── bashrc
 │   ├── tmux.conf
 │   ├── asoundrc
@@ -36,6 +35,7 @@ wsl/
 │   ├── fastfetchlogo.png
 │   ├── golazo-settings.yaml
 │   └── windows/
+│       ├── wslconfig
 │       ├── wt-settings.json
 │       ├── yasb-config.yaml
 │       ├── yasb-styles.css
@@ -71,7 +71,7 @@ etc.) is saved to `~/.install-logs/` — only the tail is shown if a command fai
 - installs `golazo` (football TUI)
 - installs `gonzo` (log analysis TUI, GitHub release binary with go install fallback)
 - symlinks dotfiles (incl. opencode and tmuxai config)
-- copies `dotfiles/wslconfig` as `.wslconfig` to the Windows user profile
+- copies `dotfiles/windows/wslconfig` as `.wslconfig` to the Windows user profile
 - copies `dotfiles/windows/` (Windows Terminal, YASB, GlazeWM, VS Code) to their config locations, skipping any app that isn't installed
 - copies `dotfiles/cliamp.toml` to `~/.config/cliamp/config.toml` (symlinks `cliamp-radios.toml`)
 - mounts Windows `C:\data\shared` at `$HOME/shared` (persistent via `/etc/fstab`, drvfs `metadata`)
@@ -139,9 +139,8 @@ Machine-local infra lives under `$HOME/shared/infra/` (not versioned): `git_cred
 
 ## Dotfiles
 
-`dotfiles/` contains `tmux.conf`, `bashrc`, `vimrc`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `fastfetchlogo.png`, `golazo-settings.yaml`, `wslconfig`, and `windows/`.
-Installation symlinks the Linux dotfiles, copies `wslconfig` as `.wslconfig` to the Windows
-user profile (`C:\Users\<user>\.wslconfig`), and copies `windows/` to each app's own
+`dotfiles/` contains `tmux.conf`, `bashrc`, `vimrc`, `asoundrc`, `opencode.jsonc`, `tmuxai.yaml`, `cliamp.toml`, `cliamp-radios.toml`, `config.jsonc`, `fastfetchlogo.png`, `golazo-settings.yaml`, and `windows/`.
+Installation symlinks the Linux dotfiles and copies each `windows/` file to its own
 config location:
 
 ```text
@@ -156,7 +155,7 @@ config location:
 ~/.config/golazo/settings.yaml    -> ~/wsl/dotfiles/golazo-settings.yaml
 ~/.config/cliamp/radios.toml      -> ~/wsl/dotfiles/cliamp-radios.toml
 ~/.config/cliamp/config.toml      <- ~/wsl/dotfiles/cliamp.toml  (copied, not symlinked)
-C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/wslconfig  (copied, not symlinked)
+C:\Users\<user>\.wslconfig <- ~/wsl/dotfiles/windows/wslconfig  (copied, not symlinked)
 ```
 
 `~/.bash_aliases` links to `~/shared/infra/bash_aliases/bash_aliases` (shared storage,
@@ -191,14 +190,15 @@ to its native location, then reports `[ok]` (copied), `[skip] already copied`
 
 | Repo file | Windows location |
 | --- | --- |
+| `wslconfig` | `%USERPROFILE%\.wslconfig` |
 | `wt-settings.json` | `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal*\LocalState\settings.json` |
 | `yasb-config.yaml` | `%USERPROFILE%\.config\yasb\config.yaml` |
 | `yasb-styles.css` | `%USERPROFILE%\.config\yasb\styles.css` |
 | `glazewm-config.yaml` | `%USERPROFILE%\.glzr\glazewm\config.yaml` |
 | `vscode-settings.json` | `%APPDATA%\Code\User\settings.json` |
 
-All five are copied, never symlinked, for the same reason `.wslconfig` is: they live
-on the Windows side, where a link would not resolve.
+All six are copied, never symlinked: they live on the Windows side, where a link would
+reach the app as a text stub instead of the file.
 
 Windows Terminal is looked up by glob because its package folder name carries the
 release channel, so one copy covers Stable, Preview, and Canary. Unpackaged builds
@@ -212,8 +212,8 @@ files for an app that isn't installed.
 
 Copying runs one way, WSL to Windows. If you change a setting inside an app's own
 UI, the repo copy goes stale and re-running `./install.sh` overwrites your change;
-edit `dotfiles/windows/` and `./push.sh` instead. This matters more for these files
-than for `.wslconfig` — VS Code and GlazeWM settings change far more often.
+edit `dotfiles/windows/` and `./push.sh` instead. This matters most for VS Code and
+GlazeWM, whose settings change far more often than `.wslconfig`.
 
 `yasb-config.yaml` hardcodes `C:\Users\benito\` in its `bitcoin` and `dolar` widget
 definitions, so those two widgets need that exact account name to resolve. The rest
