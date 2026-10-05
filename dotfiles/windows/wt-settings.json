@@ -6,7 +6,7 @@
     "alwaysShowNotificationIcon": true,
     "copyFormatting": "none",
     "copyOnSelect": true,
-    "defaultProfile": "{2c4de342-38b7-51cf-b940-2309a097f518}",
+    "defaultProfile": "{fbba1a3e-2fbc-55a0-ba44-16beb3d1022f}",
     "keybindings": 
     [
         {
@@ -14,12 +14,12 @@
             "keys": "ctrl+c"
         },
         {
-            "id": "Terminal.PasteFromClipboard",
-            "keys": "ctrl+v"
-        },
-        {
             "id": "Terminal.FindText",
             "keys": "ctrl+shift+f"
+        },
+        {
+            "id": "Terminal.PasteFromClipboard",
+            "keys": "ctrl+v"
         },
         {
             "id": "Terminal.DuplicatePaneAuto",
@@ -38,24 +38,52 @@
         "defaults": 
         {
             "cursorShape": "vintage",
+            "elevate": false,
             "experimental.retroTerminalEffect": false,
             "font": 
             {
                 "face": "Cascadia Code NF"
             },
-            "historySize": 999999,
-            "opacity": 95,
+            "historySize": 50000,
+            "opacity": 100,
             "padding": "8",
+            "pathTranslationStyle": "wsl",
             "scrollbarState": "visible",
+            "startingDirectory": "~",
             "useAcrylic": false
         },
         "list": 
         [
             {
                 "colorScheme": "Dark+",
+                "commandline": "C:\\Windows\\system32\\wsl.exe --distribution-id {fb3bf7c4-7971-49b6-a3be-69e190a0fc11} --cd ~",
+                "cursorShape": "filledBox",
+                "font": 
+                {
+                    "face": "Cascadia Code NF",
+                    "size": 12
+                },
+                "guid": "{fbba1a3e-2fbc-55a0-ba44-16beb3d1022f}",
+                "hidden": false,
+                "icon": "C:\\data\\shared\\infra\\ubuntu_icos\\ubuntu-alpha-grn.ico",
+                "name": "ubu",
+                "pathTranslationStyle": "wsl",
+                "source": "Microsoft.WSL",
+                "startingDirectory": "~",
+                "suppressApplicationTitle": true
+            },
+            {
+                "guid": "{455cf534-7552-5b82-956f-3d3c0c3f1a5f}",
+                "hidden": true,
+                "name": "ubu",
+                "source": "Microsoft.WSL",
+                "startingDirectory": "~"
+            },
+            {
+                "colorScheme": "Dark+",
                 "commandline": "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
                 "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
-                "hidden": false,
+                "hidden": true,
                 "name": "Windows PowerShell"
             },
             {
@@ -69,32 +97,6 @@
                 "hidden": true,
                 "name": "Azure Cloud Shell",
                 "source": "Windows.Terminal.Azure"
-            },
-            {
-                "colorScheme": "Dark+",
-                "font": 
-                {
-                    "face": "FuraCode Nerd Font Mono Retina"
-                },
-                "guid": "{51855cb2-8cce-5362-8f54-464b92b32386}",
-                "hidden": false,
-                "icon": "C:\\Users\\benito\\AppData\\Local\\wsl\\{bef7ebc3-5fde-440f-947b-868f87846bbe}\\shortcut.ico",
-                "name": "Ubuntu",
-                "source": "CanonicalGroupLimited.Ubuntu_79rhkp1fndgsc"
-            },
-            {
-                "backgroundImage": null,
-                "backgroundImageOpacity": 1,
-                "colorScheme": "Dark+",
-                "commandline": "C:\\Windows\\system32\\wsl.exe -d ubu",
-                "cursorHeight": 100,
-                "experimental.retroTerminalEffect": false,
-                "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
-                "hidden": false,
-                "name": "Ubuntu",
-                "opacity": 100,
-                "source": "Windows.Terminal.Wsl",
-                "useAcrylic": false
             },
             {
                 "guid": "{2ece5bfe-50ed-5f3a-ab87-5cd4baafed2b}",
@@ -119,18 +121,6 @@
                 "hidden": false,
                 "name": "PowerShell",
                 "source": "Windows.Terminal.PowershellCore"
-            },
-            {
-                "guid": "{fbba1a3e-2fbc-55a0-ba44-16beb3d1022f}",
-                "hidden": false,
-                "name": "ubu",
-                "source": "Microsoft.WSL"
-            },
-            {
-                "guid": "{559bd0e1-b33e-5de9-a0c3-21c854743a15}",
-                "hidden": false,
-                "name": "ubu2",
-                "source": "Microsoft.WSL"
             }
         ]
     },
