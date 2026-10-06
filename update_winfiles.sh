@@ -33,7 +33,7 @@ last_group=""
 print_group() {
   local g="$1"
   case "$g" in
-    wsl) printf 'WSL\n';;
+    wsl) printf 'Windows Subsystem for Linux\n';;
     yasb) printf 'YASB\n';;
     glazewm) printf 'GlazeWM\n';;
     vscode) printf 'Visual Studio Code\n';;
@@ -124,16 +124,6 @@ printf 'Updated from %s\\\n\n' "$win_home_win"
 group_line "wsl"
 pull "$win_home/.wslconfig" "wslconfig"
 
-group_line "yasb"
-pull "$win_home/.config/yasb/config.yaml" "yasb-config.yaml"
-pull "$win_home/.config/yasb/styles.css" "yasb-styles.css"
-
-group_line "glazewm"
-pull "$win_home/.glzr/glazewm/config.yaml" "glazewm-config.yaml"
-
-group_line "vscode"
-pull "$win_home/AppData/Roaming/Code/User/settings.json" "vscode-settings.json"
-
 # WT ships as an MSIX, so its folder carries the release channel - glob it.
 # Unpackaged builds (GitHub, Scoop, Chocolatey) keep settings.json outside
 # Packages instead, so that path is tried too.
@@ -154,6 +144,16 @@ if [ -z "$wt_target" ]; then
   wt_target="$win_home/AppData/Local/Packages/Microsoft.WindowsTerminal*/LocalState/settings.json"
 fi
 pull "$wt_target" "wt-settings.json"
+
+group_line "glazewm"
+pull "$win_home/.glzr/glazewm/config.yaml" "glazewm-config.yaml"
+
+group_line "yasb"
+pull "$win_home/.config/yasb/config.yaml" "yasb-config.yaml"
+pull "$win_home/.config/yasb/styles.css" "yasb-styles.css"
+
+group_line "vscode"
+pull "$win_home/AppData/Roaming/Code/User/settings.json" "vscode-settings.json"
 
 echo
 echo
