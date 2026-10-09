@@ -124,235 +124,12 @@ apt_update() {
   fi
 }
 
-# ---- distro / package-manager layer --------------------------------------
-PM_FAMILY=""
-DISTRO_ID=""
-DISTRO_VER=""
-DISTRO_LIKE=""
-DISTRO_PRETTY=""
-PKG_LOG="pkg-install.log"
-
-# apt -> RH (dnf/yum) package-name translations
-declare -A RH_NAME=(
-  [bind9-dnsutils]=bind-utils
-  [snmp]=net-snmp-utils
-  [lm-sensors]=lm_sensors
-  [golang-go]=golang
-  [pkg-config]=pkgconf-pkg-config
-  [libfontconfig1-dev]=fontconfig-devel
-  [libfreetype-dev]=freetype-devel
-  [libxcb-composite0-dev]=libxcb-devel
-  [libharfbuzz-dev]=harfbuzz-devel
-  [libexpat1-dev]=expat-devel
-  [libasound2-plugins]=alsa-plugins-pulseaudio
-  [libfaad-dev]=faad2-devel
-  [libtag1-dev]=taglib-devel
-  [libfftw3-dev]=fftw-devel
-  [libopus-dev]=opus-devel
-  [libopusfile-dev]=opusfile-devel
-  [libvorbis-dev]=libvorbis-devel
-  [libogg-dev]=libogg-devel
-  [libchafa-dev]=chafa-devel
-  [libglib2.0-dev]=glib2-devel
-  [libgdk-pixbuf-2.0-dev]=gdk-pixbuf2-devel
-  [libdbus-1-dev]=dbus-devel
-  [imagemagick]=ImageMagick
-)
-
-# packages that may be absent without failing the run
-PM_OPTIONAL=(
-  glances ncdu iftop gping nvtop lnav yq cava nyancat
-  cpufetch boxes jp2a cmatrix lolcat toilet pipx sshpass
-)
-
-detect_family() {
-  local id="" like="" ver="" pretty=""
-  local osrel="${OS_RELEASE:-/etc/os-release}"
-  if [ -r "$osrel" ]; then
-    # shellcheck disable=SC1091
-    . "$osrel"
-    id="${ID:-}"; like="${ID_LIKE:-}"; ver="${VERSION_ID:-}"
-    pretty="${PRETTY_NAME:-$id}"
-  fi
-  DISTRO_ID="$id"; DISTRO_LIKE="$like"; DISTRO_VER="$ver"; DISTRO_PRETTY="$pretty"
-
-  case "$id" in
-    debian|ubuntu|kali|linuxmint|pop|elxr|raspbian|devuan) PM_FAMILY="apt" ;;
-    fedora|rhel|centos|almalinux|rocky|ol|oracle)            PM_FAMILY="dnf" ;;
-    opensuse*|sles|sled|suse)                                PM_FAMILY="zypper" ;;
-    arch|manjaro|endeavouros|garuda|artix)                   PM_FAMILY="pacman" ;;
-    *)
-      case " $like " in
-        *" debian "*|*" ubuntu "*)                PM_FAMILY="apt" ;;
-        *" fedora "*|*" rhel "*|*" centos "*)     PM_FAMILY="dnf" ;;
-        *" suse "*|*" opensuse "*)                PM_FAMILY="zypper" ;;
-        *" arch "*)                               PM_FAMILY="pacman" ;;
-        *)                                        PM_FAMILY="" ;;
-      esac ;;
-  esac
-
-  case "$PM_FAMILY" in
-    apt|dnf) ;;
-    "") printf "Unsupported distribution: %s\n" "${pretty:-unknown}" >&2; exit 1 ;;
-    *)  printf "Distribution family '%s' (%s) is not supported yet.\n" \
-          "$PM_FAMILY" "${pretty:-unknown}" >&2; exit 1 ;;
-  esac
-  PKG_LOG="${PM_FAMILY}-install.log"
-}
-
-pm_name() {
-  local p="$1"
-  case "$PM_FAMILY" in
-    dnf) printf '%s' "${RH_NAME[$p]:-$p}" ;;
-    *)   printf '%s' "$p" ;;
-  esac
-}
-
-pm_is_optional() {
-  local p="$1" o
-  for o in "${PM_OPTIONAL[@]}"; do
-    [ "$o" = "$p" ] && return 0
-  done
-  return 1
-}
-
-pm_present() {
-  local p="$1"
-  case "$PM_FAMILY" in
-    apt)         dpkg -s "$p" >/dev/null 2>&1 ;;
-    dnf|zypper)  rpm -q "$p" >/dev/null 2>&1 ;;
-    pacman)      pacman -Q "$p" >/dev/null 2>&1 ;;
-    *)           return 1 ;;
-  esac
-}
-
-# is the package installable from the configured repositories?
-pm_query() {
-  local p="$1"
-  case "$PM_FAMILY" in
-    # apt lists may be stale until refresh; the install attempt is authoritative
-    apt)    return 0 ;;
-    dnf)    dnf -q list --available "$p" >/dev/null 2>&1 ;;
-    zypper) zypper --non-interactive --quiet search -x "$p" >/dev/null 2>&1 ;;
-    pacman) pacman -Si "$p" >/dev/null 2>&1 ;;
-    *)      return 0 ;;
-  esac
-}
-
-pm_refresh() {
-  case "$PM_FAMILY" in
-    apt)    sudo apt update >> "$LOG_DIR/apt-update.log" 2>&1 ;;
-    dnf)    sudo dnf -y makecache >> "$LOG_DIR/dnf-makecache.log" 2>&1 ;;
-    zypper) sudo zypper --non-interactive refresh >> "$LOG_DIR/zypper-refresh.log" 2>&1 ;;
-    pacman) sudo pacman -Sy >> "$LOG_DIR/pacman-sync.log" 2>&1 ;;
-    *)      return 1 ;;
-  esac
-}
-
-dnf_live() {
-  local line m
-  while IFS= read -r line; do
-    [ "$VERBOSE" -ge 3 ] && continue
-    case "$line" in
-      "Installing : "*) m="${line#Installing : }"; m="${m%% *}"; step "dnf -> ${m,,}" ;;
-      "Upgrading : "*)  m="${line#Upgrading : }";  m="${m%% *}"; step "dnf -> ${m,,}" ;;
-      "Installing dependencies:"*) step "dnf -> installing dependencies" ;;
-    esac
-  done
-}
-
-pm_install_batch() {
-  local log="$1"; shift
-  case "$PM_FAMILY" in
-    apt)    sudo apt install -y "$@" 2>&1 | tee -a "$log" | apt_live ;;
-    dnf)    sudo dnf install -y "$@" 2>&1 | tee -a "$log" | dnf_live ;;
-    zypper) sudo zypper --non-interactive install "$@" >> "$log" 2>&1 ;;
-    pacman) sudo pacman --noconfirm -S "$@" >> "$log" 2>&1 ;;
-    *)      return 1 ;;
-  esac
-}
-
-pm_install_one() {
-  local pkg="$1" log="$2"
-  case "$PM_FAMILY" in
-    apt)    sudo apt install -y "$pkg" >> "$log" 2>&1 ;;
-    dnf)    sudo dnf install -y "$pkg" >> "$log" 2>&1 ;;
-    zypper) sudo zypper --non-interactive install "$pkg" >> "$log" 2>&1 ;;
-    pacman) sudo pacman --noconfirm -S "$pkg" >> "$log" 2>&1 ;;
-    *)      return 1 ;;
-  esac
-}
-
-# Provision the extra repositories the RH family needs (EPEL, CRB, RPM Fusion).
-prepare_repos() {
-  [ "$PM_FAMILY" = "dnf" ] || return 0
-  local log="$LOG_DIR/repos.log"
-  local maj="${DISTRO_VER%%.*}"
-
-  if [ "$DISTRO_ID" = "fedora" ]; then
-    if ! rpm -q rpmfusion-free-release >/dev/null 2>&1; then
-      step "repos -> enabling RPM Fusion (free)"
-      local fv; fv="$(rpm -E %fedora 2>/dev/null || true)"
-      [ -n "$fv" ] || fv="$maj"
-      sudo dnf install -y \
-        "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${fv}.noarch.rpm" \
-        >> "$log" 2>&1 \
-        || step "repos -> RPM Fusion unavailable (ffmpeg/faad2 may fail)"
-    fi
-    return 0
-  fi
-
-  # Enterprise Linux (RHEL / Alma / Rocky / Oracle)
-  if ! rpm -q epel-release >/dev/null 2>&1; then
-    step "repos -> enabling EPEL"
-    if ! sudo dnf install -y epel-release >> "$log" 2>&1; then
-      case "$DISTRO_ID" in
-        ol|oracle)
-          sudo dnf install -y "oracle-epel-release-el${maj}" >> "$log" 2>&1 \
-            || sudo dnf install -y \
-                 "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${maj}.noarch.rpm" \
-                 >> "$log" 2>&1 \
-            || step "repos -> EPEL unavailable"
-          ;;
-        *)
-          sudo dnf install -y \
-            "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${maj}.noarch.rpm" \
-            >> "$log" 2>&1 \
-            || step "repos -> EPEL unavailable"
-          ;;
-      esac
-    fi
-  fi
-
-  # CRB / powertools is required by several EPEL packages
-  if [ "${maj:-0}" -ge 9 ] 2>/dev/null; then
-    case "$DISTRO_ID" in
-      ol|oracle) sudo dnf config-manager --set-enabled "ol${maj}_codeready_builder" >> "$log" 2>&1 || true ;;
-      *)         sudo dnf config-manager --set-enabled crb >> "$log" 2>&1 || true ;;
-    esac
-  else
-    sudo dnf config-manager --set-enabled powertools >> "$log" 2>&1 \
-      || sudo dnf config-manager --set-enabled PowerTools >> "$log" 2>&1 || true
-  fi
-
-  # RPM Fusion (free) supplies ffmpeg / faad2
-  if ! rpm -q rpmfusion-free-release >/dev/null 2>&1; then
-    step "repos -> enabling RPM Fusion (free)"
-    local ev; ev="$(rpm -E %rhel 2>/dev/null || true)"
-    case "$ev" in ""|"%rhel") ev="$maj" ;; esac
-    sudo dnf install -y \
-      "https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-${ev}.noarch.rpm" \
-      >> "$log" 2>&1 \
-      || step "repos -> RPM Fusion unavailable (ffmpeg/faad2 may fail)"
-  fi
-}
-
-pkg_key() {
+apt_key() {
   local g="$1" p="$2"
   if [ "$p" = "zstd" ]; then
     echo "tools:ollama:server:zstd"
   else
-    echo "pkg:$g:$p"
+    echo "apt:$g:$p"
   fi
 }
 
@@ -405,15 +182,14 @@ install_packages() {
     "Ollama deps|zstd"
   )
 
-  local entry group pkg fam_pkg to_install=() wanted=() names=()
+  local entry group pkg to_install=() apt_pkgs=()
   for entry in "${packages[@]}"; do
     group="${entry%%|*}"
     pkg="${entry#*|}"
-    fam_pkg="$(pm_name "$pkg")"
-    if pm_present "$fam_pkg"; then
+    if dpkg -s "$pkg" >/dev/null 2>&1; then
       local v
       v="$(pkg_v "$pkg")"
-      record "$(pkg_key "$group" "$pkg")" skip "already installed${v:+ ${C_SECT}($v)${RESET}}"
+      record "$(apt_key "$group" "$pkg")" skip "already installed${v:+ ${C_SECT}($v)${RESET}}"
     else
       to_install+=("$entry")
     fi
@@ -424,65 +200,42 @@ install_packages() {
     return 0
   fi
 
-  local refresh_note="repo refresh"
-  [ "$PM_FAMILY" = "apt" ] && refresh_note="apt update"
-  if ! pm_refresh; then
+  if ! apt_update; then
     for entry in "${to_install[@]}"; do
-      record "$(pkg_key "${entry%%|*}" "${entry#*|}")" fail "failed ($refresh_note)"
+      record "$(apt_key "${entry%%|*}" "${entry#*|}")" fail "failed (apt update)"
     done
     return 0
   fi
 
-  # Pre-flight: classify every package against the configured repositories.
-  # Required packages missing from the repos fail early; optional ones are skipped.
   for entry in "${to_install[@]}"; do
-    group="${entry%%|*}"
-    pkg="${entry#*|}"
-    fam_pkg="$(pm_name "$pkg")"
-    if pm_query "$fam_pkg"; then
-      wanted+=("$entry")
-    elif pm_is_optional "$pkg"; then
-      record "$(pkg_key "$group" "$pkg")" skip "not available in repos"
-    else
-      record "$(pkg_key "$group" "$pkg")" fail "not available in repos"
-    fi
+    apt_pkgs+=("${entry#*|}")
   done
 
-  if [ "${#wanted[@]}" -eq 0 ]; then
-    step "no packages available to install"
-    return 0
-  fi
-
-  for entry in "${wanted[@]}"; do
-    names+=("$(pm_name "${entry#*|}")")
-  done
-
-  step "$PM_FAMILY install ${#names[@]} packages (single run)"
-  if pm_install_batch "$LOG_DIR/$PKG_LOG" "${names[@]}"; then
-    for entry in "${wanted[@]}"; do
+  step "apt install ${#apt_pkgs[@]} packages (single run)"
+  if sudo apt install -y "${apt_pkgs[@]}" 2>&1 | tee -a "$LOG_DIR/apt-install.log" | apt_live; then
+    for entry in "${to_install[@]}"; do
       group="${entry%%|*}"
       pkg="${entry#*|}"
       local v
       v="$(pkg_v "$pkg")"
-      record "$(pkg_key "$group" "$pkg")" ok "installed${v:+ ${C_SECT}($v)${RESET}}"
+      record "$(apt_key "$group" "$pkg")" ok "installed${v:+ ${C_SECT}($v)${RESET}}"
     done
     return 0
   fi
 
   step "batch install failed, retrying individually"
-  for entry in "${wanted[@]}"; do
+  for entry in "${to_install[@]}"; do
     group="${entry%%|*}"
     pkg="${entry#*|}"
-    fam_pkg="$(pm_name "$pkg")"
     local v
     v="$(pkg_v "$pkg")"
-    if pm_present "$fam_pkg"; then
-      record "$(pkg_key "$group" "$pkg")" ok "installed${v:+ ${C_SECT}($v)${RESET}}"
-    elif pm_install_one "$fam_pkg" "$LOG_DIR/$PM_FAMILY-$pkg.log"; then
-      record "$(pkg_key "$group" "$pkg")" ok "installed${v:+ ${C_SECT}($v)${RESET}}"
+    if dpkg -s "$pkg" >/dev/null 2>&1; then
+      record "$(apt_key "$group" "$pkg")" ok "installed${v:+ ${C_SECT}($v)${RESET}}"
+    elif sudo apt install -y "$pkg" >> "$LOG_DIR/apt-$pkg.log" 2>&1; then
+      record "$(apt_key "$group" "$pkg")" ok "installed${v:+ ${C_SECT}($v)${RESET}}"
     else
-      record "$(pkg_key "$group" "$pkg")" fail "failed"
-      log_tail "$PM_FAMILY-$pkg.log"
+      record "$(apt_key "$group" "$pkg")" fail "failed"
+      log_tail "apt-$pkg.log"
     fi
   done
 }
@@ -493,46 +246,23 @@ install_fastfetch() {
     record "tools:fastfetch" skip "already installed"
     return 0
   fi
-
-  case "$PM_FAMILY" in
-    dnf)
-      step "fastfetch -> installing"
-      if ! sudo dnf install -y fastfetch >> "$log" 2>&1; then
-        log_tail fastfetch.log
-        record "tools:fastfetch" fail "failed (no package)"
-        return 1
-      fi
-      record "tools:fastfetch" ok "installed"
-      ;;
-    apt)
-      # base repo first (Debian 13+/Ubuntu 25.04+); PPA is the fallback
-      if sudo apt install -y fastfetch >> "$log" 2>&1; then
-        record "tools:fastfetch" ok "installed"
-        return 0
-      fi
-      step "fastfetch -> base repo miss, adding PPA"
-      if ! sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch >> "$log" 2>&1; then
-        log_tail fastfetch.log
-        record "tools:fastfetch" fail "failed (PPA)"
-        return 1
-      fi
-      if ! pm_refresh; then
-        record "tools:fastfetch" fail "failed (apt update)"
-        return 1
-      fi
-      step "fastfetch -> installing from PPA"
-      if ! sudo apt install -y fastfetch >> "$log" 2>&1; then
-        log_tail fastfetch.log
-        record "tools:fastfetch" fail "failed"
-        return 1
-      fi
-      record "tools:fastfetch" ok "installed"
-      ;;
-    *)
-      record "tools:fastfetch" fail "unsupported family"
-      return 1
-      ;;
-  esac
+  step "fastfetch -> adding PPA"
+  if ! sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch >> "$log" 2>&1; then
+    log_tail fastfetch.log
+    record "tools:fastfetch" fail "failed (PPA)"
+    return 1
+  fi
+  if ! apt_update; then
+    record "tools:fastfetch" fail "failed (apt update)"
+    return 1
+  fi
+  step "fastfetch -> installing"
+  if ! sudo apt install -y fastfetch >> "$log" 2>&1; then
+    log_tail fastfetch.log
+    record "tools:fastfetch" fail "failed"
+    return 1
+  fi
+  record "tools:fastfetch" ok "installed"
 }
 
 install_opencode() {
@@ -661,66 +391,40 @@ install_ollama() {
 install_vagrant() {
   local log="$LOG_DIR/vagrant.log"
 
-  if pm_present vagrant || command -v vagrant >/dev/null 2>&1; then
+  if dpkg -s vagrant >/dev/null 2>&1; then
     local ver
     ver="$(get_version vagrant)"
     record "tools:vagrant" skip "already installed ${C_SECT}($ver)${RESET}"
   else
-    case "$PM_FAMILY" in
-      apt)
-        local codename
-        codename="$(lsb_release -cs 2>/dev/null || true)"
-        if [ -z "$codename" ] || [ "$codename" = "sid" ] || [ "$codename" = "n/a" ]; then
-          step "vagrant -> codename '$codename' not supported by HashiCorp, using 'trixie'"
-          codename="trixie"
-        fi
+    local codename
+    codename="$(lsb_release -cs 2>/dev/null || true)"
+    if [ -z "$codename" ] || [ "$codename" = "sid" ] || [ "$codename" = "n/a" ]; then
+      step "vagrant -> codename '$codename' not supported by HashiCorp, using 'trixie'"
+      codename="trixie"
+    fi
 
-        if [ ! -f /etc/apt/sources.list.d/hashicorp.list ]; then
-          step "vagrant -> adding HashiCorp repo ($codename)"
-          if ! curl -fsSL https://apt.releases.hashicorp.com/gpg \
-              | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg >> "$log" 2>&1; then
-            log_tail vagrant.log
-            record "tools:vagrant" fail "failed (repo key)"
-            return 1
-          fi
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $codename main" \
-            | sudo tee /etc/apt/sources.list.d/hashicorp.list >/dev/null
-        fi
-
-        step "vagrant -> updating apt"
-        if ! apt_update; then
-          record "tools:vagrant" fail "failed (apt update)"
-          return 1
-        fi
-        if ! sudo apt install -y vagrant >> "$log" 2>&1; then
-          log_tail vagrant.log
-          record "tools:vagrant" fail "failed"
-          return 1
-        fi
-        ;;
-      dnf)
-        if [ ! -f /etc/yum.repos.d/hashicorp.repo ]; then
-          step "vagrant -> adding HashiCorp repo"
-          local hc_url="https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo"
-          [ "$DISTRO_ID" = "fedora" ] && hc_url="https://rpm.releases.hashicorp.com/fedora/hashicorp.repo"
-          sudo dnf config-manager --add-repo "$hc_url" >> "$log" 2>&1 || true
-        fi
-        step "vagrant -> refreshing repos"
-        if ! pm_refresh; then
-          record "tools:vagrant" fail "failed (repo refresh)"
-          return 1
-        fi
-        if ! sudo dnf install -y vagrant >> "$log" 2>&1; then
-          log_tail vagrant.log
-          record "tools:vagrant" fail "failed"
-          return 1
-        fi
-        ;;
-      *)
-        record "tools:vagrant" fail "unsupported family"
+    if [ ! -f /etc/apt/sources.list.d/hashicorp.list ]; then
+      step "vagrant -> adding HashiCorp repo ($codename)"
+      if ! curl -fsSL https://apt.releases.hashicorp.com/gpg \
+          | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg >> "$log" 2>&1; then
+        log_tail vagrant.log
+        record "tools:vagrant" fail "failed (repo key)"
         return 1
-        ;;
-    esac
+      fi
+      echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $codename main" \
+        | sudo tee /etc/apt/sources.list.d/hashicorp.list >/dev/null
+    fi
+
+    step "vagrant -> updating apt"
+    if ! apt_update; then
+      record "tools:vagrant" fail "failed (apt update)"
+      return 1
+    fi
+    if ! sudo apt install -y vagrant >> "$log" 2>&1; then
+      log_tail vagrant.log
+      record "tools:vagrant" fail "failed"
+      return 1
+    fi
     record "tools:vagrant" ok "installed ${C_SECT}($(get_version vagrant))${RESET}"
     VAGRANT_RESTART_NEEDED=1
   fi
@@ -752,7 +456,7 @@ install_ansible() {
   local repo="https://github.com/c-lech/ansible-scripts"
 
   if ! command -v ansible >/dev/null 2>&1; then
-    record "pkg:Remote:ansible:ansible_scripts" skip "not installed (ansible missing)"
+    record "apt:Remote:ansible:ansible_scripts" skip "not installed (ansible missing)"
     return 0
   fi
 
@@ -764,7 +468,7 @@ install_ansible() {
     if ! GIT_TERMINAL_PROMPT=0 git clone -q "$repo" "$tmp" >> "$log" 2>&1; then
       rm -rf "$tmp"
       log_tail ansible.log
-      record "pkg:Remote:ansible:ansible_scripts" fail "failed (git clone $repo)"
+      record "apt:Remote:ansible:ansible_scripts" fail "failed (git clone $repo)"
       return 1
     fi
     step "ansible -> populating $dir"
@@ -772,7 +476,7 @@ install_ansible() {
        || ! sudo cp -a "$tmp/." "$dir/" >> "$log" 2>&1; then
       rm -rf "$tmp"
       log_tail ansible.log
-      record "pkg:Remote:ansible:ansible_scripts" fail "failed (populate $dir)"
+      record "apt:Remote:ansible:ansible_scripts" fail "failed (populate $dir)"
       return 1
     fi
     rm -rf "$tmp"
@@ -781,13 +485,13 @@ install_ansible() {
 
   # init chowns $dir recursively, so it must run after the clone
   if ! sudo test -x "$dir/ansible_users.sh"; then
-    record "pkg:Remote:ansible:ansible_scripts" fail "ansible_users.sh missing in $dir"
+    record "apt:Remote:ansible:ansible_scripts" fail "ansible_users.sh missing in $dir"
     return 1
   fi
   step "ansible -> ansible_users.sh init"
   if ! sudo "$dir/ansible_users.sh" init >> "$log" 2>&1; then
     log_tail ansible.log
-    record "pkg:Remote:ansible:ansible_scripts" fail "failed (ansible_users.sh init)"
+    record "apt:Remote:ansible:ansible_scripts" fail "failed (ansible_users.sh init)"
     return 1
   fi
 
@@ -796,13 +500,13 @@ install_ansible() {
   step "ansible -> ansible_users.sh add-user $me"
   if ! sudo "$dir/ansible_users.sh" add-user "$me" >> "$log" 2>&1; then
     log_tail ansible.log
-    record "pkg:Remote:ansible:ansible_scripts" fail "failed (add-user $me)"
+    record "apt:Remote:ansible:ansible_scripts" fail "failed (add-user $me)"
     return 1
   fi
   if [ "$cloned" -eq 1 ]; then
-    record "pkg:Remote:ansible:ansible_scripts" ok "installed"
+    record "apt:Remote:ansible:ansible_scripts" ok "installed"
   else
-    record "pkg:Remote:ansible:ansible_scripts" skip "already present"
+    record "apt:Remote:ansible:ansible_scripts" skip "already present"
   fi
 }
 
@@ -1837,28 +1541,28 @@ report() {
   local n_ok=0 n_skip=0 n_fail=0
 
   declare -A P=(
-    ["python"]="pkg:Python pkg mgrs"
+    ["python"]="apt:Python pkg mgrs"
     ["nodejs"]="tools:nvm;tools:node"
-    ["rust"]="tools:rust;pkg:Cargo deps"
-    ["go"]="pkg:Go"
-    ["CPU"]="pkg:CPU"
-    ["disk"]="pkg:Disk"
-    ["networking"]="pkg:Networking"
-    ["hardware"]="pkg:Hardware"
-    ["log analysis"]="pkg:Log Analysis;tools:gonzo"
+    ["rust"]="tools:rust;apt:Cargo deps"
+    ["go"]="apt:Go"
+    ["CPU"]="apt:CPU"
+    ["disk"]="apt:Disk"
+    ["networking"]="apt:Networking"
+    ["hardware"]="apt:Hardware"
+    ["log analysis"]="apt:Log Analysis;tools:gonzo"
     ["provision"]="tools:vagrant"
-    ["configure"]="pkg:Remote"
-    ["automate"]="pkg:Automation;tools:watchexec"
-    ["files"]="pkg:Files"
-    ["parse"]="pkg:Parse"
+    ["configure"]="apt:Remote"
+    ["automate"]="apt:Automation;tools:watchexec"
+    ["files"]="apt:Files"
+    ["parse"]="apt:Parse"
     ["render"]="tools:silicon;tools:termshot"
     ["agent"]="tools:agent"
     ["runtime"]="tools:ollama"
     ["models"]="models"
-    ["MISC"]="tools:drift;tools:golazo;tools:cliamp;tools:kew;tools:lavat;pkg:Cliamp deps;pkg:Kew deps;pkg:Misc:cava;pkg:Misc:nyancat"
-    ["multiplexer"]="tools:tmuxai;tools:tmux-plugins;pkg:TMUX integration"
-    ["system-info"]="tools:fastfetch;pkg:Cpufetch util"
-    ["ASCII/ANSI"]="tools:tdfiglet;tools:tte;tools:cfonts;tools:drawbox;pkg:ASCII"
+    ["MISC"]="tools:drift;tools:golazo;tools:cliamp;tools:kew;tools:lavat;apt:Cliamp deps;apt:Kew deps;apt:Misc:cava;apt:Misc:nyancat"
+    ["multiplexer"]="tools:tmuxai;tools:tmux-plugins;apt:TMUX integration"
+    ["system-info"]="tools:fastfetch;apt:Cpufetch util"
+    ["ASCII/ANSI"]="tools:tdfiglet;tools:tte;tools:cfonts;tools:drawbox;apt:ASCII"
     ["system"]="system"
   )
   local sections=(provision configure automate CPU disk networking hardware "log analysis" python nodejs rust go agent runtime models files parse render multiplexer system-info "ASCII/ANSI" MISC system)
@@ -1880,7 +1584,7 @@ report() {
     [multiplexer]="TERMINAL"
   )
 
-  local -A VPARENT=( ["pkg:Cliamp deps"]="tools:cliamp" ["pkg:Kew deps"]="tools:kew" ["pkg:Cargo deps"]="tools:rust" )
+  local -A VPARENT=( ["apt:Cliamp deps"]="tools:cliamp" ["apt:Kew deps"]="tools:kew" ["apt:Cargo deps"]="tools:rust" )
 
   local -a I_SEC I_NAME I_IND I_COL I_CLS I_LBL I_BKT I_GRP I_KEY I_PKEY
   for k in "${ORDER[@]}"; do
@@ -1894,7 +1598,7 @@ report() {
       done
     done
     if [ -z "$sec" ]; then
-      sec="MISC"; pref="pkg:Misc"
+      sec="MISC"; pref="apt:Misc"
     fi
     local parent="" vp=""
     local a
@@ -2156,9 +1860,6 @@ main() {
   SECONDS=0
   mkdir -p "$LOG_DIR"
 
-  detect_family
-  step "distro -> ${DISTRO_PRETTY:-unknown} (family: $PM_FAMILY)"
-
   sudo -v
   # keep sudo credentials fresh for the entire run (long steps exceed the 15-min window)
   (
@@ -2176,8 +1877,7 @@ main() {
   trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null' EXIT
 
   run_step "system:mount shared data" "Mounting shared data" --log mount.log mount_data_dir
-  prepare_repos
-  run_step "pkg" "Installing $PM_FAMILY packages" --log "$PKG_LOG" install_packages
+  run_step "apt" "Installing apt packages" --log apt-install.log install_packages
   run_step "tools:fastfetch" "Installing Fastfetch" --log fastfetch.log install_fastfetch
   run_step "tools:agent" "Installing opencode" --log opencode.log install_opencode
   run_step "tools:tmuxai" "Installing tmuxai" --log tmuxai.log install_tmuxai
@@ -2203,7 +1903,7 @@ main() {
   run_step "tools:tmux-plugins" "Installing tmux plugins" --log tmux-plugins.log install_tmux_plugins
   run_step "system:config git" "Configuring git" configure_git
   run_step "system:copy ssh keys" "Copying SSH keys" install_ssh
-  run_step "pkg:Remote:ansible:ansible_scripts" "Setting up /etc/ansible" --log ansible.log install_ansible
+  run_step "apt:Remote:ansible:ansible_scripts" "Setting up /etc/ansible" --log ansible.log install_ansible
   run_step "system:wsl config (on host)" "Configuring WSL" install_wslconfig
   run_step "system:copy windows dotfiles" "Copying Windows dotfiles" install_windows_dotfiles
 
