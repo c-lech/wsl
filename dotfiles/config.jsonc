@@ -179,7 +179,7 @@
       "showReadOnly": true,
       "showUnknown": false,
       "folders": "",
-      "hideFolders": "/efi:/boot:/boot/*:/mnt/c",
+      "hideFolders": "/efi:/boot:/boot/*:/mnt/c:/usr/src/linux-headers-*:/usr/lib/linux-tools/*",
       "hideFS": "",
       "useAvailable": false,
       "percent": {
