@@ -224,9 +224,6 @@
     {
       "type": "localip"
     },
-    {
-      "type": "publicip"
-    },
     "break",
     {
       "type": "colors",
